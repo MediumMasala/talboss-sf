@@ -21,7 +21,7 @@ export type ResumeSubmission = {
   consent: { privacy: string; terms: string };
 };
 
-/** Tal Select application details collected before the resume (name, LinkedIn, work authorization). */
+/** Tal application details collected before the resume (name, LinkedIn, email, the intro they saw). */
 export type Application = {
   program: string;
   name: string;
@@ -30,7 +30,8 @@ export type Application = {
   linkedinUrl: string | null;
   linkedinStatus: "confirmed" | "typed" | "skipped";
   linkedinProfile: unknown;
-  workAuth: string | null;
+  /** Deprecated (v3): no longer collected. New rows store null; old rows keep their value in `work_auth`. */
+  workAuth?: string | null;
   /** Typed by the person; required when there's no resume. */
   email: string | null;
   /** The "how we'd introduce you" draft they were shown (from /api/pitch), and where it came from. */
@@ -85,7 +86,7 @@ function cloudflare(env: CloudflareEnv): ResumeStorage {
         )
           .bind(
             crypto.randomUUID(), s.createdAt, s.id, a.program, a.name, a.company, a.designation, a.linkedinUrl, a.linkedinStatus,
-            a.linkedinProfile ? JSON.stringify(a.linkedinProfile) : null, a.workAuth, JSON.stringify({ utm: s.meta.utm, referrer: s.meta.referrer }),
+            a.linkedinProfile ? JSON.stringify(a.linkedinProfile) : null, null, JSON.stringify({ utm: s.meta.utm, referrer: s.meta.referrer }),
             a.email, a.pitch, a.pitchSource,
           )
           .run();
@@ -129,7 +130,7 @@ export type SubmissionRow = {
   app_email: string | null;
 };
 
-/** Newest first, with the Tal Select application details when there are any. */
+/** Newest first, with the Tal application details when there are any. */
 export async function listSubmissions(env: CloudflareEnv, limit = 500): Promise<SubmissionRow[]> {
   const { results } = await env.DB.prepare(
     `SELECT s.id, s.created_at, s.email, s.linkedin, s.file_name, s.file_size, s.has_resume, s.meta,

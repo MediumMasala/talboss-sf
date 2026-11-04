@@ -5,7 +5,7 @@
 - live `/api/pitch` on 7 fixtures (founder, infra, PM, data scientist, frontend-mock, thin, infra+answer);
 - a real browser run on the founder's cached profile: type → found → "Yes, that's me" → the live email card (`flow-4-pitch.png`).
 
-That last run was a cache hit, so no paid run. The rate limit didn't trip this time, which is consistent with "only paid runs count."
+Correction: that run took **16.7 s**, so it was probably not a cache hit but one paid founder-only lookup (about $0.07). I expected the cache to serve it. The lookup cache key may have changed this round. The rate limit didn't trip. 16.7 s is a little over the "Usually about 15 seconds" copy, which is fine, and the search log kept it honest.
 
 ## 1. VERDICT: PASS
 

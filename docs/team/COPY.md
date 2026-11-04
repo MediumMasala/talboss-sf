@@ -1,150 +1,198 @@
-# Tal Select US: copy (round 3)
+# Tal US site: copy (v3)
 
-Owner: copywriter. The source of truth is `content/site.ts` (`site.select`, `site.claims`). This file explains it.
+Owner: copywriter. Source of truth: `content/site.ts`. This file records every string, where it appears and why it's worded that way. v2 copy is gone in full.
 
-## What changed in round 3 (Steve round 2)
+## Key map
 
-- **Fix 1: honest limits.** There are two new states, and neither says "couldn't find you". In both, the primary action is paste-link and the secondary is skip.
-  - `apply.rateLimited`: "Tal is getting a lot of requests from your network." / "Lookups from your network are paused for now. Paste your LinkedIn link and Tal will carry on, or skip it and Tal will work from your resume." Shown on API `code:"rate_limited"`.
-  - `apply.dailyCap`: "Tal's LinkedIn search is full for today." / "Paste your LinkedIn link and Tal will carry on, or skip it and Tal will work from your resume." Shown when the global daily cap is reached.
-  - `apply.notFound` is now only for a true not-found.
-- **Fix 4: true email card.**
-  - `email.needsMoreThin` "Tal only has your title so far. One line from you changes that." is for no LinkedIn confirmed.
-  - `email.needsMoreLinkedIn` "Tal only has your LinkedIn so far. One line from you changes that." is for a confirmed LinkedIn without a resume.
-  - `email.needsMore` stays as a deprecated alias of the thin line; frontend switches to the two keys.
-  - `email.from` is now "Tal · Tal Select".
-- **Fix 7: no sentence twice.**
-  - Meet Tal now opens "An AI agent with a human team behind him. …"; "talent agent for top professionals" is only in the hero (and SEO).
-  - FAQ "Who is Tal?" no longer repeats the about line.
-  - FAQ "How does Tal find roles?" drops "round the clock", which is now in how step 3 only, and the first-members line, which is now in `about.more` and done only.
-  - FAQ "I'm not looking" no longer echoes the deal.
-  - "Nobody sees your name until you say yes" stays in the hero only. Elsewhere it's "Your name stays private until you say yes" (how 4), "Your name goes to a company only after you say yes to that specific role" (FAQ 6) and "Your name goes out only with your yes" (final sub).
+| Where on the page | Key in `site` |
+|---|---|
+| Meta (layout, page, social card) | `seo`, `select.seo`, `select.og` |
+| Top bar | `select.topBar.wordmark`, `funding.line` |
+| Sound toggle (fixed, bottom-left) | `select.sound.*` |
+| Mobile dock / after-hero action | `select.dock` |
+| 1. Opening frame | `select.hero.word`, `select.hero.sub` |
+| Step counter (mono) | `select.steps.label(n,total)`, `select.steps.names` |
+| 1. Form card | `select.apply.you.*` |
+| 2. Finding you | `select.apply.search.*` (use `stages`, not `lines`) |
+| Error screens | `select.apply.notFound`, `.rateLimited`, `.dailyCap`, `.searchDown`, `.offline` |
+| 3. Is this you? | `select.apply.confirm.*` |
+| 4. The letter | `select.apply.email.*` |
+| 5. Resume | `select.apply.resume.*`, `select.apply.noResume.*`, `upload.idle`, `upload.errors`, `upload.consent` |
+| 6. Done title card | `select.apply.done.credit(date)`, `.next(first)`, `.email(email)` / `.noEmail`, `.private` |
+| 7. What an agent does | `select.agent.label`, `select.agent.paragraphs[0..2]` |
+| 8. Sample letter | `select.sample.*` |
+| 9. Where we come from | `select.origin.*` |
+| 10. Terms letter | `select.terms.*` (`paragraphs(date)` is a function) |
+| 11. Questions | `select.faq.*` |
+| 12. End credits | `select.credits.*`, `funding.line`, `legal.supportEmail` |
+| Logo row caption | `select.proofLine` (the logo files and list belong to the frontend) |
+| Claims (never inline a number) | `claims.network` and `claims.startups`, each used once, in `origin.network` |
 
-## What changed in round 2b
+Round 1 fix 8 (4 Nov 2026): every DEPRECATED v2 key, the legacy `/v2` and `/drop` keys (`hero`, `light`, `howItWorks`, `upload.matching/done/elsewhere/uploadError`), the `TeamMember` type and the old logo list (`proof.brands`) are deleted. `grep -c DEPRECATED content/site.ts` returns 0, and `tsc --noEmit` is clean; no component broke.
 
-- **Founder decision (4 Nov), overriding Steve fix #6:** there are no named humans. **Tal**, an AI talent agent with a human team behind him, is the protagonist. He is written in the third person ("Tal reads your profile tonight"). "Tal Select" stays as the programme name (eyebrow, done title, nav CTA).
-- `site.select.team` is **deprecated**: an empty array kept only so `Sections.tsx` compiles, and `about.teamLabel` is `""`. **Frontend: delete the team block in Sections.tsx; then I'll remove both keys.**
-- The round 2 fixes still hold. Buttons promise the payoff ("Draft my intro", "Represent me", "Join Tal Select"), and "application" is on no button. There is one wait string. The SF positioning is honest ("opening in SF now", first members get the first US intros). Each claim number appears once in the body, now in `about.more`.
-- Funding (founder decision): `site.funding` reads "We have raised $7 million from Peak XV (formerly Sequoia Capital)." No other investor claims.
+## Notes for the frontend engineer
 
-## Headline
+- **Subject line:** `email.subject(name, title, company)` takes the **full name** ("Ana Ruiz, staff engineer at Stripe").
+- **Search:** use `search.stages[stage]` with Math.max on the index.
+- **Letter intro line:** `email.intro` ("Change anything that isn't right") only if the letter is editable in place; otherwise `email.introReadOnly`.
+- **Credit line and terms:** `done.credit(date)` uppercases the date itself; `terms.paragraphs(date)` needs the same computed date.
+- **Logo row:** `select.proofLine` is the only logo copy left in `site.ts`. Any logo shown must be one logged in ASSETS.md, and the row sits beside the Bengaluru story so it can't read as US openings.
+- **Unused but kept:** `select.og` (source text for `app/opengraph-image.alt.txt`), `seo.ogAlt`, `email.intro`, `hero.alternates` (founder reference, never rendered) and `upload.idle.button`.
 
-**Keep building. Tal makes the intros.** (picked)
-Others considered: "Keep building. Tal will find the roles." / "Tal is your talent agent. Keep building." / "Keep building. Tal is on it." (cute, cut) / "Meet Tal, your talent agent." (a label, no promise).
-Why: it keeps the round-1 line Steve protected and puts Tal in the subject slot. "Makes the intros" is the one job only an agent does. "Find the roles" undersells it, because job boards find roles.
+## Naming, voice and claims (how every line was tested)
 
-## Page copy, in reading order
+- The brand and sender is **Tal**. The page speaks as **we**. Tal has no pronoun. The old programme name is in no string, comment or meta tag.
+- AI is mentioned once, in `agent.paragraphs[0]`: "We use AI to read every profile and role, day and night, and people on our team decide who should meet whom." ("AI companies" in `origin` is a fact about Round1's clients, not about us.)
+- Claims used: the funding line (top bar and credits, from one constant); 300,000+ and 5,000+ once each (`origin.network`); the Sarvam CTO fact once (`origin.body`); roles in "San Francisco, the Bay Area, and remote" (meta description and FAQ 1); free for you and companies pay when they hire (`terms` and one FAQ); we ask first; six months as a real date; the Grapevine → Round1 → Tal story; about 20 people in Bengaluru.
+- Left out on purpose: any other Sarvam claim; any time promise ("tonight", "within a day").
+- Every line was read aloud. Anything that sounded like a landing page was cut.
 
-**SEO:** Tal Select: an AI talent agent for engineers, now opening in SF / Tal is a talent agent for top professionals, opening in SF now. Tal finds roles that fit and emails them to you. Nobody sees your name until you say yes. Free.
-**OG card:** Keep building. Tal makes the intros. / Tal Select is opening in SF. Free for engineers.
-**Nav:** Join Tal Select
+## The copy, in flow order
 
-### Hero
-Tal Select · now opening in SF
-*Keep building.*
-**Tal makes the intros.**
-Tal is a talent agent for top professionals, opening in SF now. For six months, Tal finds roles that fit you and emails them to you. Nobody sees your name until you say yes. Free.
-*(under form, hidden after done)* You'll read the intro Tal would send a founder about you before he asks for your resume.
+### Meta
+- `seo.title` / `select.seo.title`: **Tal: a talent agent for engineers, researchers, PMs and designers**
+- `seo.description` / `select.seo.description`: Tal is a talent agent for engineers, researchers, PMs and designers, for roles in San Francisco, the Bay Area, and remote. We ask you before anyone hears your name, and it's free for you.
+- `select.og.line`: **Talent** · `og.sub`: Tal is a talent agent, opening in San Francisco now. · `og.alt`: The word Talent set over a photograph, with the line: Tal is a talent agent, opening in San Francisco now.
+- Why: the title names who it's for and avoids the sentence Dex owns. The description is the hero in three plain sentences.
 
-### Apply flow
-**1. You:** Who should Tal represent? / Name, company and title. Tal finds your LinkedIn and drafts your intro from it. / Full name [Your full name] · Company [Where you work now] · Title [Member of Technical Staff] / **[Draft my intro]** · Paste my LinkedIn link instead → Your LinkedIn link [linkedin.com/in/your-name] **[Draft my intro]**
-Errors: "Tal needs your full name and company to find you." / "That isn't a LinkedIn profile link. It should look like linkedin.com/in/your-name."
+### 0. Top bar and fixed controls
+- `select.topBar.wordmark`: tal (lowercase, display serif) · `wordmarkLabel`: Tal, home
+- `funding.line`: We have raised $7 million from Peak XV (formerly Sequoia Capital).
+- `select.sound.off` / `.on`: SOUND OFF / SOUND ON · aria: Turn sound on / Turn sound off
+- `select.dock`: Ask Tal to represent you
 
-**2. Search:** Searching LinkedIn → Reading the profile Tal found → Lining it up for you to check · Usually about 15 seconds. · Skip this. I'll add my resume.
+### 1. Opening frame
+- `select.hero.word`: ***Talent***
+- `select.hero.sub` (pick): That's what we call the people we represent. Tal is a talent agent for engineers, researchers, PMs and designers, and we're opening in San Francisco now.
+- Alternates, ranked (`hero.alternates`, never rendered):
+  2. In film, that's the word for the people in front of the camera, and every one of them has an agent. Tal is a talent agent for engineers, researchers, PMs and designers, opening in San Francisco now.
+  3. That's what we call the people we represent. We read their work, find the founder who should meet them, and ask before we say their name. Tal is opening in San Francisco now.
+- Why the pick: the first sentence explains the big word without a lecture, and the second says who we are, who it's for and where, plainly. Alternate 2 is lovely but explains the metaphor; the image should do that.
 
-**3. Confirm:** Is this you? · Tal only reads your public profile. · [Yes, that's me] [Not me] → Trying the next match
-**3c. Rate limited:** Tal is getting a lot of requests from your network. / Lookups from your network are paused for now. Paste your LinkedIn link and Tal will carry on, or skip it and Tal will work from your resume. / **[Paste my LinkedIn link]** · Skip. I'll add my resume.
-**3d. Daily cap:** Tal's LinkedIn search is full for today. / Paste your LinkedIn link and Tal will carry on, or skip it and Tal will work from your resume. / **[Paste my LinkedIn link]** · Skip. I'll add my resume.
-**3b. Not found (true not-found only):** Tal couldn't find you. / Some profiles don't show up in search. Paste your link, or skip it and Tal will work from your resume. / [Paste my LinkedIn link] · Skip. I'll add my resume.
+### 1. The form card
+- Live title line before typing (`you.nameEmpty`): *Your name* (crossfades to their typed name in the serif)
+- Mono credit under it (`you.credit`): REPRESENTED BY TAL
+- Intro (`you.hint`): Tell us your name and where you work. We'll find you on LinkedIn and write the note we'd send a founder about you.
+- Fields (`you.fields`): Full name [Your full name] · Company [Where you work now] · Title [Member of Technical Staff]
+- Primary (`you.cta`): **Find me on LinkedIn** · Secondary (`you.manual`): Paste my LinkedIn link instead
+- Paste path: label `manualLabel` "Your LinkedIn link", placeholder `manualPlaceholder` "linkedin.com/in/your-name", button `manualCta` **Use this link**
+- Errors: `you.missing` "We need your full name and where you work to find you." · `you.badUrl` "That doesn't look like a LinkedIn profile link. It should look like linkedin.com/in/your-name."
+- Step counter: `steps.label(2,4)` → STEP 2 OF 4 · `steps.names`: YOU, LINKEDIN, THE LETTER, RESUME
+- Why: the button says exactly what happens next. "Draft my intro" (v2) promised the letter before we'd found them.
 
-**4. The email card (right after "Yes, that's me")**
+### 2. Finding you
+- `search.stages.search`: Looking for you on LinkedIn
+- `search.stages.people`: Going through the profiles with your name
+- `search.stages.profile`: Reading your profile
+- `search.stages.found`: Getting it ready for you to check
+- Slow (`search.wait`): This usually takes about 15 seconds.
+- `search.skip`: Skip this and add my resume
+- Why: each line is what the API is really doing at that stage (API.md: `people` = the people search is running). No percentages.
+
+### Error screens (body leads with pasting the link; the primary button is `manual`)
+- **Not found** (`notFound`): We couldn't find you on LinkedIn. / Some profiles don't show up in search. Paste your link and we'll read it from there, or skip this and we'll work from your resume. / [Paste my LinkedIn link] · Skip this and add my resume
+- **Rate limited** (`rateLimited`, code `rate_limited`): We've had a lot of searches from your network this hour. / Paste your LinkedIn link and we'll carry on from there. Or skip this, and we'll work from your resume.
+- **Daily cap** (`dailyCap`, code `daily_cap`, a global per-day counter that resets daily): We've done all the LinkedIn searches we can for today. / Paste your LinkedIn link and we'll carry on from there. Or try again tomorrow, or skip this and we'll work from your resume.
+- **Search down** (`searchDown`, HTTP 502): Our LinkedIn search isn't working right now, and that's on our side. / Paste your LinkedIn link and we'll try it that way. Or skip this, and we'll work from your resume.
+- **Offline** (`offline`, 503 or no network): You seem to be offline. / When you're back, try again or paste your LinkedIn link. Everything you typed is still here. / [Try again] · [Paste my LinkedIn link]
+- Why: only not-found says we couldn't find them. The others give the real reason in one line and take the blame where it's ours. Offline leads with "try again" because pasting a link needs a connection too.
+
+### 3. Is this you?
+- `confirm.title`: **Is this you?** · `confirm.hint`: We only read your public profile.
+- Buttons: `yes` Yes, that's me · `no` No, not me · `manual` Paste my link
+- Trying again (`confirm.trying`): Looking at the next profile with your name
+- After three (`confirm.outOfProfiles`): That's everyone we found with your name. Paste your LinkedIn link and we'll start from that.
+
+### 4. The letter
+- Above it (`email.intro`): This is how we'd introduce you. Change anything that isn't right. (Read-only fallback `email.introReadOnly`: This is how we'd introduce you to a founder.)
+- Header: To `email.toLine` "A founder in San Francisco" · From `email.from` "Tal" · Subject `email.subject(name,title,company)` "Ana Ruiz, staff engineer at Stripe"
+- While drafting (`email.drafting`): Writing your letter · Tag (`email.draftTag`): DRAFT
+- Signature (`email.signature`): Tal, a talent agent
+- Under the signature (`email.sendNote`): **We'll only send this to a founder you've agreed to meet.**
+- Fallback draft (`email.fallbackNote`): This first draft comes from your title alone. We'll write a better one once we've read your profile.
+- needsMore lead-in: `needsMoreThin` "So far we only know your title." / `needsMoreLinkedIn` "So far we only know what's on your LinkedIn."
+- The question (`email.question`): **What's one thing you've built that you'd want a founder to hear about?**
+- Answer: placeholder "A sentence or two is plenty." · button `submit` "Add it to the letter" · while working `rewriting` "Adding it to the letter" · after `rewritten` "We've added that in." · sr-only label on the highlight `highlightLabel` "From your answer" · exit `keep` "Looks good as it is" · error "We couldn't rewrite it just now. Please try once more."
+- Why: the send note states the rule as a fact about the letter, without the banned possessive shape from v2. The question asks what an agent needs to sell them, and "built" covers engineers, PMs and designers alike.
+
+### 5. Resume (optional)
+- `resume.title`: Want it sharper? Add your resume. · `resume.hint`: PDF or Word file, up to 5 MB. The more we read, the better we can introduce you.
+- Drop zone: `resume.drop` "Drop it here, or choose a file" · `upload.idle.button` "Choose a file" · `upload.idle.dragging` "Let go to add it"
+- Button (`resume.cta`): **Ask Tal to represent me** · Sending (`resume.sending`): Saving your details → Putting it with your profile → One moment
+- Quiet path (`noResume.link`): No resume handy? We'll work from your LinkedIn. (`linkNoLinkedIn` when LinkedIn was skipped: No resume handy? Your email is enough to start.)
+- `noResume.title`: Where should we write to you? · `noResume.hint`: We'll email you when there's a role worth your time, and you tell us yes or no.
+- Email: label "Email", placeholder "you@example.com", missing "We'll need an email to write to you.", invalid "That email doesn't look right. Check it for a typo." · `noResume.cta` Ask Tal to represent me · `noResume.back` Add a resume instead
+- Consent (`upload.consent`): By continuing, you agree to our Privacy Policy and Terms.
+- Upload errors (`upload.errors`): wrongType "That's a .png file. We need a PDF or a Word document (.docx)." · tooBig "That file is 7.2 MB, and the limit is 5 MB. Saving it as a PDF usually makes it smaller." · empty "That file looks empty. Try another one." · corrupt "We couldn't open that file. Try saving it again as a PDF." · multiple "One file at a time, please." · network "We couldn't reach our server. Check your connection and try again." · server "Something went wrong on our side. Please try again in a minute." · tooBigForServer "That file is too big for us to upload. A PDF under 4 MB will work."
+- `upload.uploadError`: That didn't go through. / [Try again] [Choose another file]
+
+### 6. Done: the title card
+- Their name, in the display serif.
+- `done.credit(date)`: REPRESENTED BY TAL · UNTIL 4 MAY 2027
+- `done.next(first)`: Thank you, Ana. We'll read everything properly and start looking for roles worth your time.
+- `done.email(email)`: When we find one, we'll write to you at ana@example.com. (No email: `done.noEmail` "We couldn't find an email on your resume, so we can't write to you yet. Add one to your resume and upload it again.")
+- `done.private`: Nobody outside Tal hears your name until you say yes.
+- Why: "outside Tal" keeps it true, since our team does read the profile.
+
+### 7. What an agent does (`agent.label` WHAT AN AGENT DOES)
+1. We read everything you give us, properly. We use AI to read every profile and role, day and night, and people on our team decide who should meet whom. When we describe you to a founder, it should sound like we know your work. (43 words)
+2. Then we look for the role, and for the person who makes the call on it, usually a founder or the manager you'd work for. A short note from someone they trust gets read, and that's the note we write. (40)
+3. When we find something, we email you about it: the company, the role, the person and why we think it's worth your time. If you say no, nobody hears your name. Say yes, and we make the intro and set up the conversation. (43)
+
+### 8. Sample letter (`sample`)
+- Label: SAMPLE · AN INVENTED PERSON, TO SHOW HOW WE WRITE
+- To: A founder in San Francisco · From: Tal · Subject: Noor Halvorsen, staff engineer at Acme Freight
+- Body: Noor leads routing at Acme Freight and rebuilt the dispatch system that plans every truck's day. Before that, Noor spent four years building the payments ledger at a regional bank.
+- Signature: Tal, a talent agent
+- Why: Acme is the universal invented company, so nobody reads this as a real member. Two plain facts, no pronouns and no closing judgement (Steve round 1, fix 6). It passes the backend's `vet()` unchanged: run against the same invented facts it returned `{ok:true}` with the text untouched.
+
+### 9. Where we come from (`origin`)
+- `heading`: Where we come from
+- `body` (90 words): We started in Bengaluru with Grapevine, India's largest anonymous professional network, where more than a million verified professionals share real salaries and the truth about where they work. Then we built Round1, a hiring agency that became profitable placing engineers at India's fastest-growing AI companies. One engineer Round1 placed at Sarvam AI went on to become its CTO. Round1 taught us that the scarce thing in hiring is trust. A founder will make time for someone new when the note comes from people they believe. We built Tal on that.
+- `network`: There are about 20 of us, and the network behind Tal is 300,000+ tech professionals and 5,000+ AI and consumer startups. (The only place either number appears.)
+- Logo row caption (`select.proofLine`): **Bosses from these companies hire on Tal**. Founder's call (overrides DIRECTION §5). Put it beside the Bengaluru story, never under the SF hero, so it can't read as US openings.
+- Contact sheet caption (`caption`): **People on Tal in Bengaluru**. These faces appear here and nowhere else, with no quotes beside them.
+
+### 10. The terms (`terms`), a letter on paper, about 105 words
+- Label: THE TERMS · Heading: What we're agreeing to
+- It's free for you. Companies pay us when they hire someone we introduced. You never pay us anything.
+- We ask before your name goes anywhere. Every role comes to you first, by email, and nobody outside Tal hears about you unless you say yes to it.
+- We'll represent you for six months, until {date}. Then we'll ask if you want us to keep going. If we don't hear back, we'll assume you're not looking right now, and we'll stop.
+- We use your LinkedIn profile and resume only to represent you. Ask at support@gvine.app and we'll delete your profile and resume.
+- Signed: The Tal team, Bengaluru
+
+### 11. Questions (`faq`)
+1. **Where are the roles?** In San Francisco, the Bay Area, and remote.
+2. **I'm happy where I am. Should I still sign up?** Yes, and it's a good time to. You keep your job, and we only write to you when a role looks worth your time.
+3. **Will my company find out?** Not from us. Your name goes to a company only after you've said yes to that specific role.
+4. **How will I hear from you?** By email, one role at a time. Each one says who the company is, what the role is and why we thought of you, and you reply yes or no.
+5. **What does it cost?** Nothing. Companies pay us when they hire someone we introduced.
+6. **What happens after six months?** We'll write and ask if you'd like us to keep going. If you don't reply, we'll take it that you're not looking right now, and we'll stop representing you.
+- Cut to stay at six: "Who makes Tal?" (the origin section and credits cover it) and "What happens to my data?" (the terms letter says it). The company name is `legal.company`; show it in the credits.
+
+### 12. End credits (`credits`)
+- `cta`: **Ask Tal to represent you**
+- `made`: Made in Bengaluru by the team behind Grapevine
+- `photosLabel`: PHOTOGRAPHS · `photo(name, source)`: PHOTOGRAPH: JANE DOE / UNSPLASH (one per photographer, from ASSETS.md)
+- `privacy` Privacy · `terms` Terms · `legal.supportEmail` support@gvine.app · `funding.line`
+
+## Questions for the founder
+All answered on 4 Nov 2026: Sarvam may be named once (the CTO fact); 5,000+ is approved; roles are San Francisco, the Bay Area, and remote; after six months with no reply we stop; the daily cap resets each day; deletion wording stays "ask and we'll delete your profile and resume". Still open: does deletion also cover the sheet and the cache?
+
+## Banned-pattern grep (run on both files after the last edit)
+
+Command: `grep -nEi "every time|one job|not [^."]* but|—|–|\b(he|him|his)\b|tal select|work.?auth|interview|candidate|\bapply\b|talent pool|\bmatch|unlock|seamless|game.changer|supercharge|your yes|that's it|no catch|got you|keep building|six months, then|senior software engineers|each dot|places most engineers" content/site.ts docs/team/COPY.md`
+
+Every hit is an internal key or file name (`apply`) or a developer note. None is user-facing copy.
+
 ```
-The intro Tal will send                                     Draft
-From     Tal · Tal Select
-To       a founder hiring for {kind}     (fallback: a role like yours)
-Subject  Intro: {First}, {Title} at {Company}
------------------------------------------------------------------
-{pitch streams in}           (while empty: "Tal is drafting your intro")
------------------------------------------------------------------
-Tal drafted this from your LinkedIn. His team sharpens it, and it
-goes out only after you say yes to a role.
-
-[needsMore, no LinkedIn] Tal only has your title so far. One line from you changes that.
-[needsMore, LinkedIn confirmed] Tal only has your LinkedIn so far. One line from you changes that.
-What's the hardest thing you've shipped?
-[ One sentence is plenty.              ] [Rewrite it]   Looks good as is
-→ "Tal is rewriting it with your answer" → "Rewritten with your answer."
-   error: "Tal couldn't rewrite it just now. Try once more?"
+docs/team/COPY.md:15:| 1. Form card | `select.apply.you.*` |
+docs/team/COPY.md:16:| 2. Finding you | `select.apply.search.*` (use `stages`, not `lines`) |
+docs/team/COPY.md:17:| Error screens | `select.apply.notFound`, `.rateLimited`, `.dailyCap`, `.searchDown`, `.offline` |
+docs/team/COPY.md:18:| 3. Is this you? | `select.apply.confirm.*` |
+docs/team/COPY.md:19:| 4. The letter | `select.apply.email.*` |
+docs/team/COPY.md:20:| 5. Resume | `select.apply.resume.*`, `select.apply.noResume.*`, `upload.idle`, `upload.errors`, `upload.consent` |
+docs/team/COPY.md:21:| 6. Done title card | `select.apply.done.credit(date)`, `.next(first)`, `.email(email)` / `.noEmail`, `.private` |
+docs/team/COPY.md:31:Round 1 fix 8 (4 Nov 2026): every DEPRECATED v2 key, the legacy `/v2` and `/drop` keys (`hero`, `light`, `howItWorks`, `upload.matching/done/elsewhere/uploadError`), the `TeamMember` type and the old logo list (`proof.brands`) are deleted. `grep -c DEPRECATED content/site.ts` returns 0, and `tsc --noEmit` is clean; no component broke.
+content/site.ts:171:    apply: {
 ```
-Alternates: "What are you proudest of from the last two years?" / "What problem would you happily spend the next three years on?" / "What do teammates come to you for?"
-
-**5. Resume (the reward):** Want it sharper? Give Tal your resume. / PDF or DOCX, up to 5MB. More for Tal to work from means a better intro. / US work authorization (Optional): 5 options / **[Represent me]**
-*(small link)* No resume handy? Tal will work from your LinkedIn. *(LinkedIn skipped)* No resume handy? Your email is enough for now.
-**5b. No resume:** Where should Tal reach you? / Tal emails you when a role fits. You reply yes or no. / Email [you@example.com] **[Represent me]** · Add a resume instead
-Errors: "Add an email so Tal can reach you." / "That email doesn't look right. Check for a typo?"
-
-**6. Sending:** Saving your details → Setting up your Tal Select profile → Starting your six months
-
-**7. Done:** You're in Tal Select. / Welcome, {first}. Tal takes it from here. / You're early. Tal's first US intros go to the first members.
-- Tonight: Tal reads your profile and sharpens your intro.
-- As roles come in: Tal emails you the ones that fit. Each email is one role, and you reply yes or no.
-- When you say yes: Nobody sees your name before then. Tal sends your intro to the founder or hiring manager and sets up the conversation.
-- For 6 months: Tal keeps looking while you keep building.
-
-Tal represents you until {date}. · Tal will write to you at {email}. · Free for you. Companies pay when they hire.
-
-### How Tal works
-1. Tell Tal who you are: Name, company and title. Tal finds your LinkedIn and drafts your intro on the spot.
-2. Sharpen it in one line: Answer one question and Tal rewrites the draft with your detail in it.
-3. Tal finds the roles: Tal and his team work round the clock to find roles that fit, then email them to you.
-4. You say yes, then meet the boss: Your name stays private until you say yes. Then Tal sets up the conversation with the founder or hiring manager.
-
-### The deal
-Free for you · Your yes, every time · Six months, then you decide · Your data has one job (now in Tal's voice).
-
-### Meet Tal
-**An AI agent with a human team behind him. He reads every profile, finds the roles that fit, and emails them to you.**
-*(smaller, `about.more`)* Tal comes from a hiring network built in Bengaluru, with 300,000+ tech professionals and 5,000+ AI and consumer startups. Tal Select is opening in SF now, and the first members get Tal's first US intros.
-
-### FAQ (8)
-1. **Who is Tal?** The agent behind Tal Select. Tal drafts your intro, his team sharpens it, and together they pitch you to the founders and hiring managers who make the call.
-2. **How does Tal find roles?** Tal and his team search for roles that match your experience, your level and your work authorization, and bring you only the ones that fit.
-3. **How will I hear from Tal?** By email. When a role fits, Tal writes to you about it, and you reply yes or no.
-4. **I'm not looking. Should I join?** That's the best time. You keep your job, and you decide on each role Tal brings you.
-5. **What does it cost?** Nothing. Companies pay when they hire someone Tal introduced. Representation lasts six months, then Tal asks if you want more.
-6. **Will my company find out?** Your name goes to a company only after you say yes to that specific role. Tal asks every time.
-7. **What about work authorization?** Tell Tal your status when you join. Tal only puts you forward for roles where it works.
-8. **Who runs Tal, and what happens to my data?** Tal is built by Grapevine (Watercooler Chat Private Limited) in Bengaluru. Your LinkedIn and resume are used to represent you, nothing else. Email support@gvine.app and we delete them.
-
-### Final CTA (hidden after done)
-**Your name, in front of the right founder.** / Free. Six months. Your name goes out only with your yes. / **[Join Tal Select]**
-
-## Key map (`site.select` unless noted)
-
-| Key | Type | Where |
-|---|---|---|
-| `site.claims.network`, `site.claims.startups` | string | used once in the body, in `about.more` (plus the hero field legend) |
-| `site.funding.{before,amount,after}` | string | "We have raised $7 million from Peak XV (formerly Sequoia Capital)." |
-| `seo.title`, `seo.description` | string | `app/page.tsx` |
-| `og.line`, `og.sub`, `og.alt` | string | `app/opengraph-image.tsx` |
-| `hero.eyebrow`, `hero.title` [2], `hero.sub`, `hero.note` | string | hero; hide `note` after done |
-| `apply.you.*` | string | step 1; `cta` and `manualCta` = "Draft my intro" |
-| `apply.search.{lines[3],wait,skip}` | string | search; `wait` is the only wait string (drop `WAIT_COPY`) |
-| `apply.confirm.*`, `apply.notFound.*` | string | confirm / true not-found only |
-| `apply.rateLimited.{title,body,manual,skip}` | string | **new**: API `code:"rate_limited"`; `manual` is the primary button |
-| `apply.dailyCap.{title,body,manual,skip}` | string | **new**: global daily cap; `manual` is the primary button |
-| `apply.email.{label,fromLabel,from,toLabel,to(kind),toFallback,subjectLabel,subject(first,role,company),drafting,draftTag,note}` | string / fn | email card |
-| `apply.email.{questions[4],placeholder,submit,rewriting,rewritten,keep,error}` | string | sharpening question; show `questions[0]` |
-| `apply.email.needsMoreThin`, `apply.email.needsMoreLinkedIn` | string | **new**: thin = no LinkedIn confirmed; LinkedIn = confirmed, no resume. `needsMore` is a deprecated alias |
-| `apply.resume.{title,hint,authLabel,authOptional,auth,cta,sending}` | string | resume as reward; `cta` = "Represent me" |
-| `apply.noResume.*` | string | no-resume path |
-| `apply.done.{title,lead(first),early,steps[4],until(date),email(email),noEmail,free}` | string / fn | done |
-| `apply.done.pitch.{label,tag,loading,note,fallbackNote}` | string | intro card if repeated on done |
-| `how.{heading,steps[4]}`, `deal.{heading,items[4]}` | string | proof 1, 2 |
-| `about.heading`, `about.body`, `about.more` (**new**) | string | "Meet Tal"; `more` is a smaller second paragraph and **must be wired** (it holds the claims) |
-| `faq.{heading,items[8]}` | [q, a][] | FAQ |
-| `final.{heading,sub,cta}` | string | final CTA and nav button |
-| `team`, `about.teamLabel`, `stats` | deprecated | empty, kept so the build compiles; remove their render blocks |
-| `proofLine` | string | logo strip (currently dropped) |
-
-Non-`select` keys are untouched apart from `funding.after`.

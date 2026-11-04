@@ -107,6 +107,33 @@ export async function readToken(secret: string, token: string | null): Promise<R
   }
 }
 
+/* ------------------------------------------------------------------ photos */
+
+/** LinkedIn's photo CDN only: the proxy refuses every other host, so it can't be used as an open proxy. */
+export const PHOTO_HOST = /^https:\/\/media\.licdn\.com\//;
+
+/** Same-origin, signed link to a profile photo: /api/linkedin/photo?u=<url>&s=<mac>. Empty when there's no photo. */
+export async function photoLink(secret: string, url: string): Promise<string> {
+  if (!url || !PHOTO_HOST.test(url)) return "";
+  return `/api/linkedin/photo?u=${encodeURIComponent(b64url(url))}&s=${await mac(secret, `photo:${url}`)}`;
+}
+
+export async function readPhotoLink(secret: string, u: string | null, s: string | null): Promise<string | null> {
+  if (!u || !s || u.length > 4000) return null;
+  let url: string;
+  try {
+    url = unb64url(u);
+  } catch {
+    return null;
+  }
+  if (!PHOTO_HOST.test(url)) return null;
+  const expected = await mac(secret, `photo:${url}`);
+  if (s.length !== expected.length) return null;
+  let diff = 0;
+  for (let i = 0; i < s.length; i++) diff |= s.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff ? null : url;
+}
+
 /* ------------------------------------------------------------------ apify */
 
 type Run = { id: string; status: string; defaultDatasetId: string };

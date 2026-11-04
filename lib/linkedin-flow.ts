@@ -11,7 +11,7 @@
  * "No, not me" hands back a token; the next poll shows the next candidate (instantly when its profile is held).
  */
 import {
-  bonus, candsFromSerp, getRun, items, peopleInput, profileInput, queryKey, readToken, scoreProfile, searchInput,
+  bonus, candsFromSerp, photoLink, getRun, items, peopleInput, profileInput, queryKey, readToken, scoreProfile, searchInput,
   shapeProfile, signToken, slugOf, startRun, trimRaw, type Cand, type LookupInput, type Profile, type Raw, type RunToken,
   type Stage,
 } from "./linkedin";
@@ -157,7 +157,10 @@ async function step(keys: Keys, t: RunToken, store: ReturnType<typeof storeFor>)
     if (raw) {
       t.shown.push(next.s);
       const more = t.shown.length < MAX_SHOWN && (ranked(t).length > 0 || busy);
-      return { state: "found", profile: shapeProfile(raw, next.sc), next: more ? await sign(keys, t) : null };
+      const profile = shapeProfile(raw, next.sc);
+      // Never hot-link LinkedIn's expiring CDN URL: hand the browser our signed, cached proxy instead.
+      profile.photo = await photoLink(keys.secret, profile.photo);
+      return { state: "found", profile, next: more ? await sign(keys, t) : null };
     }
     next.sc = undefined; // the stored profile is gone (expired): pull it again below
   }

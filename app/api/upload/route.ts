@@ -15,7 +15,7 @@ function fail(status: number, error: string) {
   return Response.json({ ok: false, error }, { status });
 }
 
-const WORK_AUTH = new Set(["citizen", "green_card", "visa_no_sponsorship", "needs_sponsorship", "outside_us"]);
+// Work authorization is no longer collected (v3). An old client may still send `workAuth`; it is ignored.
 
 /** Plain English until copy keys exist in content/site.ts. */
 const NO_RESUME = {
@@ -29,7 +29,7 @@ const validEmail = (v: string) => v.length <= 254 && EMAIL_RE.test(v);
 /** Collapse control characters and runs of spaces. */
 const tidy = (v: string) => v.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
 
-/** The Tal Select details sent with the resume. Everything is trimmed; nothing here is trusted for logic. */
+/** The Tal application details sent with the resume. Everything is trimmed; nothing here is trusted for logic. */
 function readApplication(raw: unknown): Application | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -46,8 +46,12 @@ function readApplication(raw: unknown): Application | null {
     linkedinUrl: /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\/in\//i.test(url) ? url : null,
     linkedinStatus: status === "confirmed" || status === "typed" ? status : "skipped",
     // Keep the confirmed card only if it's a sane size; never drop the application over it.
-    linkedinProfile: r.linkedinProfile && typeof r.linkedinProfile === "object" && JSON.stringify(r.linkedinProfile).length < 20_000 ? r.linkedinProfile : null,
-    workAuth: WORK_AUTH.has(str("workAuth")) ? str("workAuth") : null,
+    // The photo is shown only to the person on "Is this you?"; it is never stored with the application.
+    linkedinProfile:
+      r.linkedinProfile && typeof r.linkedinProfile === "object" && JSON.stringify(r.linkedinProfile).length < 20_000
+        ? { ...(r.linkedinProfile as Record<string, unknown>), photo: undefined }
+        : null,
+    workAuth: null,
     email: validEmail(str("email", 254).toLowerCase()) ? str("email", 254).toLowerCase() : null,
     pitch: str("pitch", 800) || null,
     pitchSource: str("pitchSource") === "ai" || str("pitchSource") === "fallback" ? (str("pitchSource") as "ai" | "fallback") : null,
