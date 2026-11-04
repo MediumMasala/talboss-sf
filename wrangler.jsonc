@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "talboss-sf",
+  // Grapevine account, where the other Tal Boss sites live. Pinned so wrangler never picks another account.
+  "account_id": "a8e831b9fc9f3941e67b0bd1885e1c45",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    // Self-reference used by OpenNext; must match "name".
+    { "binding": "WORKER_SELF_REFERENCE", "service": "talboss-sf" }
+  ],
+  // Resume files (KV holds values up to 25MB; R2 isn't enabled on this account).
+  "kv_namespaces": [{ "binding": "RESUMES", "id": "1c905c54da6e43d192de94c4b1644444" }],
+  // One row per submission.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "talboss-sf-submissions",
+      "database_id": "25856412-f5f1-4049-8bcf-7b924b2e8e0a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": { "enabled": true }
+}

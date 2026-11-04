@@ -1,0 +1,20 @@
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+
+# env
+.env*
+!.env.example
+
+# local resume uploads: user PII, never commit
+.uploads
+
+.DS_Store
+
+# Cloudflare / OpenNext
+.open-next
+.wrangler
+.dev.vars*
