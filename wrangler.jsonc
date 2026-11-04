@@ -4,6 +4,11 @@
   // Grapevine account, where the other Tal Boss sites live. Pinned so wrangler never picks another account.
   "account_id": "a8e831b9fc9f3941e67b0bd1885e1c45",
   "main": ".open-next/worker.js",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "jointalboss.com", "custom_domain": true },
+    { "pattern": "www.jointalboss.com", "custom_domain": true }
+  ],
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
