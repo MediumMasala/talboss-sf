@@ -11,10 +11,10 @@ const REACH: Record<FlowStage, number> = { idle: 0, error: 0, matching: 0.6, don
  * FOUNDER from the upper left, YOU from the right at the card's height (kept clear of the bridge below).
  * They drift closer as the person moves through the upload.
  */
-export function Hands() {
+export function Hands({ reach, tags: tagsOverride }: { reach?: number; tags?: { left: string; right: string } } = {}) {
   const { state } = useResumeFlow();
-  const style = { "--reach": REACH[state.stage] } as CSSProperties;
-  const { tags } = site.hero;
+  const style = { "--reach": reach ?? REACH[state.stage] } as CSSProperties;
+  const tags = tagsOverride ?? site.hero.tags;
 
   return (
     // Desktop only: on a phone the card fills the width and the hands would only show as slivers.

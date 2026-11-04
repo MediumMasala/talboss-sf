@@ -1,3 +1,28 @@
+# Tal Select (US) + Tal Boss resume drop
+
+**`/` is now the Tal Select landing for US LinkedIn ads** (the old resume drop lives at `/drop`, noindex).
+Onboarding: name, company, title → LinkedIn lookup via Apify ("Is this you?" yes/no, or paste a link, or skip) →
+US work authorization + resume upload → "what happens next" (six months of representation).
+
+- Copy: `content/site.ts` → `select`. Components: `components/select/`. Lookup: `lib/linkedin.ts` + `lib/linkedin-flow.ts`,
+  routes `app/api/linkedin/{start,poll,profile}`. The browser polls a signed token naming one Apify run; runs are capped
+  (worst case ≈ $0.15/person) and lookups are rate-limited to 6 per IP per hour (KV).
+- Storage: `migrations/0002_applications.sql` adds `applications` (one row per Tal Select application, linked to the resume
+  in `submissions`). The sheet CSV now has Name, Company, Designation, LinkedIn check, Work authorization, Program.
+
+### Ship it
+
+```bash
+npx wrangler login
+npx wrangler secret put APIFY_TOKEN     # same token boss-live uses
+npm run db:migrate                     # applies 0002_applications.sql to the remote D1
+npm run deploy
+```
+
+Ad links should carry `utm_source=linkedin&utm_campaign=…`; UTMs are saved with every application.
+
+---
+
 # Tal Boss: resume drop for SF startups
 
 Single-page resume drop for engineers, PMs and designers who want SF startup roles.

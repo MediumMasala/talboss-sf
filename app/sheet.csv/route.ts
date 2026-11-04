@@ -3,7 +3,7 @@ import { sameKey, signResumeId } from "@/lib/signing";
 
 export const dynamic = "force-dynamic";
 
-const HEADERS = ["Uploaded (IST)", "Email", "LinkedIn", "Resume", "Source", "File", "ID"];
+const HEADERS = ["Uploaded (IST)", "Name", "Company", "Designation", "Email", "LinkedIn", "LinkedIn check", "Work authorization", "Resume", "Source", "Program", "File", "ID"];
 
 /** "2026-11-03 18:55" in IST: unambiguous, and Sheets reads it as a date-time in any locale. */
 function ist(iso: string) {
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       }
     })();
     const link = `${url.origin}/r/${r.id}/${await signResumeId(env.LINK_SECRET, r.id)}`;
-    lines.push([ist(r.created_at), r.email, r.linkedin, link, utm.utm_source, r.file_name, r.id].map(cell).join(","));
+    lines.push([ist(r.created_at), r.name, r.company, r.designation, r.email, r.app_linkedin || r.linkedin, r.linkedin_status, r.work_auth, link, utm.utm_source, r.program, r.file_name, r.id].map(cell).join(","));
   }
 
   return new Response(lines.join("\n") + "\n", {

@@ -11,8 +11,8 @@ function markSize(ratio: number) {
 }
 
 /** Real logos of Bay Area companies whose bosses are hiring on Tal Boss. White by default, brand colour on hover. */
-export function BrandMarquee() {
-  const { line, brands } = site.proof;
+export function BrandMarquee({ line = site.proof.line }: { line?: string } = {}) {
+  const { brands } = site.proof;
 
   const row = (copy: boolean) => (
     <ul aria-hidden={copy || undefined} className="flex shrink-0 gap-3 pr-3">

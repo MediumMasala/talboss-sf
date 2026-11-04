@@ -13,7 +13,13 @@ export type AnalyticsEvent =
   | "upload_failed"
   | "match_shown"
   | "jump_to_active_upload"
-  | "sticky_bar_click";
+  | "sticky_bar_click"
+  | "select_lookup_started"
+  | "select_lookup_found"
+  | "select_lookup_failed"
+  | "select_profile_confirmed"
+  | "select_profile_rejected"
+  | "select_apply_click";
 
 export type AnalyticsProps = Record<string, string | number | boolean | string[] | null | undefined>;
 

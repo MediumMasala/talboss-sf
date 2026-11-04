@@ -123,6 +123,125 @@ export const site = {
     ] as [string, string, string, number][],
   },
 
+  /** Tal Select (US): the landing at "/" for US LinkedIn ads. */
+  select: {
+    seo: {
+      title: "Tal Select: get represented for top SF and US tech roles",
+      description: "Apply once. For six months, Tal Select puts you forward by name for top SF and US tech roles, to the people who hire. Free for you.",
+    },
+    eyebrow: "Tal Select · San Francisco",
+    headline: { lead: "Apply once.", main: "We represent you for", scribble: "6 months.", tail: "" },
+    sub: "Tal Select is the talent agency inside Tal's network of 300,000+ tech professionals. We put you forward, by name, for top roles in SF and across the US, and set up the conversations with the people who hire.",
+    chips: ["Free for you", "Founders and hiring managers, not job boards", "Six months, every role that fits"],
+    tags: { left: "THE BOSS", right: "YOU" },
+
+    apply: {
+      you: {
+        title: "Start with who you are",
+        hint: "We'll find your public LinkedIn profile, so you don't have to fill in a form.",
+        fields: {
+          name: { label: "Full name", placeholder: "Alex Chen" },
+          company: { label: "Company", placeholder: "Where you work now" },
+          role: { label: "Title", placeholder: "Senior Software Engineer" },
+        },
+        cta: "Find my LinkedIn",
+        manual: "Paste my LinkedIn link instead",
+        manualLabel: "LinkedIn profile link",
+        manualPlaceholder: "linkedin.com/in/your-name",
+        manualCta: "Use this profile",
+        badUrl: "That doesn't look like a LinkedIn profile link (linkedin.com/in/…).",
+        missing: "Add your full name and company.",
+      },
+      search: {
+        lines: ["Searching LinkedIn", "Reading your profile", "Matching your experience"],
+        wait: "Usually under a minute.",
+        skip: "Skip this, I'll just add my resume",
+      },
+      confirm: {
+        title: "Is this you?",
+        yes: "Yes, that's me",
+        no: "No, not me",
+        trying: "Checking the next profile",
+      },
+      notFound: {
+        title: "We couldn't find you on LinkedIn",
+        body: "Paste your profile link, or skip it and we'll work from your resume.",
+        skip: "Skip, I'll add my resume",
+      },
+      resume: {
+        title: "Last step: your resume",
+        hint: "PDF or DOCX, up to 5MB. We read it so we can pitch you well.",
+        authLabel: "US work authorization",
+        auth: [
+          ["citizen", "US citizen"],
+          ["green_card", "Green card"],
+          ["visa_no_sponsorship", "Visa, no sponsorship needed"],
+          ["needs_sponsorship", "Will need sponsorship"],
+          ["outside_us", "Based outside the US"],
+        ] as [string, string][],
+        sending: ["Saving your resume", "Building your Tal Select profile", "Lining up the roles that fit"],
+      },
+      done: {
+        title: "You're in Tal Select.",
+        lead: (first: string) => `Welcome${first ? `, ${first}` : ""}. Here's what happens next.`,
+        steps: [
+          { when: "This week", what: "A person on our talent team reads your profile and resume. No keyword filters." },
+          { when: "Next", what: "We write your Tal Select pitch: a short, specific case for you, in our words." },
+          { when: "For 6 months", what: "We put you forward for top SF and US roles that fit, to the founders and hiring managers who make the call." },
+          { when: "When it clicks", what: "You get an intro and a direct chat with the person hiring. You decide who to talk to." },
+        ],
+        until: (date: string) => `Your representation runs until ${date}.`,
+        email: (email: string) => `We'll reach you at ${email}.`,
+        noEmail: "We couldn't find an email on your resume. Add one and upload again so we can reach you.",
+        free: "Free for you. Companies pay us when they hire.",
+      },
+    },
+
+    stats: [
+      { value: "300K+", label: "tech professionals in the Tal network" },
+      { value: "6 months", label: "of active representation from one application" },
+      { value: "1:1", label: "intros to the person hiring, not a recruiter queue" },
+    ],
+
+    compare: {
+      heading: "Represented, not filtered",
+      cols: ["Applying on your own", "With Tal Select"],
+      rows: [
+        ["Who reads you first", "A keyword filter", "A person on our talent team"],
+        ["How you show up", "One resume in a pile", "By name, with a pitch written for you"],
+        ["Who you talk to first", "A recruiter screen", "The founder or hiring manager"],
+        ["How long it works", "One job at a time", "Every role that fits, for 6 months"],
+      ] as [string, string, string][],
+    },
+
+    proofLine: "Bosses from these companies hire on Tal",
+
+    how: {
+      heading: "How it works",
+      steps: [
+        { title: "Tell us who you are", body: "Name, company and title. We pull your LinkedIn so there's no form." },
+        { title: "Add your resume", body: "One upload finishes your application." },
+        { title: "We pitch you", body: "For six months we put you forward, by name, for roles that fit." },
+        { title: "Talk to the boss", body: "When a founder or hiring manager wants to meet, we set up the chat." },
+      ],
+    },
+
+    faq: {
+      heading: "Questions",
+      items: [
+        ["Who is Tal Select for?", "Engineers, product managers, designers, and data and ML people with a strong track record who want roles at top startups and tech companies in San Francisco and across the US."],
+        ["What does it cost?", "Nothing. Tal Select is free for you. Companies pay us when they hire someone we introduced."],
+        ["Will you send my resume anywhere without asking?", "No. We ask you before we put you forward for a specific role."],
+        ["What happens after six months?", "Your representation ends. If you're still looking, we'll ask whether you want to keep going."],
+        ["What about work authorization?", "Tell us your status when you apply. We only put you forward for roles where it fits."],
+        ["Who is behind Tal?", "Tal is built by Grapevine (Watercooler Chat Private Limited). Our network of 300,000+ tech professionals is where Tal Select comes from."],
+        ["What do you do with my data?", "We use your LinkedIn profile and resume to represent you, and nothing else. You can ask us to delete them at any time."],
+      ] as [string, string][],
+    },
+
+    final: { heading: "Six months of introductions start with one application.", cta: "Apply to Tal Select" },
+  },
+
   /** Runs under Grapevine's policies (Watercooler Chat Private Limited). /privacy and /terms redirect here. */
   legal: {
     privacyUrl: "https://www.grapevine.in/privacy",

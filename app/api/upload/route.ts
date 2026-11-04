@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { site } from "@/content/site";
-import { getStorage, type ResumeSubmission } from "@/lib/storage";
+import { getStorage, type Application, type ResumeSubmission } from "@/lib/storage";
 import { extractContact } from "@/lib/extract";
 import { checkResumeFile } from "@/lib/validation";
 
@@ -13,6 +13,30 @@ const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ut
 
 function fail(status: number, error: string) {
   return Response.json({ ok: false, error }, { status });
+}
+
+const WORK_AUTH = new Set(["citizen", "green_card", "visa_no_sponsorship", "needs_sponsorship", "outside_us"]);
+
+/** The Tal Select details sent with the resume. Everything is trimmed; nothing here is trusted for logic. */
+function readApplication(raw: unknown): Application | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const str = (k: string, n = 120) => (typeof r[k] === "string" ? (r[k] as string).trim().slice(0, n) : "");
+  const name = str("name"), company = str("company"), designation = str("designation");
+  if (!name || !company) return null;
+  const status = str("linkedinStatus");
+  const url = str("linkedinUrl", 300);
+  return {
+    program: "tal-select-us",
+    name,
+    company,
+    designation,
+    linkedinUrl: /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\/in\//i.test(url) ? url : null,
+    linkedinStatus: status === "confirmed" || status === "typed" ? status : "skipped",
+    // Keep the confirmed card only if it's a sane size; never drop the application over it.
+    linkedinProfile: r.linkedinProfile && typeof r.linkedinProfile === "object" && JSON.stringify(r.linkedinProfile).length < 20_000 ? r.linkedinProfile : null,
+    workAuth: WORK_AUTH.has(str("workAuth")) ? str("workAuth") : null,
+  };
 }
 
 function parseJson(value: FormDataEntryValue | null): unknown {
@@ -81,8 +105,15 @@ export async function POST(request: Request) {
     consent: { privacy: site.legal.privacyUrl, terms: site.legal.termsUrl },
   };
 
+  let application: Application | null = null;
   try {
-    await (await getStorage()).save(submission, bytes);
+    application = readApplication(parseJson(form.get("application")));
+  } catch {
+    application = null;
+  }
+
+  try {
+    await (await getStorage()).save(submission, bytes, application);
   } catch (error) {
     console.error("[upload] storage failed", error);
     return fail(500, errors.server);
