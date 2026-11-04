@@ -21,6 +21,7 @@ const SCREENS: [string, string][] = [
   ["/start?state=sending", "A6 Saving"],
   ["/start?state=A6b", "A6b Email"],
   ["/start?state=A7", "A7 Done"],
+  ["/start?state=noemail", "A6b No email on the resume"],
 ];
 
 /**

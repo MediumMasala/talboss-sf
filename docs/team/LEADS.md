@@ -18,6 +18,12 @@ script only ever writes columns A–K, so they survive every update.
 3. **Resync sheet** on `/leads` (or `POST /api/leads/resync?key=<LEADS_KEY>`) pushes every pending row, oldest first,
    50 per request, up to 500 per click. The script upserts by ID, so pushing a row twice writes it once.
 4. Rows from before this change start as pending, so the **first resync backfills the whole history**.
+5. **Only complete leads go to the sheet.** When a resume has no email on it, the site asks for one and the browser
+   sends the same resume again with the typed address. That is **one lead, not two**: the second upload fills in the
+   first row (same ID, same resume link) when the resume file is byte-for-byte the same, it came within 30 minutes,
+   the first row had no email, and name, company and title match (ignoring case and spacing). The email-less first
+   upload is never pushed; the completed row is pushed once. Someone who leaves without typing an email shows on
+   `/leads` and in the CSV, never in the sheet.
 
 Sheet columns: Submitted (IST) · Name · Company · Title · Email · LinkedIn (link) · LinkedIn status · Headline ·
 Resume ("Open resume (file.pdf)" link, or "no resume") · Source (UTM) · ID.
@@ -45,7 +51,7 @@ deployments → edit → Version: New version, or the old code keeps running.
 npx wrangler secret put LEADS_WEBHOOK_URL      # paste the /exec URL
 npx wrangler secret put LEADS_WEBHOOK_SECRET   # the same value as the Script property
 npx wrangler secret put LEADS_KEY              # a new long random value; this opens /leads
-npm run db:migrate                             # applies migrations/0004_leads.sql to the live D1 (BEFORE the deploy)
+npm run db:migrate                             # applies 0004_leads.sql and 0005_resume_hash.sql to the live D1 (BEFORE the deploy)
 npm run deploy
 ```
 
@@ -66,7 +72,8 @@ isn't "Anyone" or the URL isn't the `/exec` one.
 `scripts/leads-smoke.sh` runs the whole loop on your machine against a python stand-in for the Apps Script
 (instructions at the top of the file: three lines in `.dev.vars`, restart `npx next dev -p 3217`). It submits a fake
 lead with a PDF, shows the webhook payload, finds the lead on `/leads`, downloads the resume, saves a note, then stops the
-listener, submits a second lead, sees it pending, and resyncs it.
+listener, submits a second lead, sees it pending, and resyncs it. Last, it uploads a resume with no email and then the
+same resume with a typed email, and checks there is one row, with the email, and one sheet push.
 
 ## Good to know
 - `/leads`, `/api/leads/*` and `/sheet.csv` answer **404** without the key or cookie (or when `LEADS_KEY` is unset).

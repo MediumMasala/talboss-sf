@@ -11,10 +11,13 @@ English and safe to show as is (`message` on lookup routes, `error` elsewhere). 
   company, it is shown as soon as that run finishes. No third run is needed.
 - A Google result that has the company in its snippet gets its profile pulled while the people search is still running.
   Whichever confident match lands first wins.
-- Without a confident match we wait for Google for up to 25 s. After that, the best name match is shown.
+- Every candidate passes the **match guard** (below) before it is shown. Name + company is shown at once; name +
+  title only is shown after we've waited up to 25 s for Google to find a name + company match. Nothing else is
+  ever shown: when no candidate passes, poll returns `not_found` and the flow offers the paste-link path.
 - Profiles stay server-side in KV (`li:d:<lookup id>`, about 7 h). The browser holds a signed token with run ids and
   public slugs only. It can't name another lookup's runs or data.
-- **Cache:** the same name and company within 6 h (`li:q:v4:<sha>`) reuses the candidates and costs nothing.
+- **Cache:** the same name, company and role within 6 h (`li:q:v5:<sha>`) reuses the candidates and costs nothing.
+  v5 (Nov 5, match guard) replaced v4, whose entries could hold name-only guesses; v4 keys are never read again.
 - **Cost caps:** people ≤ 10 items (≤ $0.05), ≤ 3 profile pulls (each `maxItems=1`, ≤ $0.06), and one SERP page.
   The worst case is about $0.07 per person.
 - **Limits** (`lib/limits.ts`; round 3). They are counted only when a paid run is about to start, so cache hits never count:
@@ -29,7 +32,30 @@ English and safe to show as is (`message` on lookup routes, `error` elsewhere). 
   **Tested:** a mocked-Apify unit test (`/tmp/tsf/limits-test.mts`; no network) showed that 10 different names from one IP all start; the same name is blocked on the 4th try; the network limit and the daily cap return their codes; a cache hit goes through while the IP is limited; and paste-link stays allowed. Seeding the local KV counters forced both 429s from the real endpoint.
 - **Fails fast**, before any paid run, on: a missing name or company, a name with digits, `@`, `/` or a URL, a name
   with fewer than two letters, a company with no letters or digits, and a `url` that isn't a `linkedin.com/in/` link.
-- A first name that differs (a colleague with the same surname) scores below the show threshold, so it is never offered.
+
+### Match guard (`lib/linkedin-match.ts`, Nov 5)
+Steve's v4.1 review typed "Aryan Mehta / Halcyon Labs / Member of Technical Staff" and was offered a Houston
+engineer, then a London banker: same name, nothing else. The old score gave 0.6 for the name alone, and after 25 s
+the best name match was shown. Now a profile is offered only when **name AND (company OR title)** match:
+
+| Check | Passes when |
+|---|---|
+| **Name** (required) | The typed first AND last name both appear in the profile's full name, as two different words, in any order. Each part matches exactly, as a known nickname (Sam ~ Samuel, Bob ~ Robert, Mohd ~ Mohammed), as a first-name short form of 3+ letters (Alex ~ Alexander; first names only), or as a close transliteration (Tripathi ~ Tripathy, Aaryan ~ Aryan, Mohammed ~ Muhammad). Diacritics fold (José = Jose, Søren = Soren). Titles, suffixes and initials (Dr, Jr, PhD, "K.") are ignored. A one-word typed name must match the first name. |
+| **Company** | The typed company, with legal and descriptive suffixes stripped (Inc, LLC, Ltd, Pvt, Corp, Co, GmbH, Labs, Technologies, Tech, AI, HQ, Software, Group, India, …, and a leading "The"), equals the current company or the company of a current or one of the two most recent roles (or one starts the other: Google ~ Google DeepMind), or appears in order in the headline. "Open AI" ~ "OpenAI". |
+| **Title** | The typed role shares at least two meaningful words (or the only one typed) with the headline or with a current or recent title. Seniority and filler words (senior, staff, lead, principal, head, member, of, …) don't count. Common forms are folded: MTS = Member of Technical Staff, SWE/SDE = Software Engineer, PM = Product Manager, ML = Machine Learning, Co-founder = Founder. |
+
+- **Score:** name + company = 0.9 (1.0 with the title too), name + title only = 0.7, anything else 0 (`MATCH` in the
+  file: pass 0.7, sure 0.9). A same-name stranger at another company with another job, or a colleague with the
+  same company and surname, is 0 and never offered.
+- **Google results** are only pulled (≈ $0.005 each) when the result title carries the first and last name AND the
+  title or snippet shows the company or the role, so we no longer pay to pull strangers.
+- **"No, not me"** moves on only over candidates that pass the guard; when none are left, it's `not_found`.
+- **Before any profile is shown**, the guard runs again on the stored profile, so an in-flight token or a cache
+  written under older rules can't surface a guess.
+- **A pasted LinkedIn link** is the person's own choice and is still shown whatever its score.
+- **Test (no network):** `node --test scripts/linkedin-match.test.mjs` (8 cases: exact; Inc/Labs/LLC/The variations;
+  same name at another company, rejected; same company with another name, rejected; title-only with the same name,
+  accepted; nicknames and transliterations; empty company, where the title must match; diacritics).
 
 ### Measured (founder's own profile, local dev, Nov 4)
 | | Before | After |
@@ -39,6 +65,11 @@ English and safe to show as is (`message` on lookup routes, `error` elsewhere). 
 | "No, not me" (next profile already held) | ~5–15 s (a new profile run) | **0.3 s**; at most +5 s when it waits for a Google company hit |
 
 What sets the floor now is the people-search run (~11 s). With `POLL_MS = 2200`, the browser adds up to 2 s on top.
+
+**After the guard (Nov 5, local dev, "Sanchit Tripathi / Grapevine / Strategy Lead"):** found in 12 s, right person,
+score 0.9 (name + company, from his recent role at Grapevine; "Strategy Lead" isn't on his profile). "No, not me"
+then ended at `not_found` (32 s, waiting out the Google run and its guarded pulls) instead of offering a stranger.
+The repeat was a v5 cache hit: found on the first poll, 0.16 s.
 
 ### Endpoints (contract unchanged)
 - `POST /api/linkedin/start` `{name, company, role, url?}` returns
@@ -73,6 +104,22 @@ Fields: `resume` (file, **optional**), `utm` (JSON), `application` (JSON; commen
   "Add an email so we can reach you, or upload your resume." or "We lost your name and company. Go back a step and try again."
 - Returns `{ok:true, id, email}`, where `email` is the address we'll use (from the resume or typed), or `null`.
   Failures return `{ok:false, error}`.
+- **One lead per person (Nov 5, migration `0005_resume_hash.sql`).** A resume with no email on it is saved and
+  answered with `email: null`; the flow then asks for an email (A6b) and sends the same resume again with it. The
+  second upload **updates the first row instead of inserting a new one** when all of these hold:
+  - the resume bytes are identical (`submissions.resume_sha256`, hex SHA-256, new column);
+  - the earlier row is from the **last 30 minutes** (`MERGE_WINDOW_MS` in `lib/storage.ts`);
+  - the earlier row has **no email** (none on the resume, none typed);
+  - name, company and designation are the same after normalising (Unicode NFKC, lower case, spaces collapsed).
+
+  The reply carries the **earlier row's id**. The resume stays under that row's KV key (it isn't written again), and
+  `created_at` stays the first upload's. The update sets email, LinkedIn URL/status/card (the photo only if the new one
+  has one), and meta (the new values on top, UTM tags from both visits kept, plus `mergedAt`). The frontend needs no
+  change. Rows from before 0005 have no hash, so they are never merged into.
+- **Only complete leads go to the Google Sheet.** An upload that ends with no email (the reply that makes the flow
+  ask for one) is stored with `sheet_pending = 0` and is **not pushed**. When the same resume comes back with an email,
+  the merged row is set pending and pushed under its id (the Apps Script upserts by id). 0005 also takes any older
+  email-less row out of the resync queue. Email-less rows still show on `/leads` and in `/sheet.csv`.
 - **v4 payload:** exactly the seven fields above. `pitch`, `pitchSource` and `workAuth` are no longer read; old clients may still send them, and they are ignored (new rows store `NULL` in `pitch`, `pitch_source` and `work_auth`; those columns stay for old rows, and migrations stay additive).
 
 Storage (migration `0003_optional_resume_and_pitch.sql`, additive only): `submissions.has_resume` (1 for every old
@@ -84,8 +131,8 @@ address.
 - `linkedinProfile.photo` (the signed proxy link) is stripped from the stored JSON. Since the leads desk, the LinkedIn
   photo URL behind it is verified (only links minted by poll, only `media.licdn.com`) and kept in
   `applications.linkedin_photo`, so `/leads` can show it through the same proxy. Unsigned or foreign links store `NULL`.
-- **After the save** the lead is pushed to the team's Google Sheet in `ctx.waitUntil` (see **Leads** below). The reply
-  never waits on it, and a failed push never fails the upload.
+- **After the save** a complete lead (one with an email) is pushed to the team's Google Sheet in `ctx.waitUntil`
+  (see **Leads** below). The reply never waits on it, and a failed push never fails the upload.
 
 ## `GET /api/linkedin/photo?u=…&s=…` (v3, additive)
 In a `found` reply, `profile.photo` is now a **same-origin signed link** to this route, or `""` when there is no photo. Use it as the `<img src>` on "Is this you?".
@@ -136,14 +183,22 @@ curl -s localhost:3217/api/upload -F 'application={"name":"Test A","company":"Ac
 curl -s localhost:3217/api/upload -F 'application={"name":"Test B","company":"Acme","designation":"Engineer","linkedinStatus":"skipped","email":"b@example.org","workAuth":"citizen","pitch":"x","pitchSource":"ai"}'
 # bad input fails before any paid run
 curl -s localhost:3217/api/linkedin/start -H 'content-type: application/json' -d '{"name":"12345","company":"Acme"}'
+# the match guard, no network
+node --test scripts/linkedin-match.test.mjs
+# one real lookup (the allowed identity only): start, then poll with the latest token every ~2 s
+T=$(curl -s localhost:3217/api/linkedin/start -H 'content-type: application/json' \
+  -d '{"name":"Sanchit Tripathi","company":"Grapevine","role":"Strategy Lead"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')
+curl -s "localhost:3217/api/linkedin/poll?t=$T"   # repeat with the token from each pending reply
 ```
-The leads loop end to end (fake lead, local webhook listener, /leads, resume, notes, resync): `scripts/leads-smoke.sh`.
+The leads loop end to end (fake lead, local webhook listener, /leads, resume, notes, resync, and the no-email double
+upload: one row, with the email, one sheet push): `scripts/leads-smoke.sh`.
 
 Real lookups cost money. Test only with "Sanchit Tripathi" at "Grapevine". A repeat within 6 h is a free cache hit.
 
 ## Ship
-`npm run db:migrate` (applies 0004 to remote D1), then `npm run deploy`.
-**Run the migration before the deploy:** `/api/upload` writes `applications.linkedin_photo`, and `/leads` and
-`/sheet.csv` read the new columns, so a deploy without 0004 fails every upload.
+`npm run db:migrate` (applies **0004 and 0005** to remote D1), then `npm run deploy`.
+**Run the migration before the deploy:** `/api/upload` writes `applications.linkedin_photo` (0004) and
+`submissions.resume_sha256` (0005), and `/leads` and `/sheet.csv` read the 0004 columns, so a deploy without both
+fails every upload. Locally: `npm run db:migrate:local` (the smoke script runs it too).
 Secrets: `LEADS_KEY`, `LEADS_WEBHOOK_URL`, `LEADS_WEBHOOK_SECRET` (`npx wrangler secret put …`; see LEADS.md).
 Without the webhook pair, uploads still work and rows wait as pending until it's set and Resync runs.

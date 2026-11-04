@@ -1,6 +1,7 @@
 #!/bin/bash
 # Leads smoke test against a LOCAL dev server: submits a fake lead (with a tiny PDF), shows the payload the sheet's
-# web app would get, finds the lead on /leads, downloads the resume, saves a note, and proves the resync path.
+# web app would get, finds the lead on /leads, downloads the resume, saves a note, proves the resync path, and proves
+# the no-email double upload (same resume sent twice) ends as one row with the email and one sheet push.
 #
 # Once, in .dev.vars (local values only; never the real sheet URL here):
 #   LEADS_KEY=<any long random string>
@@ -27,7 +28,7 @@ PORT=$(printf '%s' "$HOOK" | sed -E 's#^http://[^:/]+:([0-9]+).*#\1#')
 step() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
 step "1. Local D1 migrations (same as npm run db:migrate:local)"
-npx --cache "$NPM_CACHE" wrangler d1 migrations apply DB --local 2>&1 | grep -E "Migrations to be applied|No migrations|✅|0004" || true
+npx --cache "$NPM_CACHE" wrangler d1 migrations apply DB --local 2>&1 | grep -E "Migrations to be applied|No migrations|✅|0004|0005" || true
 
 step "2. A local stand-in for the Apps Script web app on :$PORT (checks the secret, logs rows, answers {ok:true})"
 start_listener() {
@@ -96,4 +97,38 @@ start_listener
 curl -s -X POST -b "$JAR" -H 'content-type: application/json' "$BASE/api/leads/resync" -d '{}'; echo
 grep -q "$ID2" "$HOOK_LOG" && echo "  ok  resync delivered the pending lead" || { echo "FAIL: resync did not deliver"; exit 1; }
 
-step "Done. Fake leads: $ID, $ID2 (local D1 only)"
+step "9. No email on the resume: the flow sends it twice (without, then with the typed email). One row, one push"
+# A fresh PDF each run (no email inside), so a rerun never matches an older run's row.
+printf '%%PDF-1.4\n%% cara smoke %s\n1 0 obj<<>>endobj\ntrailer<<>>\n%%%%EOF\n' "$(date +%s)-$RANDOM" > "$TMP/Cara Diaz Resume.pdf"
+APP3='{"name":"Cara Diaz (TEST)","company":"Acme Test","designation":"ML Engineer","linkedinUrl":"https://www.linkedin.com/in/cara-diaz-test","linkedinStatus":"typed","linkedinProfile":null}'
+APP3_EMAIL='{"name":"Cara  Diaz (TEST)","company":"acme test","designation":"ML Engineer","linkedinUrl":"https://www.linkedin.com/in/cara-diaz-test","linkedinStatus":"typed","linkedinProfile":null,"email":"cara.test@example.com"}'
+field() { python3 -c 'import json,sys; v=json.load(sys.stdin).get(sys.argv[1]); print("null" if v is None else v)' "$1"; }
+FIRST=$(curl -s "$BASE/api/upload" -F "application=$APP3" -F 'utm={"utm_source":"smoke"}' -F "resume=@$TMP/Cara Diaz Resume.pdf;type=application/pdf")
+echo "  first upload:  $FIRST"
+ID3=$(printf '%s' "$FIRST" | field id)
+[ "$(printf '%s' "$FIRST" | field email)" = "null" ] && echo "  ok  server answered email: null (the flow asks for one)" || { echo "FAIL: expected email null"; exit 1; }
+sleep 3   # long enough for a waitUntil push, if there were one
+grep -q "$ID3" "$HOOK_LOG" 2>/dev/null && { echo "FAIL: the email-less upload was pushed to the sheet"; exit 1; } || echo "  ok  nothing pushed to the sheet for the email-less upload"
+SECOND=$(curl -s "$BASE/api/upload" -F "application=$APP3_EMAIL" -F 'utm={"utm_source":"smoke","utm_campaign":"double"}' -F "resume=@$TMP/Cara Diaz Resume.pdf;type=application/pdf")
+echo "  second upload: $SECOND"
+[ "$(printf '%s' "$SECOND" | field id)" = "$ID3" ] && echo "  ok  same id: the email-less row was completed, not duplicated" || { echo "FAIL: second upload got a new id"; exit 1; }
+for _ in 1 2 3 4 5 6 7 8 9 10; do grep -q "$ID3" "$HOOK_LOG" 2>/dev/null && break; sleep 0.5; done
+sleep 1
+PUSHES=$(grep -c "$ID3" "$HOOK_LOG" || true)
+[ "$PUSHES" = "1" ] && echo "  ok  exactly one sheet push for $ID3" || { echo "FAIL: $PUSHES sheet pushes for $ID3"; exit 1; }
+grep "$ID3" "$HOOK_LOG" | python3 -c 'import json,sys; r=json.loads(sys.stdin.read()); print("  pushed:", json.dumps({k: r[k] for k in ("id","name","email","resumeName","source")})); assert r["email"]=="cara.test@example.com" and r["resumeUrl"]' \
+  || { echo "FAIL: the pushed row has no email or no resume"; exit 1; }
+RURL=$(grep "$ID3" "$HOOK_LOG" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["resumeUrl"])')
+curl -s -o "$TMP/cara-got.pdf" "$RURL?dl=1"
+cmp -s "$TMP/cara-got.pdf" "$TMP/Cara Diaz Resume.pdf" && echo "  ok  the sheet's resume link opens the one stored file (resume:$ID3)" || { echo "FAIL: resume link"; exit 1; }
+ROWS=$(npx --cache "$NPM_CACHE" wrangler d1 execute DB --local --json --command \
+  "SELECT s.id, s.email, a.email AS app_email, s.sheet_pending, s.resume_sha256 IS NOT NULL AS hashed FROM submissions s JOIN applications a ON a.submission_id = s.id WHERE a.name LIKE 'Cara%Diaz (TEST)' AND s.resume_sha256 = (SELECT resume_sha256 FROM submissions WHERE id = '$ID3')" 2>/dev/null)
+printf '%s' "$ROWS" | python3 -c '
+import json,sys
+rows=json.load(sys.stdin)[0]["results"]
+print("  D1 rows for this resume:", json.dumps(rows))
+assert len(rows)==1 and rows[0]["email"]=="cara.test@example.com" and rows[0]["sheet_pending"]==0, "expected one complete, synced row"
+print("  ok  one row in D1, with the email, synced")' || { echo "FAIL: D1 does not have exactly one complete row"; exit 1; }
+curl -s -b "$JAR" "$BASE/leads?q=Cara" | grep -oF "cara.test@example.com" | head -1 | sed 's/^/  ok  on \/leads: /'
+
+step "Done. Fake leads: $ID, $ID2, $ID3 (local D1 only)"

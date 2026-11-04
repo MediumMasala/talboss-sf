@@ -20,9 +20,9 @@ const day = () => new Date().toISOString().slice(0, 10);
 const toNextDay = () => 86_400 - Math.floor((Date.now() % 86_400_000) / 1000);
 
 export const MESSAGES = {
-  network: "Tal is getting a lot of requests from your network right now. Paste your LinkedIn link instead, or try again in a few minutes.",
+  network: "Tal is getting a lot of requests right now. Paste your LinkedIn link instead, or try again in a few minutes.",
   name: "You've searched for this name a few times this hour. Paste your LinkedIn link instead.",
-  url: "Too many profile links from your network this hour. Skip this step; Tal will find you from your resume or email.",
+  url: "Tal is getting a lot of profile links right now. Skip this step; Tal will find you from your resume or email.",
   daily: "Tal has reached today's limit for automatic LinkedIn searches. Paste your LinkedIn link instead, or skip this step.",
 };
 

@@ -25,7 +25,7 @@ export function Nav() {
     <nav
       aria-label="Main"
       className={`sticky top-[53px] z-40 -mb-16 flex h-16 items-center justify-between px-4 transition-[background-color,border-color,backdrop-filter] duration-300 ease-[var(--ease-out)] md:top-9 md:-mb-[88px] md:h-[88px] md:px-12 ${
-        solid ? "border-b border-hair bg-black/60 backdrop-blur-xl" : "border-b border-transparent"
+        solid ? "border-b border-hair bg-black/85 backdrop-blur-xl" : "border-b border-transparent"
       }`}
     >
       <a

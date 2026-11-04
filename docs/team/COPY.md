@@ -28,7 +28,7 @@ Owner: copywriter. Source of truth: `content/site.ts`. v3's copy (the letter, th
 | A5b states | `select.apply.notFound`, `.rateLimited`, `.dailyCap`, `.searchDown`, `.offline` |
 | A6 Resume | `select.apply.resume.*`, `upload.idle`, `upload.errors`, `upload.consent` |
 | A6b Email | `select.apply.noResume.*` |
-| A7 Done | `select.apply.done.credit(date)`, `.next`, `.email(email)` / `.noEmail`, `.private`, `.close` |
+| A7 Done | `select.apply.done.credit(date)`, `.sub`, `.places`, `.roles` (v4.1: each chip becomes its role line), `.email(email)`, `.close` (`.noEmail` removed in v4.1: no email routes to A6b) |
 | Claims | `claims.network`, `claims.startups`, used once each in `select.stats.items` |
 
 ## Deleted in v4
@@ -100,7 +100,7 @@ tal · [Questions?] · [Ask Tal to represent you] · We have raised $7 million f
 - **A1** What's your full name? / This is the name we'll represent. / [Your full name] / error: Add your full name to continue.
 - **A2** Where do you work? / Company name is enough. / [Company] / error: Add where you work to continue.
 - **A3** What's your title? / Member of Technical Staff, Staff Engineer, Product Lead… / [Member of Technical Staff]
-- **A4** Finding you on LinkedIn / This usually takes about 15 seconds. / Paste my LinkedIn link instead
+- **A4** Finding you on LinkedIn / {stage: Searching LinkedIn… → Looking through people named {first name}… → Reading the profile… → Checking it's you…} / This usually takes about 15 seconds. / Paste my LinkedIn link instead
 - **Paste link** What's your LinkedIn link? / [linkedin.com/in/your-name] / error: That isn't a LinkedIn profile link. It looks like linkedin.com/in/your-name.
 - **A5** Is this you? / We only read your public profile. / [No, not me] [Yes, that's me] / Paste my link / Checking the next profile / after three: That's everyone we found. Paste your LinkedIn link instead.
 - **A5b not found** We couldn't find you on LinkedIn / Paste your LinkedIn link and we'll take it from there. / [Paste my LinkedIn link] · Skip, I'll add my resume
@@ -108,8 +108,8 @@ tal · [Questions?] · [Ask Tal to represent you] · We have raised $7 million f
 - **A5b daily cap** Tal's LinkedIn search is full for today / Paste your LinkedIn link to keep going, or try again tomorrow.
 - **A5b search down (502)** Tal's LinkedIn search isn't working right now / Paste your LinkedIn link to keep going.
 - **Offline** You're offline / Check your connection and try again. / [Try again] · Paste my LinkedIn link
-- **A6** Add your resume / Optional. It helps Tal represent you better. / Drop a PDF or DOCX, or click to choose / [Continue] / Saving your resume / No resume handy? We'll work from your LinkedIn. (No LinkedIn: No resume handy? Your email is enough to start.)
-- **A6b** Where should Tal write to you? / We'll email you when a role fits. / [you@example.com] / Add your email to continue. / That email doesn't look right. / [Continue] / Add a resume instead
+- **A6** Add your resume / Optional. It helps Tal represent you better. / Drop a PDF or DOCX, or click to choose (touch: Tap to choose a PDF or DOCX) / [Continue] / Saving your resume / No resume handy? We'll work from your LinkedIn. (No LinkedIn: No resume handy? Your email is enough to start.)
+- **A6b** Where should Tal write to you? / We'll email you when a role fits. (After a resume with no email on it: Your resume is saved, but there's no email on it. We'll write to you when a role fits.) / [you@example.com] / Add your email to continue. / That email doesn't look right. / [Continue] / Add a resume instead
 - **A7** {Full name} / Represented by Tal · until 4 May 2027 / We'll read your profile and start looking for roles that fit. When one does, we'll email you at {email}. Nobody hears your name until you say yes. / [Done]
 - Upload errors: That's a .png file. Please use a PDF or DOCX. · That file is 7.2 MB. The limit is 5 MB. · That file is empty. Try another one. · We couldn't open that file. Try saving it again as a PDF. · One file at a time, please. · We couldn't reach Tal. Check your connection and try again. · Something went wrong on our side. Please try again in a minute. · That file is too big to upload. A PDF under 4 MB will work.
 

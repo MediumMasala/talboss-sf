@@ -98,7 +98,8 @@ export const site = {
 
     /** L1. Hero (Figma 4:43 / 5:65). The metallic tal wordmark is the headline; this is the line under it. */
     hero: {
-      sub: "The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
+      /** Non-breaking spaces keep "Now in San Francisco." on one line (the Figma break, at both widths). */
+      sub: "The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
       cta: askTal,
       note: "Free for you. Companies pay when they hire.",
     },
@@ -113,7 +114,7 @@ export const site = {
         {
           from: "tal",
           meta: "Tal · Monday",
-          text: "Three new roles for you. Two in SF, one remote.",
+          text: "Three new roles for you: SF, the Bay Area and remote.",
           roles: [
             ["Staff engineer", "a Series B payments company"],
             ["Founding engineer", "a seed-stage dev tools company"],
@@ -130,7 +131,7 @@ export const site = {
     /** L3. Behind Tal (white card 4:124). Each claim number appears here and nowhere else. */
     stats: {
       heading: "Behind Tal",
-      body: "Tal just opened in San Francisco. Behind it is a network of 300,000+ tech professionals and 5,000+ AI and consumer startups, and a team that reads every profile.",
+      body: "Tal just opened in San Francisco. The network behind it is already this big, and a team reads every profile.",
       items: [
         { value: claims.network, label: "tech professionals" },
         { value: claims.startups, label: "AI and consumer startups" },
@@ -142,7 +143,7 @@ export const site = {
       who: "Tal",
       role: "Your talent agent",
       eyebrow: "Monday · picked for you",
-      title: "3 roles that fit you this week",
+      title: "3 roles that fit you this week",
       yes: "Yes",
       roles: [
         { title: "Staff engineer", company: "Series B payments company", where: "San Francisco" },
@@ -183,7 +184,7 @@ export const site = {
         ["Does it cost anything?", "Nothing. Companies pay Tal when they hire someone it introduced."],
         ["Will my employer find out?", "Not from Tal. Your name goes to a company only after you say yes to that role."],
         ["Which companies does Tal work with?", "AI and consumer startups, from seed to late stage. Tal only sends you roles that fit what you do."],
-        ["What happens after six months?", "Tal asks if you'd like it to keep going. If you don't reply, it takes it you're not looking right now, and stops."],
+        ["What happens after six months?", "Tal asks if you'd like it to keep going. If you don't reply, Tal assumes you're not looking right now and stops."],
         ["How do I delete my data?", "Write to support@gvine.app and Tal deletes your profile and resume."],
       ] as [string, string][],
     },
@@ -217,7 +218,7 @@ export const site = {
       /** A1. */
       name: {
         question: "What's your full name?",
-        sub: "This is the name we'll represent.",
+        sub: "This is the name Tal introduces you by.",
         placeholder: "Your full name",
         missing: "Add your full name to continue.",
       },
@@ -241,6 +242,17 @@ export const site = {
         /** Under the title (v4.1, from the Figma frame). */
         sub: "Tal is pulling your photo, role and work history so you don't have to type it.",
         wait: "This usually takes about 15 seconds.",
+        /**
+         * v4.1: under the bar, the stage the poll really reports (docs/team/API.md), cross-fading as it changes.
+         * `search` = Google + the people search started; `people` = Google done, people search still running;
+         * `profile` = a profile is being pulled (also a pasted link, or "No, not me"); `found` = held at 100 % for 450 ms.
+         */
+        stages: {
+          search: "Searching LinkedIn…",
+          people: (first: string) => (first ? `Looking through people named ${first}…` : "Looking through the people we found…"),
+          profile: "Reading the profile…",
+          found: "Checking it's you…",
+        },
         manual: pasteLinkInstead,
       },
 
@@ -270,7 +282,7 @@ export const site = {
         skip: "Skip, I'll add my resume",
       },
       rateLimited: {
-        title: "Tal is getting a lot of requests from your network",
+        title: "Tal is getting a lot of requests right now",
         sub: "Paste your LinkedIn link to keep going.",
         /** v4.1: primary action on this state, per the Figma frame. `wait(s)` while the server's Retry-After runs. */
         retry: "Try again",
@@ -302,10 +314,13 @@ export const site = {
         title: "Add your resume",
         sub: "Optional. It helps Tal represent you better.",
         drop: "Drop a PDF or DOCX, or click to choose",
+        /** v4.1: the same line on touch devices (`(pointer: coarse)`), where nothing can be dropped. */
+        dropTouch: "Tap to choose a PDF or DOCX",
         cta: "Continue",
         sending: "Saving your resume",
         /** v4.1: under a chosen file's name. */
         replace: "Click to choose another",
+        replaceTouch: "Tap to choose another",
       },
       /** A6b. Reached from the quiet link under the drop area. */
       noResume: {
@@ -314,6 +329,8 @@ export const site = {
         linkNoLinkedIn: "No resume handy? Your email is enough to start.",
         title: "Where should Tal write to you?",
         sub: "We'll email you when a role fits.",
+        /** v4.1: when the resume was saved but had no email on it (the upload answers `email: null`). */
+        subNoEmail: "Your resume is saved, but there's no email on it. We'll write to you when a role fits.",
         emailLabel: "Email",
         emailPlaceholder: "you@example.com",
         emailMissing: "Add your email to continue.",
@@ -327,11 +344,23 @@ export const site = {
       done: {
         /** `date` like "4 May 2027". Set in tracked caps by CSS. */
         credit: (date: string) => `Represented by Tal · until ${date}`,
-        sub: "Tal is reading your profile now. Roles in San Francisco, the Bay Area and remote will reach your inbox as they fit, and every introduction waits for your yes.",
-        /** The three chips that float up under the line. */
+        /** v4.1 founder note: what's ahead, not "Tal reads your profile". The chips below carry the places. */
+        sub: "Tal is already looking for your first roles. You say yes to each intro, and nothing happens without you.",
+        /** The three chips that rise from the horizon under the line. */
         places: ["San Francisco", "Bay Area", "Remote"],
+        /**
+         * v4.1: after a beat each chip gives way to a sample role line in the same spot (same order as `places`,
+         * so each line keeps its chip's place). The same three roles as the landing's chat and mock.
+         */
+        roles: [
+          ["Staff engineer", "payments · SF"],
+          ["ML engineer", "health · Bay Area"],
+          ["Founding engineer", "dev tools · remote"],
+        ] as [string, string][],
+        /** Steve r2: under the role lines, so nobody takes the samples for roles already found. */
+        rolesNote: "Examples of what Tal sends.",
+        /** No email ever reaches A7 any more: an upload without one goes to A6b first (v4.1). */
         email: (email: string) => `Tal will write to ${email}.`,
-        noEmail: "We couldn't find an email on your resume. Write to support@gvine.app so Tal can reach you.",
         close: "Done",
       },
     },

@@ -13,6 +13,8 @@
  * (people ≤ $0.05, ≤ 3 profile pulls at $0.005, one SERP page).
  */
 
+import { companyInText, matchProfile, nameMatches, titleInText, type MatchProfile } from "./linkedin-match";
+
 const APIFY = "https://api.apify.com/v2";
 export const ACTORS = {
   search: "apify~google-search-scraper",
@@ -214,17 +216,22 @@ export function slugFromUrl(url: string): string | null {
 
 type Serp = { organicResults?: { url?: string; title?: string; description?: string }[] };
 
-/** Google results → up to 4 candidates, flagged when the title or snippet mentions the company. */
-export function candsFromSerp(pages: Serp[], { name, company }: LookupInput): Cand[] {
-  const comp = tokens(company), who = tokens(name);
+/**
+ * Google results → up to 4 candidates worth pulling. The result title must carry the first AND last name, and the
+ * title or snippet must show the company or the role (the match guard's rules), so we never pay to pull a stranger.
+ * h = the company showed up.
+ */
+export function candsFromSerp(pages: Serp[], { name, company, role }: LookupInput): Cand[] {
   const out: Cand[] = [];
   for (const page of pages)
     for (const r of page.organicResults ?? []) {
       const slug = slugFromUrl(r.url ?? "");
       if (!slug || out.some((c) => c.s === slug)) continue;
-      const text = tokens(`${r.title ?? ""} ${r.description ?? ""}`);
-      if (who.size && !text.has(firstToken(name))) continue; // the first name must appear (a shared surname isn't a match)
-      out.push(overlap(comp, text) ? { s: slug, h: 1, r: out.length } : { s: slug, r: out.length });
+      if (!nameMatches(name, r.title ?? "")) continue;
+      const text = `${r.title ?? ""} ${r.description ?? ""}`;
+      const atCompany = companyInText(company, text);
+      if (!atCompany && !titleInText(role, text)) continue;
+      out.push(atCompany ? { s: slug, h: 1, r: out.length } : { s: slug, r: out.length });
     }
   return out.slice(0, 4);
 }
@@ -291,20 +298,20 @@ export function bonus(p: Raw, { role }: LookupInput): number {
   return (overlap(tokens(role), hl) ? 0.05 : 0) + (p.basic_info?.profile_picture_url ? 0.01 : 0);
 }
 
-const firstToken = (name: string) => [...tokens(name)][0] ?? "";
+/** The fields the match guard reads. */
+const forMatch = (p: Raw): MatchProfile => ({
+  fullname: p.basic_info?.fullname ?? "",
+  headline: p.basic_info?.headline,
+  currentCompany: p.basic_info?.current_company,
+  experience: (p.experience ?? []).map((e) => ({ title: e.title, company: e.company, current: e.is_current })),
+});
 
 /**
- * 0–1: 0.6 for the name, 0.4 if the company shows up anywhere on the profile. A different first name
- * (a colleague who shares the surname) scales the score below the show threshold.
+ * The match guard (lib/linkedin-match.ts): 0 unless first + last name match AND (company OR title) match.
+ * name + company = 0.9 (1.0 with the title too); name + title only = 0.7. See MATCH for the thresholds.
  */
-export function scoreProfile(p: Raw, { name, company }: LookupInput): number {
-  const bi = p.basic_info ?? {};
-  const want = tokens(name), got = tokens(bi.fullname ?? "");
-  const nameSim = want.size ? overlap(want, got) / want.size : 0;
-  const comp = tokens(company);
-  const hay = [bi.headline, bi.current_company, bi.about, ...(p.experience ?? []).map((e) => e.company)].map((h) => tokens(h ?? ""));
-  const score = 0.6 * nameSim + (comp.size && hay.some((h) => overlap(comp, h)) ? 0.4 : 0);
-  return got.has(firstToken(name)) ? score : score * 0.4;
+export function scoreProfile(p: Raw, input: LookupInput): number {
+  return matchProfile(forMatch(p), input).score;
 }
 
 export function shapeProfile(p: Raw, score: number): Profile {
@@ -368,5 +375,9 @@ export async function sha(value: string): Promise<string> {
   return Array.from(d.subarray(0, 16), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export const queryKey = async ({ name, company }: LookupInput) =>
-  `li:q:v4:${await sha(`${name}|${company}`.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}|]+/gu, ""))}`;
+/**
+ * v5 (match guard): v4 entries could hold name-only guesses, so they are never read again. The role is part of
+ * the key now, because the guard reads it (name + title can pass without the company).
+ */
+export const queryKey = async ({ name, company, role }: LookupInput) =>
+  `li:q:v5:${await sha(`${name}|${company}|${role}`.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}|]+/gu, ""))}`;

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { site } from "@/content/site";
-import { cloudflareEnv, getStorage, type Application, type ResumeSubmission } from "@/lib/storage";
+import { cloudflareEnv, getStorage, sha256Hex, type Application, type ResumeSubmission } from "@/lib/storage";
 import { readPhotoLink } from "@/lib/linkedin";
 import { syncLead } from "@/lib/leads";
 import { waitUntil } from "@/lib/env";
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
     if (!hasResumeSignature(bytes, check.ext)) return fail(400, errors.corrupt);
     // Read the email and LinkedIn off the resume itself.
     contact = await extractContact(bytes, check.ext);
-    fileInfo = { name: file.name.slice(0, 200), type: file.type, size: file.size, ext: check.ext };
+    fileInfo = { name: file.name.slice(0, 200), type: file.type, size: file.size, ext: check.ext, sha256: await sha256Hex(bytes) };
   } else {
     if (!application) return fail(400, NO_RESUME.details);
     if (!application.email) return fail(400, NO_RESUME.email);
@@ -161,15 +161,19 @@ export async function POST(request: Request) {
   const env = await cloudflareEnv();
   if (application && env?.LINK_SECRET) application.linkedinPhoto = await photoFromLink(env.LINK_SECRET, photo);
 
+  // A resume that comes back with the typed email (the no-email path) completes its email-less row: same id.
+  let id = submission.id;
   try {
-    await (await getStorage()).save(submission, bytes, application);
+    ({ id } = await (await getStorage()).save(submission, bytes, application));
   } catch (error) {
     console.error("[upload] storage failed", error instanceof Error ? error.message : "unknown");
     return fail(500, errors.server);
   }
 
-  // Into the team's Google Sheet, after the reply. If it fails the row stays pending for /api/leads/resync.
-  if (env) await waitUntil(syncLead(env, new URL(request.url).origin, submission.id));
+  // Into the team's Google Sheet, after the reply, but only a complete lead. With no email the reply below makes the
+  // flow ask for one, and the resume comes back with it; that upload pushes the row (the sheet upserts by id).
+  // If the push fails the row stays pending for /api/leads/resync.
+  if (env && submission.email) await waitUntil(syncLead(env, new URL(request.url).origin, id));
 
-  return Response.json({ ok: true, id: submission.id, email: submission.email || null });
+  return Response.json({ ok: true, id, email: submission.email || null });
 }

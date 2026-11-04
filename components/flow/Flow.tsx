@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, domMax, LazyMotion, m, MotionConfig } from "framer-motion";
-import { useCallback, useEffect, useReducer, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { HeroField } from "@/components/ds/HeroField";
 import { LogoTile } from "@/components/ds/LogoTile";
 import { Magnetic } from "@/components/ds/Magnetic";
@@ -14,7 +14,7 @@ import { busyCode, EMAIL_RE, LINKEDIN_RE, poll, post, searchProgress, stageIndex
 import { Done } from "./Done";
 import { LinkedInVisual } from "./LinkedInVisual";
 import { mockEmail, mockPerson, mockProfile } from "./mock";
-import { cascade, screen, travel } from "./motion";
+import { cascade, EASE_IO, EASE_OUT, screen, travel } from "./motion";
 import { ProfileCard } from "./ProfileCard";
 
 /* eslint-disable @next/next/no-img-element -- local DS icons */
@@ -42,8 +42,11 @@ export const CODES: Record<Step, string> = {
 export const PREVIEW: Record<string, Step> = {
   a1: "name", a2: "company", a3: "title", a4: "search", a5: "confirm", link: "link", notfound: "notFound",
   ratelimited: "rateLimited", dailycap: "dailyCap", searchdown: "searchDown", offline: "offline",
-  a6: "resume", a6b: "email", sending: "resume", a7: "done", done: "done",
+  a6: "resume", a6b: "email", noemail: "email", sending: "resume", a7: "done", done: "done",
 };
+
+/** "linkedin.com/in/x" → "https://linkedin.com/in/x" (what the field accepts before it checks LINKEDIN_RE). */
+const normaliseLink = (raw: string) => raw.trim().replace(/^(?!https?:\/\/)/, "https://").replace(/^http:/, "https:");
 
 const BUSY_STEP: Record<BusyCode, Step> = { rate_limited: "rateLimited", daily_cap: "dailyCap", search_down: "searchDown", offline: "offline" };
 
@@ -69,6 +72,8 @@ type State = {
   sentEmail: string | null;
   retryAt: number;
   checkingNext: boolean;
+  /** The resume was saved but had no email on it: A6b asks for one, and the resume goes again with it. */
+  needEmail: boolean;
   preview: boolean;
   /** Bumped by a preview load so the screen swaps without a transition. */
   epoch: number;
@@ -77,7 +82,7 @@ type State = {
 const initial: State = {
   step: "name", dir: 1, history: [], name: "", company: "", title: "", url: "", email: "", token: null, stage: 0, stageAt: 0,
   startedAt: 0, profile: null, next: null, status: "skipped", file: null, error: null, sending: false, sentEmail: null,
-  retryAt: 0, checkingNext: false, preview: false, epoch: 0,
+  retryAt: 0, checkingNext: false, needEmail: false, preview: false, epoch: 0,
 };
 
 type Action =
@@ -87,10 +92,11 @@ type Action =
   | { type: "searching"; token: string; index: number; restart?: boolean; checkingNext?: boolean }
   | { type: "found"; profile: Profile; next: string | null }
   | { type: "busy"; code: BusyCode; retryAfter?: number }
-  | { type: "status"; status: Status }
+  | { type: "status"; status: Status; url?: string }
   | { type: "file"; file: State["file"] }
   | { type: "error"; message: string | null }
   | { type: "sending"; on: boolean }
+  | { type: "needEmail" }
   | { type: "done"; email: string | null }
   | { type: "load"; state: State };
 
@@ -108,7 +114,7 @@ function reducer(s: State, a: Action): State {
     case "back": {
       const history = [...s.history];
       const prev = history.pop() ?? "name";
-      return { ...s, step: prev, dir: -1, history, error: null, token: null, sending: false };
+      return { ...s, step: prev, dir: -1, history, error: null, token: null, sending: false, needEmail: false };
     }
     case "searching": {
       const now = Date.now();
@@ -129,7 +135,10 @@ function reducer(s: State, a: Action): State {
         history: TRANSIENT.includes(s.step) ? s.history : [...s.history, s.step],
       };
     case "status":
-      return { ...s, status: a.status === "skipped" && s.url ? "typed" : a.status, step: "resume", dir: 1, history: [...s.history, s.step], token: null, error: null };
+      // The caller decides typed vs skipped: only a link that passed LINKEDIN_RE counts as typed (Steve v4.1 #5).
+      return { ...s, status: a.status, url: a.url ?? s.url, step: "resume", dir: 1, history: [...s.history, s.step], token: null, error: null };
+    case "needEmail":
+      return { ...s, step: "email", dir: 1, needEmail: true, sending: false, error: null, history: [...s.history, s.step] };
     case "file":
       return { ...s, file: a.file, error: null };
     case "error":
@@ -178,22 +187,91 @@ function Heading({ title, sub, id }: { title: string; sub?: string; id?: string 
   );
 }
 
-/** Your answers so far, quiet, above the question. Each one is a layoutId, so it arrives from the field you typed it in. */
+/**
+ * Your answers so far, quiet, above the question. Each one is a layoutId, so it arrives from the field you typed it in.
+ * When the trail wraps (390: "Aryan Mehta · Halcyon Labs" / "Member of Technical Staff"), an answer that starts a line
+ * drops its "·" and gets a hard break before it, so no line ever opens with a separator (Steve v4.1 #9). Measured with
+ * every separator shown, then applied once; re-measured when the answers or the column width change.
+ */
 function Trail({ items }: { items: { id: string; text: string }[] }) {
   const shown = items.filter((i) => i.text.trim());
+  const ref = useRef<HTMLParagraphElement>(null);
+  const key = shown.map((i) => i.text.trim()).join("\u0000");
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      const units = [...el.querySelectorAll<HTMLElement>("[data-unit]")];
+      el.querySelectorAll<HTMLElement>("[data-br]").forEach((b) => (b.style.display = "none"));
+      el.querySelectorAll<HTMLElement>("[data-sep]").forEach((d) => (d.style.display = ""));
+      const tops = units.map((u) => u.offsetTop);
+      units.forEach((u, i) => {
+        if (i === 0 || tops[i] <= tops[i - 1] + 1) return;
+        const sep = u.querySelector<HTMLElement>("[data-sep]");
+        const br = el.querySelector<HTMLElement>(`[data-br="${i}"]`);
+        if (sep) sep.style.display = "none";
+        if (br) br.style.display = "block";
+      });
+    };
+    fit();
+    let width = el.parentElement?.clientWidth ?? 0;
+    const ro = new ResizeObserver(() => {
+      const w = el.parentElement?.clientWidth ?? 0;
+      if (w === width) return;
+      width = w;
+      fit();
+    });
+    if (el.parentElement) ro.observe(el.parentElement);
+    return () => ro.disconnect();
+  }, [key]);
   if (!shown.length) return null;
   return (
-    <p className="t-helper -mb-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-s600" aria-label="Your answers">
+    <p ref={ref} className="t-helper -mb-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-s600" aria-label="Your answers">
       {shown.map((it, i) => (
-        <span key={it.id} className="flex items-center gap-2">
-          {i > 0 ? <span aria-hidden className="text-s400">·</span> : null}
-          <m.span layoutId={it.id} transition={travel} className="whitespace-nowrap">
-            {it.text.trim()}
-          </m.span>
+        <span key={it.id} className="contents">
+          {i > 0 ? <span data-br={i} aria-hidden className="hidden h-0 basis-full" /> : null}
+          <span data-unit className="flex items-center gap-2">
+            {i > 0 ? <span data-sep aria-hidden className="text-s400">·</span> : null}
+            <m.span layoutId={it.id} transition={travel} className="whitespace-nowrap">
+              {it.text.trim()}
+            </m.span>
+          </span>
         </span>
       ))}
     </p>
   );
+}
+
+/** A4: the stage the poll reports, in words, cross-fading as it changes (Steve v4.1 #4). */
+function StageLine({ text }: { text: string }) {
+  return (
+    <div className="relative h-5 w-[320px] max-w-full" aria-live="polite">
+      <AnimatePresence initial={false} mode="wait">
+        <m.p
+          key={text}
+          className="absolute inset-0 truncate text-center text-[14px] font-medium leading-5 text-s1000"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0, transition: { duration: 0.42, ease: EASE_OUT } }}
+          exit={{ opacity: 0, y: -5, transition: { duration: 0.18, ease: EASE_IO } }}
+        >
+          {text}
+        </m.p>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** True on touch-first devices (`(pointer: coarse)`), after mount, so the server render and hydration agree. */
+function useCoarsePointer() {
+  const [coarse, setCoarse] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const on = () => setCoarse(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return coarse;
 }
 
 function Primary({ children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -236,10 +314,12 @@ function Screen({ children, actions, onSubmit, label }: { children: ReactNode; a
       onSubmit={onSubmit}
       noValidate
       aria-label={label}
-      className="flex min-h-full w-full flex-1 flex-col items-center px-6 pt-14 md:justify-center md:px-0 md:pt-0"
+      className="flex min-h-full w-full flex-1 flex-col items-center px-6 pt-14 short-phone:pt-6 md:justify-center md:px-0 md:pt-0"
     >
-      <div className="flex w-full flex-1 flex-col items-center gap-8 md:flex-none">{children}</div>
-      <m.div variants={cascade} custom={3} className="sticky bottom-0 mt-8 flex w-full flex-col items-center gap-3 bg-white pb-[max(34px,env(safe-area-inset-bottom))] pt-4 md:static md:w-auto md:bg-transparent md:pb-0 md:pt-0">
+      <div className="flex w-full flex-1 flex-col items-center gap-8 short-phone:gap-5 md:flex-none">{children}</div>
+      {/* Phones: pinned to the bottom. On short phones the screen tightens (short-phone) so A5's card clears the bar at
+          720 px; shorter still, the content scrolls out from under it, and a 16 px white fade marks the edge. */}
+      <m.div variants={cascade} custom={3} className="sticky bottom-0 mt-8 flex w-full flex-col items-center gap-3 bg-white pb-[max(34px,env(safe-area-inset-bottom))] pt-4 before:pointer-events-none before:absolute before:inset-x-0 before:-top-4 before:h-4 before:bg-[linear-gradient(0deg,#fff,rgba(255,255,255,0))] short-phone:mt-4 md:static md:w-auto md:bg-transparent md:pb-0 md:pt-0 md:before:hidden">
         {actions}
       </m.div>
     </Tag>
@@ -267,6 +347,7 @@ function FlowInner() {
   const [until, setUntil] = useState("");
   const [now, setNow] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const touch = useCoarsePointer();
   const pickedFile = useRef<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const polls = useRef(0);
@@ -303,6 +384,7 @@ function FlowInner() {
       ratelimited: { retryAt: Date.now() + 42_000 },
       a6: confirmed,
       a6b: { ...confirmed, email: mockEmail },
+      noemail: { ...confirmed, needEmail: true, file: { name: "aryan-mehta-resume.pdf", size: 214_000 }, history: ["resume"] },
       sending: { ...confirmed, file: { name: "aryan-mehta-resume.pdf", size: 214_000 }, sending: true },
       a7: { ...confirmed, sentEmail: mockEmail },
       done: { ...confirmed, sentEmail: mockEmail },
@@ -416,7 +498,7 @@ function FlowInner() {
   };
   const submitLink = (e: FormEvent) => {
     e.preventDefault();
-    const url = s.url.trim().replace(/^(?!https?:\/\/)/, "https://").replace(/^http:/, "https:");
+    const url = normaliseLink(s.url);
     if (!LINKEDIN_RE.test(url)) return dispatch({ type: "error", message: A.link.badUrl });
     dispatch({ type: "field", key: "url", value: url });
     begin({ name: s.name.trim(), company: s.company.trim(), role: s.title.trim(), url });
@@ -439,7 +521,10 @@ function FlowInner() {
   };
   const skipLinkedIn = () => {
     track("linkedin_failed", { reason: "skipped" });
-    dispatch({ type: "status", status: "skipped" });
+    // A link left in the field counts only if it is a real linkedin.com/in/ link; anything else is a plain skip.
+    const url = normaliseLink(s.url);
+    if (s.url.trim() && LINKEDIN_RE.test(url)) dispatch({ type: "status", status: "typed", url });
+    else dispatch({ type: "status", status: "skipped" });
   };
 
   const pick = (files: FileList | null) => {
@@ -461,7 +546,8 @@ function FlowInner() {
   };
 
   const send = async (via: "resume" | "email") => {
-    const file = via === "resume" ? pickedFile.current : null;
+    // After a resume with no email on it, A6b sends the same resume again with the typed address.
+    const file = via === "resume" || s.needEmail ? pickedFile.current : null;
     const email = via === "email" ? s.email.trim() : null;
     if (via === "resume" && !file && !s.preview) return fileRef.current?.click();
     if (via === "email") {
@@ -484,7 +570,8 @@ function FlowInner() {
         name: (s.status === "confirmed" && s.profile?.fullname) || s.name.trim(),
         company: s.company.trim(),
         designation: s.title.trim(),
-        linkedinUrl: (s.status === "confirmed" && s.profile?.url) || (s.status === "typed" ? s.url : ""),
+        // Never an unchecked link: "typed" is only set for a URL that passed LINKEDIN_RE, and it's checked again here.
+        linkedinUrl: (s.status === "confirmed" && s.profile?.url) || (s.status === "typed" && LINKEDIN_RE.test(s.url) ? s.url : ""),
         linkedinStatus: s.status,
         linkedinProfile: s.status === "confirmed" ? s.profile : null,
         ...(email ? { email } : {}),
@@ -500,7 +587,11 @@ function FlowInner() {
         return dispatch({ type: "error", message: res.status === 413 ? errors.tooBigForServer : data?.error ?? errors.server });
       }
       track(file ? "resume_added" : "resume_skipped", { linkedin: s.status, email_found: Boolean(data.email) });
-      dispatch({ type: "done", email: data.email ?? email ?? null });
+      const reachAt = data.email ?? null;
+      // No email on Done, ever (Steve v4.1 #6): a resume without one goes to A6b; a typed address the server refused
+      // stays on A6b with the error.
+      if (!reachAt) return dispatch(email ? { type: "error", message: A.noResume.emailInvalid } : { type: "needEmail" });
+      dispatch({ type: "done", email: reachAt });
     } catch {
       await minWait;
       dispatch({ type: "error", message: errors.network });
@@ -547,6 +638,10 @@ function FlowInner() {
     ),
     search: () => {
       const pct = Math.round(searchP * 100);
+      const st = A.search.stages;
+      const first = s.name.trim().split(/\s+/)[0] ?? "";
+      // STAGES order: search, people, profile, found (the reducer keeps the furthest one reached).
+      const stageLine = [st.search, st.people(first), st.profile, st.found][Math.min(3, Math.max(0, s.stage))];
       return (
         <Screen label={A.search.title} actions={<TextButton onClick={() => dispatch({ type: "go", step: "link", push: false })}>{A.search.manual}</TextButton>}>
           <m.div variants={cascade} custom={0}>
@@ -561,9 +656,10 @@ function FlowInner() {
               </div>
               <p className="w-10 text-left text-[14px] font-medium tabular-nums leading-5 text-s1000">{pct}%</p>
             </div>
-            <p className="text-[14px] leading-5 text-s700" aria-live="polite">
-              {A.search.wait}
-            </p>
+            <div className="flex flex-col items-center gap-1">
+              <StageLine text={stageLine} />
+              <p className="t-helper text-s600">{A.search.wait}</p>
+            </div>
           </m.div>
         </Screen>
       );
@@ -663,11 +759,11 @@ function FlowInner() {
             {s.file ? (
               <m.div key={s.file.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col items-center">
                 <p className="max-w-full truncate text-[14px] font-medium leading-5 text-s1000">{s.file.name}</p>
-                <p className="t-helper text-s600">{formatBytes(s.file.size)} · {A.resume.replace}</p>
+                <p className="t-helper text-s600">{formatBytes(s.file.size)} · {touch ? A.resume.replaceTouch : A.resume.replace}</p>
               </m.div>
             ) : (
               <>
-                <p className="text-[14px] font-medium leading-5 text-s1000">{dragging ? site.upload.idle.dragging : A.resume.drop}</p>
+                <p className="text-[14px] font-medium leading-5 text-s1000">{dragging ? site.upload.idle.dragging : touch ? A.resume.dropTouch : A.resume.drop}</p>
                 <p id="f-resume-hint" className="t-helper text-s600">{site.upload.idle.hint}</p>
               </>
             )}
@@ -689,13 +785,13 @@ function FlowInner() {
           <>
             <Primary type="submit" disabled={s.sending} aria-busy={s.sending}>{s.sending ? <Saving label={A.noResume.sending} /> : A.noResume.cta}</Primary>
             <EnterHint />
-            <TextButton onClick={() => dispatch({ type: "back" })}>{A.noResume.back}</TextButton>
+            {s.needEmail ? null : <TextButton onClick={() => dispatch({ type: "back" })}>{A.noResume.back}</TextButton>}
             <Consent />
           </>
         }
       >
         <Trail items={[{ id: "ans-name", text: fullName }]} />
-        <Heading title={A.noResume.title} sub={A.noResume.sub} />
+        <Heading title={A.noResume.title} sub={s.needEmail ? A.noResume.subNoEmail : A.noResume.sub} />
         <m.div variants={cascade} custom={1} className="w-full max-w-[560px]">
           <HeroField id="f-email" type="email" inputMode="email" autoComplete="email" enterKeyHint="done" value={s.email} onValue={(v) => dispatch({ type: "field", key: "email", value: v })} placeholder={A.noResume.emailPlaceholder} error={s.error} errorId="f-email-err" aria-label={A.noResume.emailLabel} />
         </m.div>

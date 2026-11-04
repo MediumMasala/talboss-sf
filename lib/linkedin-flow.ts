@@ -6,15 +6,20 @@
  * matters when the people search misses: a Google hit with the company in its snippet gets its profile pulled,
  * speculatively, while the people search is still running. Whichever gives a confident match first wins.
  *
+ * Only profiles that pass the match guard (lib/linkedin-match.ts: first + last name AND company or title) are ever
+ * shown; when none pass, the reply is not_found and the browser offers the paste-link path. No guessing.
+ *
  * Profiles live server-side in KV ("li:d:<lookup id>"); the browser holds a signed token with run ids and slugs
- * only. A repeat of the same name + company within 6 h reuses the candidates ("li:q:v4:<hash>") and costs nothing.
- * "No, not me" hands back a token; the next poll shows the next candidate (instantly when its profile is held).
+ * only. A repeat of the same name + company + role within 6 h reuses the candidates ("li:q:v5:<hash>") and costs
+ * nothing. "No, not me" hands back a token; the next poll shows the next candidate that passes the guard
+ * (instantly when its profile is held).
  */
 import {
   bonus, candsFromSerp, photoLink, getRun, items, peopleInput, profileInput, queryKey, readToken, scoreProfile, searchInput,
   shapeProfile, signToken, slugOf, startRun, trimRaw, type Cand, type LookupInput, type Profile, type Raw, type RunToken,
   type Stage,
 } from "./linkedin";
+import { MATCH } from "./linkedin-match";
 import type { Block } from "./limits";
 
 /** Runs right before paid Apify runs start (never on a cache hit). null = go ahead. */
@@ -30,13 +35,13 @@ export type LookupReply =
 type Keys = { apify: string; secret: string; kv?: KVNamespace };
 
 const TTL = 15 * 60_000; // token life
-const MIN_SCORE = 0.35; // below this we never show a profile (the name doesn't match)
-const SURE = 0.99; // name and company both match: show it now
+const MIN_SCORE = MATCH.pass; // the match guard: below this (name AND company-or-title) we never show a profile
+const SURE = MATCH.sure; // name and company both match: show it now
 const MAX_SHOWN = 3;
 const MAX_PULLS = 3;
 const MAX_CANDS = 10;
-const WAIT_FOR_DISCOVERY_MS = 25_000; // past this, show a name-only match rather than keep waiting on Google
-const WAIT_AFTER_REJECT_MS = 5_000; // after "not me", wait at most this long for Google before showing the next name match
+const WAIT_FOR_DISCOVERY_MS = 25_000; // past this, show a name + title match rather than keep waiting on Google for name + company
+const WAIT_AFTER_REJECT_MS = 5_000; // after "not me", wait at most this long for Google before showing the next guarded match
 const CACHE_S = 6 * 3600;
 
 type Store = Record<string, Raw>;
@@ -155,9 +160,16 @@ async function step(keys: Keys, t: RunToken, store: ReturnType<typeof storeFor>)
     if (!sure && discovering(t) && !waited) return pending(keys, t);
     const raw = (await store.get())[next.s];
     if (raw) {
+      // Re-check the guard on the stored profile right before showing it, so a token or cache scored by older
+      // rules can never surface a guess. A pasted link is the person's own choice and is always shown.
+      const sc = t.manual ? next.sc : scoreProfile(raw, t.input);
+      if (sc < MIN_SCORE && !t.manual) {
+        t.dead.push(next.s);
+        return step(keys, t, store);
+      }
       t.shown.push(next.s);
       const more = t.shown.length < MAX_SHOWN && (ranked(t).length > 0 || busy);
-      const profile = shapeProfile(raw, next.sc);
+      const profile = shapeProfile(raw, sc);
       // Never hot-link LinkedIn's expiring CDN URL: hand the browser our signed, cached proxy instead.
       profile.photo = await photoLink(keys.secret, profile.photo);
       return { state: "found", profile, next: more ? await sign(keys, t) : null };

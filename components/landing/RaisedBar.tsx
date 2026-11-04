@@ -5,7 +5,7 @@ export function RaisedBar() {
   const line = site.funding.line;
   const cut = line.indexOf(" (");
   return (
-    <div className="sticky top-0 z-50 flex h-[53px] items-center justify-center border-b border-hair bg-white/6 px-4 text-center backdrop-blur-md md:h-9">
+    <div className="sticky top-0 z-50 flex h-[53px] items-center justify-center border-b border-hair bg-[rgba(15,15,15,0.94)] px-4 text-center backdrop-blur-md md:h-9">
       <p className="t-helper text-white/72">
         {cut > 0 ? (
           <>

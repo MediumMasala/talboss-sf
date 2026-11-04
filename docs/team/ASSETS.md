@@ -76,11 +76,35 @@ The v3 photographs (`public/photos/`), sound (`public/sound/`), the self-hosted 
 
 | file | source | licence | used where |
 |---|---|---|---|
-| `public/art/hero-16x9-{640,1024,1376}.{avif,webp}`, `hero-4x5-{480,768,928}.*` | round 3 `particle-horizon-a-*` (greyscale, `scripts/art.mjs`) | original (AI-generated) | landing hero |
+| `public/art/hero-16x9-{640,1024,1376}.{avif,webp}`, `hero-4x5-{480,768,928}.*` | round 4 `sf-horizon-a-*` (greyscale, `scripts/art.mjs`; replaced round 3 `particle-horizon-a`, which read as Manhattan, 5 Nov) | original (AI-generated) | landing hero |
 | `public/art/done-4x5-{480,720,928}.*` | round 3 `horizon-dawn-b-4x5` | original (AI-generated) | A7 Done |
 | `public/art/orb-4x5-{480,720,928}.*` | round 3 `chrome-orb-b-4x5` | original (AI-generated) | The deal card (desktop) |
 | `public/art/grain.png` (160 px RGBA noise tile) | generated in node (seeded LCG) | original | hero film grain |
-| `app/opengraph-image.jpg` | round 3 `og-b-1200x630` + the tal wordmark in the silver ramp (`scripts/og.mjs`) | original + Tal mark | social card |
+| `app/opengraph-image.jpg` | round 4 `og-a-1200x630` (from `sf-horizon-a-16x9`) + the tal wordmark in the silver ramp (`scripts/og.mjs`) | original + Tal mark | social card |
 | `public/ds/{tal-logo,chevron-left,magnifier,file-upload,mock-highlight}.svg` | exported from Figma QjHT7mWSNvgeAuiQehZZNJ (Boss DS library: tal logo v2, Anron icons) | Tal-owned | logo tile, wordmark mask, Back, LinkedIn visual, resume drop, product mock |
-| `public/logos/*.svg` (12) | white vectors from Figma DS/Logo Marquee Row 18:1395 (made from the repo SVGs) | trademarks of their owners, nominative use, founder-verified 4 Nov 2026 | logo marquee, captioned "Bosses from these companies hire on Tal" |
+| `public/logos/{amazon,uber,intuit,spotify,razorpay,sarvam}.svg` | white vectors from Figma DS/Logo Marquee Row 18:1395 (made from the repo SVGs) | trademarks of their owners, nominative use, founder-verified 4 Nov 2026 | logo marquee, captioned "Bosses from these companies hire on Tal" |
+| `public/logos/{google,microsoft,salesforce,adobe,linkedin,paypal}.svg` | full wordmarks from Wikimedia Commons, built by `scripts/logos.mjs` (5 Nov; sources in the table below) | Commons: public domain (text logo); trademarks of their owners, nominative use, founder-verified 4 Nov 2026 | logo marquee (replaced the icon-only marks) |
 | Inter (via `next/font/google`, not preloaded) | Google Fonts | SIL OFL | text fallback after the system stack |
+
+## Round 4 (5 Nov 2026)
+
+### Hero art: San Francisco horizon
+Steve v4.1 round 1, item 1: the round 3 hero showed Manhattan-like spires under "Now in San Francisco". Same particle-horizon motif regenerated with the Transamerica Pyramid, Salesforce Tower, Bay Bridge and the hills behind (Sutro Tower). `gemini-3.1-flash-image` via `scripts/art/gen.mjs`, jobs from `scripts/art/round4-jobs.py`, neutralised to greyscale. Prompts, pick and post notes: `docs/team/art/round4/PROMPTS.md`; contact sheet: `docs/team/art/round4/sheet.jpg`.
+
+| file | source | author | licence | used where |
+|---|---|---|---|---|
+| `docs/team/art/round4/sf-horizon-a-{16x9,4x5}.png` | generated, prompt in round4/PROMPTS.md | Tal (AI-generated, original) | original work | PICK: hero (desktop + mobile) |
+| `docs/team/art/round4/sf-horizon-{b,c}-{16x9,4x5}.png` | generated, prompt in round4/PROMPTS.md | Tal (AI-generated, original) | original work | candidates |
+| `docs/team/art/round4/og-a-1200x630.jpg` | derived from `sf-horizon-a-16x9.png` | Tal (AI-generated, original) | original work | PICK: OG image background |
+
+### Marquee wordmarks
+Steve v4.1 round 1, item 3: six marks were icons only. Each is now the company's full wordmark, fetched from Wikimedia Commons by `scripts/logos.mjs` (licence read from the Commons API `extmetadata`, 5 Nov 2026: `LicenseShortName: Public domain`, `Copyrighted: False`; Commons tags these as text logos below the threshold of originality). The script strips every colour to white, turns LinkedIn's white "in" into a true knockout (mask) inside its box, crops to the ink and sets a 24-px-high viewBox. Trademarks remain their owners'; shown as nominative use only.
+
+| file | Commons file page | original URL | licence | changes |
+|---|---|---|---|---|
+| `public/logos/google.svg` | https://commons.wikimedia.org/wiki/File:Google_2015_logo.svg | https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg | Public domain (text logo) | colours to white, cropped |
+| `public/logos/microsoft.svg` | https://commons.wikimedia.org/wiki/File:Microsoft_logo_(2012).svg | https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg | Public domain (text logo) | colours to white (four squares + wordmark), cropped |
+| `public/logos/salesforce.svg` | https://commons.wikimedia.org/wiki/File:Salesforce.com_logo.svg | https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg | Public domain (text logo) | **lettering only**: the cloud is dropped and the logo's own "salesforce" letterforms are kept, because inside the cloud the word is ~4 px tall at a 24 px row and unreadable. Design call to confirm; the cloud version can return if the founder prefers the official lock-up |
+| `public/logos/adobe.svg` | https://commons.wikimedia.org/wiki/File:Adobe_Corporate_logo.svg | https://upload.wikimedia.org/wikipedia/commons/6/6e/Adobe_Corporate_logo.svg | Public domain (text logo) | red to white (A mark + wordmark), cropped |
+| `public/logos/linkedin.svg` | https://commons.wikimedia.org/wiki/File:LinkedIn_Logo.svg | https://upload.wikimedia.org/wikipedia/commons/0/01/LinkedIn_Logo.svg | Public domain (text logo) | black and blue to white, "in" cut out of the box, cropped |
+| `public/logos/paypal.svg` | https://commons.wikimedia.org/wiki/File:PayPal_logo.svg | https://upload.wikimedia.org/wikipedia/commons/3/39/PayPal_logo.svg | Public domain (text logo) | two blues to white, cropped |

@@ -35,7 +35,7 @@ export function How() {
   }, []);
 
   return (
-    <section aria-labelledby="how" className="flex flex-col gap-8 px-4 pb-24 md:flex-row md:gap-16 md:px-12 md:pb-40">
+    <section aria-labelledby="how" className="flex flex-col gap-8 px-6 pb-24 md:flex-row md:gap-16 md:px-12 md:pb-40">
       <div className="flex flex-1 flex-col gap-4">
         <h2 id="how" className="text-[28px] font-semibold leading-[34px] tracking-[-0.6px] text-white md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
           {H.heading}

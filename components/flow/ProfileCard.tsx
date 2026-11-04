@@ -61,7 +61,7 @@ export function ProfileCard({ profile, nameId }: { profile: Profile; nameId?: st
       initial={{ opacity: 0, y: 24, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={snap}
-      className="flex w-full max-w-[480px] flex-col gap-5 rounded-[24px] border border-s300 bg-white p-6 text-left shadow-[0_8px_12px_rgba(0,0,0,0.1)]"
+      className="flex w-full max-w-[480px] flex-col gap-5 short-phone:gap-4 rounded-[24px] border border-s300 bg-white p-6 text-left shadow-[0_8px_12px_rgba(0,0,0,0.1)]"
     >
       <div className="flex items-center gap-4">
         <Photo src={profile.photo} name={profile.fullname} />
@@ -76,7 +76,7 @@ export function ProfileCard({ profile, nameId }: { profile: Profile; nameId?: st
       {rows.length ? (
         <>
           <div className="h-px w-full bg-s300" />
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-4 short-phone:gap-3">
             {rows.map((e, i) => (
               <m.li
                 key={`${e.company}-${i}`}

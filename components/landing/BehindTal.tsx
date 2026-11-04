@@ -9,7 +9,7 @@ const B = site.select.stats;
 export function BehindTal() {
   return (
     <section aria-labelledby="behind" className="px-4 pb-24 md:px-12 md:pb-40">
-      <div className="mx-auto flex max-w-[1344px] flex-col gap-10 overflow-hidden rounded-[28px] bg-white px-5 py-8 md:flex-row md:items-center md:gap-16 md:py-10 md:pl-16 md:pr-10">
+      <div className="mx-auto flex max-w-[1344px] flex-col gap-10 overflow-hidden rounded-[28px] bg-white px-6 py-8 md:flex-row md:items-center md:gap-16 md:py-10 md:pl-16 md:pr-10">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           <h2 id="behind" className="text-[28px] font-semibold leading-[34px] tracking-[-0.6px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
             {B.heading}

@@ -73,7 +73,7 @@ export function Chat() {
                     <TalAvatar />
                   </span>
                 ) : null}
-                <div className="relative min-w-0">
+                <div className={`relative min-w-0 ${isTal ? "" : "max-w-[80%]"}`}>
                   {isTal ? (
                     <div
                       aria-hidden={typing !== i}

@@ -1,20 +1,21 @@
 /* eslint-disable @next/next/no-img-element -- monochrome SVG marks */
 import { site } from "@/content/site";
 
-/** DS/Logo Marquee Row (18:1395): the 12 verified companies, white, optical heights 16–24 px, 48 px apart. */
+/** DS/Logo Marquee Row (18:1395): the 12 verified companies as full wordmarks, white, optical heights 16–24 px, 48 px apart.
+ *  Google, Microsoft, Salesforce, Adobe, LinkedIn and PayPal are Commons wordmarks built by scripts/logos.mjs (24-px viewBox). */
 const LOGOS: [string, string, number, number][] = [
-  ["google", "Google", 23.386, 24],
-  ["microsoft", "Microsoft", 22, 22],
+  ["google", "Google", 72.902, 24],
+  ["microsoft", "Microsoft", 103.152, 22],
   ["amazon", "Amazon", 59.721, 20],
   ["uber", "Uber", 59.553, 20],
-  ["salesforce", "Salesforce", 34.286, 24],
-  ["adobe", "Adobe", 24.849, 22],
-  ["linkedin", "LinkedIn", 22, 22],
-  ["paypal", "PayPal", 19.493, 24],
+  ["salesforce", "Salesforce", 88.219, 20],
+  ["adobe", "Adobe", 83.499, 22],
+  ["linkedin", "LinkedIn", 83.034, 22],
+  ["paypal", "PayPal", 71.297, 19],
   ["intuit", "Intuit", 79.585, 16],
   ["spotify", "Spotify", 79.857, 24],
   ["razorpay", "Razorpay", 85.107, 18],
-  ["sarvam", "Sarvam", 101.007, 16],
+  ["sarvam", "Sarvam", 101.007, 14], // Steve r2: at 16 it was the loudest mark in the row
 ];
 
 function Row({ hidden = false }: { hidden?: boolean }) {

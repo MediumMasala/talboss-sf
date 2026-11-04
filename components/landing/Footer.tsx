@@ -10,7 +10,7 @@ const C = site.select.credits;
  */
 export function Footer() {
   return (
-    <footer className="border-t border-hair px-4 pt-8 md:px-12">
+    <footer className="border-t border-hair px-6 pt-8 md:px-12">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-[7.5px] bg-white shadow-[0_2.5px_3.8px_rgba(0,0,0,0.14)]">
           <img src="/ds/tal-logo.svg" alt="" width={17} height={10} className="h-[10.4px] w-[16.9px]" />

@@ -21,9 +21,9 @@ export function Deal() {
             <img src="/art/orb-4x5-480.webp" alt="" loading="lazy" width={216} height={270} className="size-full object-cover" />
           </picture>
         </div>
-        <ul className="relative flex flex-1 flex-col border-b border-hair">
+        <ul className="relative flex flex-1 flex-col border-b border-hair md:self-start">
           {D.rows.map(([lead, rest]) => (
-            <li key={lead} className="border-t border-hair py-5 text-[16px] leading-6 tracking-[-0.1px] text-white/64 md:py-[22px] md:text-[18px] md:leading-7">
+            <li key={lead} className="border-t border-hair py-5 text-[18px] leading-7 tracking-[-0.1px] text-white/64 md:py-[22px]">
               <span className="text-white">{lead}</span>
               {rest}
             </li>

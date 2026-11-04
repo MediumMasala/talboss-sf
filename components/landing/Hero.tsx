@@ -37,11 +37,11 @@ export function Hero() {
             "radial-gradient(ellipse 30% 22% at 50% 77%, rgba(0,0,0,0.78), rgba(0,0,0,0.45) 60%, rgba(0,0,0,0) 100%), linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0) 78%, #000 100%)",
         }}
       />
-      <div className="relative flex h-full flex-col items-center px-4 pt-[76px] text-center md:pt-[100px]">
+      <div className="relative flex h-full flex-col items-center px-4 pt-[82px] text-center md:pt-[100px]">
         <h1 id="hero-logo" className="hero-logo">
           <Wordmark className="h-24 w-[156px] md:h-40 md:w-[260px]" label="tal" />
         </h1>
-        <div aria-hidden className="h-[150px] shrink-0 md:h-[210px]" />
+        <div aria-hidden className="h-[178px] shrink-0 md:h-[210px]" />
         <p className="hero-copy max-w-[342px] text-[16px] leading-6 tracking-[-0.1px] text-white/72 md:max-w-[560px] md:text-[18px] md:leading-7">{H.sub}</p>
         <div className="hero-copy mt-6 [animation-delay:120ms]">
           <StartLink from="hero" className="pill pill-l pill-white px-10">

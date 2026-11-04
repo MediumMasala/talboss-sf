@@ -2,9 +2,12 @@
  * Leads: every submission (application + resume) as one record, for the leads desk (/leads), the CSV
  * (/sheet.csv) and the push into the team's Google Sheet (an Apps Script web app, scripts/leads-sheet.gs).
  *
- * Sheet sync: a row is written with sheet_pending = 1. /api/upload pushes it right after the save (ctx.waitUntil,
- * one retry); on success sheet_pending = 0. Anything still pending (webhook down, not configured yet, or rows from
- * before migration 0004) is pushed by /api/leads/resync. The Apps Script upserts by id, so pushing twice is harmless.
+ * Sheet sync: only complete leads (with an email) go to the sheet. Such a row is written with sheet_pending = 1, and
+ * /api/upload pushes it right after the save (ctx.waitUntil, one retry); on success sheet_pending = 0. An email-less
+ * row is written with sheet_pending = 0 and never pushed; when the same resume comes back with the typed email
+ * (lib/storage.ts, findEmailless) that row is updated, set pending and pushed under its own id. Anything still
+ * pending (webhook down, not configured yet, or rows from before migration 0004) is pushed by /api/leads/resync.
+ * The Apps Script upserts by id, so pushing twice is harmless.
  */
 import { signResumeId, sameKey } from "@/lib/signing";
 import { photoLink } from "@/lib/linkedin";

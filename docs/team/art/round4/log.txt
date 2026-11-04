@@ -1,0 +1,13 @@
+sf-horizon-c-4x5 ok 8.2s gemini-3.1-flash-image
+sf-horizon-a-4x5 ok 8.4s gemini-3.1-flash-image
+sf-horizon-b-4x5 ok 9.1s gemini-3.1-flash-image
+sf-horizon-c-16x9 ok 9.3s gemini-3.1-flash-image
+sf-horizon-b-16x9 ok 9.4s gemini-3.1-flash-image
+sf-horizon-a-16x9 ok 9.9s gemini-3.1-flash-image
+reroll 1: sf-horizon-a-16x9 (Salesforce Tower and pyramid tip sat behind the wordmark at 1440) re-prompted to flank an empty centre; 4 renders
+sf-horizon-a-16x9-g1 ok 9.0s gemini-3.1-flash-image (picked; g2-g4 and v1 kept outside the repo)
+grade: all 6 shipped candidates neutralised to true greyscale (R=G=B)
+pick: sf-horizon-a (16x9 + 4x5) -> public/art/hero-* via scripts/art.mjs
+og: og-a-1200x630.jpg from sf-horizon-a-16x9 (1.25x push-in, horizon 64%) -> app/opengraph-image.jpg via scripts/og.mjs
+sheet: sheet.jpg (6 candidates)
+DONE
