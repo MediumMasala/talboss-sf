@@ -9,3 +9,4 @@
 - Round 2 complete (copy: Tal protagonist, hero 'Keep building. Tal makes the intros.'; backend: real pitches, answer/needsMore, p95 1.6s; frontend: email card, Tal point, honest done, mobile). Steve R2 launched.
 - Steve R2: FAIL but close (first 7.5, trust 7, copy 8, design 8, flow 7, AI 7.5, mobile 7.5). Round 3 dispatched: backend (rate limit 30/h + name-hash + daily cap + codes; vary pitch close, ban filler), copy (rate-limit/daily-cap copy, needsMore strings, From line, repeated hero line), frontend (rate-limited UI, highlight ≤2 answer spans, pitch CTA above fold + sticky mobile bar, funding line under hero on mobile). Then Steve R3.
 - Round 3 complete (backend limits+codes, 2-sentence pitch; copy limit states; frontend limit UI, single-span highlight, above-fold CTA, mobile funding). Steve R3 launched.
+- Steve R3 PASS (first 7.5, trust 8.5, copy 8.5, design 8.5, flow 8.5, AI 8, mobile 8). Committed on tal-select-us. Not pushed (read-only), not deployed.
