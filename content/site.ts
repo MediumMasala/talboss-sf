@@ -1,10 +1,10 @@
 /**
  * Every word on the site lives here. Components only read from this file.
  *
- * v3 (4 Nov 2026): Tal, a talent agent. The page opens on the word "Talent" and ends on the reader's name.
- * The full key map, with where each string appears and why it's worded that way, is in docs/team/COPY.md.
+ * v4 (4 Nov 2026): short and plain, one line per screen, in the voice of the India onboarding.
+ * The key map, with where each string appears, is in docs/team/COPY.md.
  *
- * House rules for anyone editing: Tal is "it" or "Tal", never a gendered pronoun. The page speaks as "we".
+ * House rules: Tal is "Tal" or "it", never a gendered pronoun. The page speaks as "we".
  * The old programme name never appears on screen. `program: "select"` is an internal value only.
  */
 
@@ -14,76 +14,36 @@ export const BRAND_NAME = "Tal";
  * Claims. Change them here only.
  * network: verified (~234K Tal app + ~1.04M Grapevine). Never say "active" or "every week".
  * startups: founder-stated, approved for use 4 Nov 2026.
- * Each is used once, in networkLine (select.origin.network).
+ * Each is used once, in select.stats.
  */
 const claims = {
   network: "300,000+",
   startups: "5,000+",
 };
 
-/* ------------------------------------------------------------------ */
-/* v3 strings that more than one place needs. Defined once, here.      */
-/* ------------------------------------------------------------------ */
-
-const hireLine = "It's free for you. Companies pay us when they hire someone we introduced.";
 const askTal = "Ask Tal to represent you";
-const askTalMe = "Ask Tal to represent me";
-const founderTo = "A founder in San Francisco";
 const pasteLink = "Paste my LinkedIn link";
-const skipToResume = "Skip this and add my resume";
-
-/** "What an agent does": three prose paragraphs, each under 45 words. The one AI mention on the page is in [0]. */
-const agentParagraphs = [
-  "We read everything you give us, properly. We use AI to read every profile and role, day and night, and people on our team decide who should meet whom. When we describe you to a founder, it should sound like we know your work.",
-  "Then we look for the role, and for the person who makes the call on it, usually a founder or the manager you'd work for. A short note from someone they trust gets read, and that's the note we write.",
-  "When we find something, we email you about it: the company, the role, the person and why we think it's worth your time. If you say no, nobody hears your name. Say yes, and we make the intro and set up the conversation.",
-] as const;
-
-/** The terms, as a letter of engagement. `{date}` is the computed end date, e.g. "4 May 2027". Under 120 words in total. */
-const termsParagraphs = (date: string) => [
-  hireLine + " You never pay us anything.",
-  "We ask before your name goes anywhere. Every role comes to you first, by email, and nobody outside Tal hears about you unless you say yes to it.",
-  `We'll represent you for six months, until ${date}. Then we'll ask if you want us to keep going. If we don't hear back, we'll assume you're not looking right now, and we'll stop.`,
-  "We use your LinkedIn profile and resume only to represent you. Ask at support@gvine.app and we'll delete your profile and resume.",
-];
-
-const faqItems: [string, string][] = [
-  ["Where are the roles?", "In San Francisco, the Bay Area, and remote."],
-  ["I'm happy where I am. Should I still sign up?", "Yes, and it's a good time to. You keep your job, and we only write to you when a role looks worth your time."],
-  ["Will my company find out?", "Not from us. Your name goes to a company only after you've said yes to that specific role."],
-  ["How will I hear from you?", "By email, one role at a time. Each one says who the company is, what the role is and why we thought of you, and you reply yes or no."],
-  ["What does it cost?", "Nothing. Companies pay us when they hire someone we introduced."],
-  ["What happens after six months?", "We'll write and ask if you'd like us to keep going. If you don't reply, we'll take it that you're not looking right now, and we'll stop representing you."],
-];
-
-const originBody =
-  "We started in Bengaluru with Grapevine, India's largest anonymous professional network, where more than a million verified professionals share real salaries and the truth about where they work. Then we built Round1, a hiring agency that became profitable placing engineers at India's fastest-growing AI companies. One engineer Round1 placed at Sarvam AI went on to become its CTO. Round1 taught us that the scarce thing in hiring is trust. A founder will make time for someone new when the note comes from people they believe. We built Tal on that.";
-
-/** The only use of both claim numbers, each once. */
-const networkLine = `There are about 20 of us, and the network behind Tal is ${claims.network} tech professionals and ${claims.startups} AI and consumer startups.`;
+const pasteLinkInstead = "Paste my LinkedIn link instead";
+const free = "Free for you. Companies pay us when they hire someone we introduced.";
 
 export const site = {
   name: BRAND_NAME,
 
   claims,
 
-  /** Root layout metadata (app/layout.tsx). Same words as select.seo so every page tells one story. */
+  /** Root layout metadata (app/layout.tsx). */
   seo: {
     title: "Tal: a talent agent for engineers, researchers, PMs and designers",
     description:
       "Tal is a talent agent for engineers, researchers, PMs and designers, for roles in San Francisco, the Bay Area, and remote. We ask you before anyone hears your name, and it's free for you.",
-    ogAlt: "The word Talent, set over a photograph.",
   },
 
-  /** The one funding claim. Top bar and end credits only. */
+  /** The one funding claim. Top bar and footer only. */
   funding: {
-    before: "We have raised",
-    amount: "$7 million",
-    after: "from Peak XV (formerly Sequoia Capital).",
     line: "We have raised $7 million from Peak XV (formerly Sequoia Capital).",
   },
 
-  /** Resume upload rules and messages for the resume step. */
+  /** Resume upload rules and messages (resume step, app/api/upload, lib/validation). */
   upload: {
     maxBytes: 5 * 1024 * 1024,
     extensions: [".pdf", ".docx"],
@@ -91,293 +51,266 @@ export const site = {
       "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ],
-
     idle: {
-      button: "Choose a file",
-      hint: "PDF or Word file, up to 5 MB",
-      dragging: "Let go to add it",
+      hint: "PDF or DOCX, up to 5 MB",
+      dragging: "Drop it here",
     },
-
     errors: {
-      wrongType: (ext: string) =>
-        `That's ${ext ? `a ${ext} file` : "a file we can't read"}. We need a PDF or a Word document (.docx).`,
-      tooBig: (size: string) => `That file is ${size}, and the limit is 5 MB. Saving it as a PDF usually makes it smaller.`,
-      empty: "That file looks empty. Try another one.",
+      wrongType: (ext: string) => `That's ${ext ? `a ${ext} file` : "a file we can't read"}. Please use a PDF or DOCX.`,
+      tooBig: (size: string) => `That file is ${size}. The limit is 5 MB.`,
+      empty: "That file is empty. Try another one.",
       corrupt: "We couldn't open that file. Try saving it again as a PDF.",
       multiple: "One file at a time, please.",
-      network: "We couldn't reach our server. Check your connection and try again.",
+      network: "We couldn't reach Tal. Check your connection and try again.",
       server: "Something went wrong on our side. Please try again in a minute.",
-      tooBigForServer: "That file is too big for us to upload. A PDF under 4 MB will work.",
+      tooBigForServer: "That file is too big to upload. A PDF under 4 MB will work.",
     },
-
-    /** Under the drop zone and the email field. Links come from `legal` below. */
+    /** Under the drop area and the email field. Links come from `legal`. */
     consent: { before: "By continuing, you agree to our", privacy: "Privacy Policy", and: "and", terms: "Terms" },
-
   },
 
   /* ---------------------------------------------------------------- */
-  /* v3: the US site at "/". The key name `select` is internal only.   */
-  /* Keys are in flow order.                                          */
+  /* v4: the US site at "/". `select` is an internal key name only.    */
   /* ---------------------------------------------------------------- */
   select: {
     seo: {
       title: "Tal: a talent agent for engineers, researchers, PMs and designers",
       description:
         "Tal is a talent agent for engineers, researchers, PMs and designers, for roles in San Francisco, the Bay Area, and remote. We ask you before anyone hears your name, and it's free for you.",
-      /** openGraph.siteName (app/page.tsx currently hardcodes the old name; use this). */
       siteName: BRAND_NAME,
     },
 
-    /** Social card (app/opengraph-image.tsx): "Talent" on a graded photograph. */
+    /** Social card text (the OG image is a generated still with "Talent."). */
     og: {
-      line: "Talent",
-      sub: "Tal is a talent agent, opening in San Francisco now.",
-      alt: "The word Talent set over a photograph, with the line: Tal is a talent agent, opening in San Francisco now.",
+      line: "Talent.",
+      sub: "Tal is a talent agent, now opening in San Francisco.",
+      alt: "The word Talent. over a black and white photograph, with the line: Tal is a talent agent, now opening in San Francisco.",
     },
 
-    /** 0. Top bar and fixed controls. The funding line is `site.funding.line`. */
+    /** Top nav (landing) and header (flow). Funding line: site.funding.line. */
     topBar: {
       wordmark: "tal",
       wordmarkLabel: "Tal, home",
+      questions: "Questions?",
+      cta: askTal,
     },
     sound: {
       off: "SOUND OFF",
       on: "SOUND ON",
-      /** aria-label for the toggle, describing what a press does. */
       turnOn: "Turn sound on",
       turnOff: "Turn sound off",
     },
-    /** Mobile bottom dock and desktop after-hero action. Hidden while the form is on screen. */
+    /** Mobile bottom dock. */
     dock: askTal,
 
-    /** 1. Opening frame. */
+    /* ------------------------------ Landing ------------------------------ */
+
+    /** L1. Hero. */
     hero: {
-      word: "Talent",
-      /** The pick. Set under the word. */
-      sub: "That's what we call the people we represent. Tal is a talent agent for engineers, researchers, PMs and designers, and we're opening in San Francisco now.",
-      /** Ranked alternates, for the founder only. Never rendered. */
-      alternates: [
-        "In film, that's the word for the people in front of the camera, and every one of them has an agent. Tal is a talent agent for engineers, researchers, PMs and designers, opening in San Francisco now.",
-        "That's what we call the people we represent. We read their work, find the founder who should meet them, and ask before we say their name. Tal is opening in San Francisco now.",
+      word: "Talent.",
+      sub: "Tal is a talent agent for engineers, researchers, PMs and designers, now opening in San Francisco.",
+      cta: askTal,
+      note: free,
+    },
+
+    /** L2. Glass chat card. An illustration, so it names no real company. */
+    chat: {
+      label: "An example",
+      tal: "Tal",
+      you: "You",
+      messages: [
+        { from: "tal", text: "Found 3 roles that fit you this week." },
+        { from: "tal", text: "Staff engineer, Series B payments company, San Francisco." },
+        { from: "you", text: "Yes to the payments one. No to the other two." },
+        { from: "tal", text: "Intro sent to the founder. They'll write to you directly." },
+      ] as { from: "tal" | "you"; text: string }[],
+    },
+
+    /** L3. White card with four stats. Each claim number appears here and nowhere else. */
+    stats: {
+      heading: "Behind Tal",
+      items: [
+        { value: claims.network, label: "tech professionals in our network" },
+        { value: claims.startups, label: "AI and consumer startups" },
+        { value: "6 months", label: "of representation" },
+        { value: "$0", label: "in fees for you" },
+      ],
+      /** One line under the stats. The only Sarvam mention. */
+      origin:
+        "Tal is built in Bengaluru by the team behind Grapevine and Round1. An engineer Round1 placed at Sarvam AI went on to become its CTO.",
+    },
+
+    /** L4. How it works, numbered 01 to 04. */
+    how: {
+      heading: "How it works",
+      steps: [
+        { title: "Tell Tal who you are", body: "Your name, company and title. It takes a minute." },
+        { title: "Tal finds your LinkedIn", body: "You confirm it's you. A resume is optional." },
+        { title: "Tal emails you roles that fit", body: "One role at a time, in San Francisco, the Bay Area, or remote." },
+        { title: "You say yes, Tal makes the intro", body: "Nobody hears your name until you say yes." },
       ],
     },
 
-    /** Mono step counter on the card. */
+    /** L5. The terms, a short dark card. `paragraphs(date)` takes the computed end date, e.g. "4 May 2027". */
+    terms: {
+      heading: "The terms",
+      paragraphs: (date: string) => [
+        free,
+        "We ask you before your name goes to anyone.",
+        `We represent you for six months, until ${date}. Then we ask if you'd like us to keep going. If we don't hear back, we stop.`,
+        "Ask at support@gvine.app and we'll delete your profile and resume.",
+      ],
+    },
+
+    /** L6. Questions. Six, each answer two sentences or fewer. */
+    faq: {
+      heading: "Questions",
+      items: [
+        ["Where are the roles?", "In San Francisco, the Bay Area, and remote."],
+        ["I'm not looking right now. Should I sign up?", "Yes. You keep your job, and we only email you when a role fits."],
+        ["Will my company find out?", "Not from us. Your name goes to a company only after you say yes to that role."],
+        ["How will I hear from Tal?", "By email, one role at a time. You reply yes or no."],
+        ["What does it cost?", "Nothing. Companies pay us when they hire someone we introduced."],
+        ["What happens after six months?", "We ask if you'd like us to keep going. If you don't reply, we take it you're not looking right now, and we stop."],
+      ] as [string, string][],
+    },
+
+    /** L7. Footer (giant metallic "tal"). Funding: site.funding.line. Email: site.legal.supportEmail. */
+    credits: {
+      cta: askTal,
+      made: "Made in Bengaluru by the team behind Grapevine",
+      privacy: "Privacy",
+      terms: "Terms",
+    },
+
+    /** Logo row caption, only if a logo row is shown. India bosses; never implies US openings. */
+    proofLine: "Bosses from these companies hire on Tal",
+
+    /* -------------------------------- Flow -------------------------------- */
+
+    /** Bottom progress bar, five segments (A1 to A6). */
     steps: {
-      label: (n: number, total: number) => `STEP ${n} OF ${total}`,
-      names: ["YOU", "LINKEDIN", "THE LETTER", "RESUME"],
+      label: (n: number, total: number) => `Step ${n} of ${total}`,
+      names: ["Name", "Company", "Title", "LinkedIn", "Resume"],
     },
 
     apply: {
-      /** 1. Form, first step (on the linen card). */
-      you: {
-        /** Live title line before anything is typed (set in the display serif, crossfades to the typed name). */
-        nameEmpty: "Your name",
-        /** Mono credit under the live name. */
-        credit: "REPRESENTED BY TAL",
-        hint: "Tell us your name and where you work. We'll find you on LinkedIn and write the note we'd send a founder about you.",
-        fields: {
-          name: { label: "Full name", placeholder: "Your full name" },
-          company: { label: "Company", placeholder: "Where you work now" },
-          role: { label: "Title", placeholder: "Member of Technical Staff" },
-        },
-        cta: "Find me on LinkedIn",
-        manual: "Paste my LinkedIn link instead",
-        manualLabel: "Your LinkedIn link",
-        manualPlaceholder: "linkedin.com/in/your-name",
-        manualCta: "Use this link",
-        badUrl: "That doesn't look like a LinkedIn profile link. It should look like linkedin.com/in/your-name.",
-        missing: "We need your full name and where you work to find you.",
+      /** Shared by every question screen. */
+      continue: "Continue",
+      enterHint: "or press Enter to continue",
+
+      /** A1. */
+      name: {
+        question: "What's your full name?",
+        sub: "This is the name we'll represent.",
+        placeholder: "Your full name",
+        missing: "Add your full name to continue.",
+      },
+      /** A2. */
+      company: {
+        question: "Where do you work?",
+        sub: "Company name is enough.",
+        placeholder: "Company",
+        missing: "Add where you work to continue.",
+      },
+      /** A3. */
+      title: {
+        question: "What's your title?",
+        sub: "Member of Technical Staff, Staff Engineer, Product Lead…",
+        placeholder: "Member of Technical Staff",
       },
 
-      /** 2. Finding you. Driven by the API `stage`; use Math.max on the index. */
+      /** A4. */
       search: {
-        srLabel: "Looking for you on LinkedIn",
-        stages: {
-          search: "Looking for you on LinkedIn",
-          people: "Going through the profiles with your name",
-          profile: "Reading your profile",
-          found: "Getting it ready for you to check",
-        },
-        /** Shown only when it's taking a while. */
+        title: "Finding you on LinkedIn",
         wait: "This usually takes about 15 seconds.",
-        skip: skipToResume,
+        manual: pasteLinkInstead,
       },
 
-      /** Error screens. Body leads with pasting the link; primary action = `manual`. */
-      notFound: {
-        title: "We couldn't find you on LinkedIn.",
-        body: "Some profiles don't show up in search. Paste your link and we'll read it from there, or skip this and we'll work from your resume.",
-        manual: pasteLink,
-        skip: skipToResume,
-      },
-      /** API code "rate_limited" (per-network or per-name limit). Never says "couldn't find you". */
-      rateLimited: {
-        title: "We've had a lot of searches from your network this hour.",
-        body: "Paste your LinkedIn link and we'll carry on from there. Or skip this, and we'll work from your resume.",
-        manual: pasteLink,
-        skip: skipToResume,
-      },
-      /** API code "daily_cap" (global per-day counter, resets daily). Never says "couldn't find you". */
-      dailyCap: {
-        title: "We've done all the LinkedIn searches we can for today.",
-        body: "Paste your LinkedIn link and we'll carry on from there. Or try again tomorrow, or skip this and we'll work from your resume.",
-        manual: pasteLink,
-        skip: skipToResume,
-      },
-      /** HTTP 502: Apify (our LinkedIn search) is down. */
-      searchDown: {
-        title: "Our LinkedIn search isn't working right now, and that's on our side.",
-        body: "Paste your LinkedIn link and we'll try it that way. Or skip this, and we'll work from your resume.",
-        manual: pasteLink,
-        skip: skipToResume,
-      },
-      /** HTTP 503 or no connection. */
-      offline: {
-        title: "You seem to be offline.",
-        body: "When you're back, try again or paste your LinkedIn link. Everything you typed is still here.",
-        retry: "Try again",
-        manual: pasteLink,
+      /** Paste-link screen, reachable from A1 to A5b. */
+      link: {
+        question: "What's your LinkedIn link?",
+        placeholder: "linkedin.com/in/your-name",
+        badUrl: "That isn't a LinkedIn profile link. It looks like linkedin.com/in/your-name.",
       },
 
-      /** 3. "Is this you?" (casting card). */
+      /** A5. */
       confirm: {
         title: "Is this you?",
         hint: "We only read your public profile.",
         yes: "Yes, that's me",
         no: "No, not me",
         manual: "Paste my link",
-        trying: "Looking at the next profile with your name",
-        /** After three "No, not me". */
-        outOfProfiles: "That's everyone we found with your name. Paste your LinkedIn link and we'll start from that.",
+        trying: "Checking the next profile",
+        outOfProfiles: "That's everyone we found. Paste your LinkedIn link instead.",
       },
 
-      /** 4. The letter, on linen paper. Draft comes from /api/pitch. */
-      email: {
-        /** Above the letter. Only true if the letter is editable; otherwise use `introReadOnly`. */
-        intro: "This is how we'd introduce you. Change anything that isn't right.",
-        introReadOnly: "This is how we'd introduce you to a founder.",
-        toLabel: "To",
-        toLine: founderTo,
-        fromLabel: "From",
-        from: "Tal",
-        subjectLabel: "Subject",
-        /** "{Full name}, {title} at {company}". Pass the FULL name. Drops empty parts cleanly. */
-        subject: (name: string, title: string, company: string) =>
-          `${name}${title ? `, ${title}` : ""}${company ? `${title ? " at" : ", at"} ${company}` : ""}`,
-        signature: "Tal, a talent agent",
-        /** Small, under the signature. */
-        sendNote: "We'll only send this to a founder you've agreed to meet.",
-        drafting: "Writing your letter",
-        draftTag: "DRAFT",
-        /** When /api/pitch returns source:"fallback". */
-        fallbackNote: "This first draft comes from your title alone. We'll write a better one once we've read your profile.",
-
-        /** needsMore:true. Lead-in by what we have, then the one question. */
-        needsMoreThin: "So far we only know your title.",
-        needsMoreLinkedIn: "So far we only know what's on your LinkedIn.",
-        question: "What's one thing you've built that you'd want a founder to hear about?",
-        placeholder: "A sentence or two is plenty.",
-        submit: "Add it to the letter",
-        rewriting: "Adding it to the letter",
-        rewritten: "We've added that in.",
-        /** sr-only label for the one highlighted passage of their own words. */
-        highlightLabel: "From your answer",
-        keep: "Looks good as it is",
-        error: "We couldn't rewrite it just now. Please try once more.",
+      /** A5b states. Primary action is always `manual`. Only notFound says we couldn't find them. */
+      notFound: {
+        title: "We couldn't find you on LinkedIn",
+        sub: "Paste your LinkedIn link and we'll take it from there.",
+        manual: pasteLink,
+        skip: "Skip, I'll add my resume",
+      },
+      rateLimited: {
+        title: "Tal is getting a lot of requests from your network",
+        sub: "Paste your LinkedIn link to keep going.",
+        manual: pasteLink,
+        skip: "Skip, I'll add my resume",
+      },
+      dailyCap: {
+        title: "Tal's LinkedIn search is full for today",
+        sub: "Paste your LinkedIn link to keep going, or try again tomorrow.",
+        manual: pasteLink,
+        skip: "Skip, I'll add my resume",
+      },
+      searchDown: {
+        title: "Tal's LinkedIn search isn't working right now",
+        sub: "Paste your LinkedIn link to keep going.",
+        manual: pasteLink,
+        skip: "Skip, I'll add my resume",
+      },
+      offline: {
+        title: "You're offline",
+        sub: "Check your connection and try again.",
+        retry: "Try again",
+        manual: pasteLink,
       },
 
-      /** 5. Resume, optional. Drop zone uses site.upload.idle / errors / consent. */
+      /** A6. */
       resume: {
-        title: "Want it sharper? Add your resume.",
-        hint: "PDF or Word file, up to 5 MB. The more we read, the better we can introduce you.",
-        drop: "Drop it here, or choose a file",
-        cta: askTalMe,
-        sending: ["Saving your details", "Putting it with your profile", "One moment"],
+        title: "Add your resume",
+        sub: "Optional. It helps Tal represent you better.",
+        drop: "Drop a PDF or DOCX, or click to choose",
+        cta: "Continue",
+        sending: "Saving your resume",
       },
-      /** The quiet path. A small text link under the drop zone. */
+      /** A6b. Reached from the quiet link under the drop area. */
       noResume: {
         link: "No resume handy? We'll work from your LinkedIn.",
         /** When LinkedIn was skipped, so the line stays true. */
         linkNoLinkedIn: "No resume handy? Your email is enough to start.",
-        title: "Where should we write to you?",
-        hint: "We'll email you when there's a role worth your time, and you tell us yes or no.",
+        title: "Where should Tal write to you?",
+        sub: "We'll email you when a role fits.",
         emailLabel: "Email",
         emailPlaceholder: "you@example.com",
-        emailMissing: "We'll need an email to write to you.",
-        emailInvalid: "That email doesn't look right. Check it for a typo.",
-        cta: askTalMe,
+        emailMissing: "Add your email to continue.",
+        emailInvalid: "That email doesn't look right.",
+        cta: "Continue",
         back: "Add a resume instead",
       },
 
-      /** 6. Done: the title card. Their name is set in the display serif above `credit`. */
+      /** A7. Their name, set large, then the credit line and three sentences. */
       done: {
-        /** `date` like "4 May 2027". */
-        credit: (date: string) => `REPRESENTED BY TAL · UNTIL ${date.toUpperCase()}`,
-        /** Three sentences, in this order. */
-        next: (first: string) =>
-          `Thank you${first ? `, ${first}` : ""}. We'll read everything properly and start looking for roles worth your time.`,
-        email: (email: string) => `When we find one, we'll write to you at ${email}.`,
-        noEmail: "We couldn't find an email on your resume, so we can't write to you yet. Add one to your resume and upload it again.",
-        private: "Nobody outside Tal hears your name until you say yes.",
+        /** `date` like "4 May 2027". Set in tracked caps by CSS. */
+        credit: (date: string) => `Represented by Tal · until ${date}`,
+        next: "We'll read your profile and start looking for roles that fit.",
+        email: (email: string) => `When one does, we'll email you at ${email}.`,
+        noEmail: "We couldn't find an email on your resume. Add one so we can write to you.",
+        private: "Nobody hears your name until you say yes.",
+        close: "Done",
       },
     },
-
-    /** 7. What an agent does: three offset photo-and-prose pairs. */
-    agent: {
-      label: "WHAT AN AGENT DOES",
-      paragraphs: agentParagraphs,
-    },
-
-    /** 8. The sample letter. An obviously invented person. Only when the hero letter isn't on screen. */
-    sample: {
-      label: "SAMPLE · AN INVENTED PERSON, TO SHOW HOW WE WRITE",
-      to: founderTo,
-      from: "Tal",
-      subject: "Noor Halvorsen, staff engineer at Acme Freight",
-      body: [
-        "Noor leads routing at Acme Freight and rebuilt the dispatch system that plans every truck's day.",
-        "Before that, Noor spent four years building the payments ledger at a regional bank.",
-      ],
-      signature: "Tal, a talent agent",
-    },
-
-    /** 9. Where we come from (forest night), then the contact sheet. */
-    origin: {
-      heading: "Where we come from",
-      body: originBody,
-      network: networkLine,
-      caption: "People on Tal in Bengaluru",
-    },
-
-    /** 10. The terms, as a letter of engagement on paper. */
-    terms: {
-      label: "THE TERMS",
-      heading: "What we're agreeing to",
-      paragraphs: termsParagraphs,
-      signature: "The Tal team, Bengaluru",
-    },
-
-    /** 11. Questions. Six, each answer two sentences or fewer. */
-    faq: {
-      heading: "Questions",
-      items: faqItems,
-    },
-
-    /** 12. End credits. */
-    credits: {
-      cta: askTal,
-      made: "Made in Bengaluru by the team behind Grapevine",
-      photosLabel: "PHOTOGRAPHS",
-      /** One line per photographer, e.g. "PHOTOGRAPH: JANE DOE / UNSPLASH". */
-      photo: (name: string, source: string) => `PHOTOGRAPH: ${name.toUpperCase()} / ${source.toUpperCase()}`,
-      privacy: "Privacy",
-      terms: "Terms",
-      /** Funding line: site.funding.line. Support email: site.legal.supportEmail. */
-    },
-
-    /** Logo row caption (components/tal/Sections.tsx). Honest: India bosses hire on Tal. Never imply US openings. */
-    proofLine: "Bosses from these companies hire on Tal",
   },
 
   /** Runs under Grapevine's policies (Watercooler Chat Private Limited). /privacy and /terms redirect here. */

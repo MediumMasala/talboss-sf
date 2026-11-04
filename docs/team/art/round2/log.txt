@@ -1,0 +1,13 @@
+chair-window-16x9 ok
+chair-window-4x5 ok
+fog-hill-16x9 ok
+fog-hill-4x5 ok
+desk-lamp-16x9 ok
+desk-lamp-4x5 ok
+train-rain-16x9 ok
+train-rain-4x5 ok
+stairwell-16x9 ok
+stairwell-4x5 ok
+dawn-city-16x9 ok
+dawn-city-4x5 ok
+DONE

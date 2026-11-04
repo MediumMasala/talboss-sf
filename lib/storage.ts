@@ -34,9 +34,6 @@ export type Application = {
   workAuth?: string | null;
   /** Typed by the person; required when there's no resume. */
   email: string | null;
-  /** The "how we'd introduce you" draft they were shown (from /api/pitch), and where it came from. */
-  pitch: string | null;
-  pitchSource: "ai" | "fallback" | null;
 };
 
 export interface ResumeStorage {
@@ -87,7 +84,7 @@ function cloudflare(env: CloudflareEnv): ResumeStorage {
           .bind(
             crypto.randomUUID(), s.createdAt, s.id, a.program, a.name, a.company, a.designation, a.linkedinUrl, a.linkedinStatus,
             a.linkedinProfile ? JSON.stringify(a.linkedinProfile) : null, null, JSON.stringify({ utm: s.meta.utm, referrer: s.meta.referrer }),
-            a.email, a.pitch, a.pitchSource,
+            a.email, null, null, // pitch, pitch_source: the pitch was removed in v4; columns kept for old rows
           )
           .run();
       }

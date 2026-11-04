@@ -15,7 +15,8 @@ function fail(status: number, error: string) {
   return Response.json({ ok: false, error }, { status });
 }
 
-// Work authorization is no longer collected (v3). An old client may still send `workAuth`; it is ignored.
+// Work authorization (v3) and the pitch (v4) are no longer collected. Old clients may still send `workAuth`,
+// `pitch` or `pitchSource`; they are ignored.
 
 /** Plain English until copy keys exist in content/site.ts. */
 const NO_RESUME = {
@@ -53,8 +54,6 @@ function readApplication(raw: unknown): Application | null {
         : null,
     workAuth: null,
     email: validEmail(str("email", 254).toLowerCase()) ? str("email", 254).toLowerCase() : null,
-    pitch: str("pitch", 800) || null,
-    pitchSource: str("pitchSource") === "ai" || str("pitchSource") === "fallback" ? (str("pitchSource") as "ai" | "fallback") : null,
   };
 }
 

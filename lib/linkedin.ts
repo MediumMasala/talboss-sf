@@ -40,7 +40,7 @@ export type Profile = {
   experience: Experience[];
   /** Up to two schools, when LinkedIn lists them. Optional: older cards and previews may not have it. */
   education?: { school: string; degree: string }[];
-  /** Their "About" text (≤ 800 chars, emails, links and phone numbers removed). Feeds /api/pitch. */
+  /** Their "About" text (≤ 800 chars, emails, links and phone numbers removed). */
   about?: string;
   /** Top skills, from the profile and its roles (≤ 10). */
   skills?: string[];
