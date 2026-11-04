@@ -48,11 +48,19 @@ How I studied them: headless Chrome over CDP (`~/.claude/jobs/17f7f79e/tmp/fe-st
 
 **Logo row (founder decision, overrides DIRECTION.md).** One quiet row at the end of "Where we come from", caption `select.proofLine` ("Bosses from these companies hire on Tal"). Only the twelve verified companies: Google, Microsoft, Amazon, Uber, Salesforce, Adobe, LinkedIn, PayPal, Intuit, Spotify, Razorpay, Sarvam. Each mark is a CSS mask filled with linen at 70%, so it sits inside the grade. No marquee, no tiles. The NVIDIA/Stripe/Databricks/Okta/eBay files in `public/brands/` are not rendered.
 
-**Previews** (dev only, no network): `/?preview=you|search|confirm|notFound|rateLimited|dailyCap|searchDown|offline|pitch|sharpened|resume|noResume|sending|done`. All render cleanly at 1440 and at 390 with no horizontal overflow (checked by the shot script: desktop page 8,712 px, mobile 8,591 px, scrollWidth 390).
+**Previews** (dev only, no network): `/?preview=you|search|confirm|notFound|rateLimited|dailyCap|searchDown|offline|pitch|sharpened|resume|noResume|sending|done`. All render cleanly at 1440 and at 390 with no horizontal overflow (checked by the shot script: desktop page 6,987 px, mobile 7,404 px, scrollWidth 390).
 
-**Shots** (fresh, from the live dev server): `docs/team/frontend-shots-v3/`: `sheet-desktop-states.jpg`, `sheet-mobile-states.jpg` (390 px iframe), `sheet-desktop-page.jpg`, `sheet-mobile-page.jpg`, `sheet-e2e.jpg`, plus every single frame. Scripts: `~/.claude/jobs/17f7f79e/tmp/fe-shots.mjs`, `fe-e2e.mjs`.
+**Shots** (fresh after round 1, from the live dev server): `docs/team/frontend-shots-v3/`: `sheet-desktop-states.jpg`, `sheet-mobile-states.jpg` (390 px iframe), `sheet-desktop-page.jpg`, `sheet-mobile-page.jpg`, `sheet-e2e.jpg`, plus every single frame. Scripts: `~/.claude/jobs/17f7f79e/tmp/fe-shots.mjs`, `fe-e2e.mjs`.
 
 **End to end, real API, once:** "Sanchit Tripathi" at "Grapevine" (cached lookup). The profile was found on the first poll (score-matched, correct person), the letter arrived and finished typing about 5 s after "Yes, that's me", the no-resume path with a@example.org posted, and the title card read "Sanchit Tripathi / REPRESENTED BY TAL · UNTIL 4 MAY 2027". The draft: "Sanchit builds Tal Boss at Grapevine after working as an investment professional for consumer tech and marketplaces at Elevation Capital. Earlier, Sanchit helped startups grow their businesses through ads as a Google account manager."
+
+**Round 1 fixes (Steve, STEVE_V3_ROUND_1.md §5).**
+- 1: new hero, Wesley Mc Lachlan's window photograph (Unsplash): no readable third-party text; *Talent* sits on the dark curtain at the lower left. The train-reader photo is deleted.
+- 3: after "Looks good as it is" or "Add it to the letter" (a successful rewrite now carries on to the resume step), the next heading scrolls to centre and takes focus 240 ms after the click (instant under reduced motion). Measured at 1440 x 812: in view and focused at 900 ms.
+- 4: on phones the sound toggle lives in the top bar. The shot script checks every state at 390 for any visible fixed element over an input: none.
+- 5: on the title card the funding line steps aside and the wordmark turns ink.
+- 7: casting-card rows wrap; the duration sits on its own line; no truncation or clamps. The e2e check for ellipsis or overflow on the founder's card returns false.
+- 8: one canopy (Cubbon) in "Where we come from"; Golden Gate Park photo deleted; tighter rhythm. `scrollHeight` at 1440 is 6,987 (mobile 7,404). Unverified logos okta, ebay, nvidia, stripe and databricks deleted from `public/brands/`.
 
 **Gotcha for whoever edits next.** Custom CSS lives in `@layer components` in `globals.css`. Unlayered rules beat Tailwind utilities in v4: an unlayered `.photo { position: relative }` silently beat `absolute`.
 

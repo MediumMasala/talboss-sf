@@ -2,7 +2,7 @@
  * Every photograph on the page, graded at build time by scripts/grade-photos.mjs (one grade, baked in).
  * Credits come from docs/team/ASSETS.md; every photographer is named in the end credits.
  */
-export type PhotoKey = "reader" | "sfFog" | "notebook" | "fogWalk" | "lamp" | "cubbon" | "ggpark" | "hill";
+export type PhotoKey = "window" | "sfFog" | "notebook" | "fogWalk" | "lamp" | "cubbon" | "hill";
 
 type Variant = { base: string; widths: number[]; w: number; h: number };
 export type PhotoDef = { alt: string; author: string; source: "Unsplash"; url: string; variants: Variant[]; tall?: Variant };
@@ -10,13 +10,13 @@ export type PhotoDef = { alt: string; author: string; source: "Unsplash"; url: s
 const wide = (base: string, widths: number[]): Variant => ({ base: `${base}-wide`, widths, w: 2390, h: 1000 });
 
 export const PHOTOS: Record<PhotoKey, PhotoDef> = {
-  reader: {
-    alt: "Someone reading a paperback by a train window in late sun, face turned away.",
-    author: "patsanannnn",
+  window: {
+    alt: "Someone standing at a window in the last of the daylight, curtains drawn back, face turned away.",
+    author: "Wesley Mc Lachlan",
     source: "Unsplash",
-    url: "https://unsplash.com/photos/Si7MtemsNas",
-    variants: [wide("reader", [1280, 1920, 2560])],
-    tall: { base: "reader-tall", widths: [640, 900], w: 4, h: 5 },
+    url: "https://unsplash.com/photos/UkhecUKFfd0",
+    variants: [wide("window", [1280, 1920, 2560])],
+    tall: { base: "window-tall", widths: [640, 900], w: 4, h: 5 },
   },
   sfFog: {
     alt: "San Francisco at sunrise, the towers standing out of a bank of fog.",
@@ -54,13 +54,6 @@ export const PHOTOS: Record<PhotoKey, PhotoDef> = {
     url: "https://unsplash.com/photos/nuIpe_EumH4",
     variants: [{ base: "cubbon", widths: [720, 1200], w: 2600, h: 1736 }],
   },
-  ggpark: {
-    alt: "A green canopy of tangled branches in a San Francisco park.",
-    author: "Anthony Sebbo",
-    source: "Unsplash",
-    url: "https://unsplash.com/photos/HWKXrXuI_Ro",
-    variants: [{ base: "ggpark", widths: [720, 1200], w: 2600, h: 1733 }],
-  },
   hill: {
     alt: "Hills at golden hour, light falling through the haze.",
     author: "Casey Horner",
@@ -71,7 +64,7 @@ export const PHOTOS: Record<PhotoKey, PhotoDef> = {
 };
 
 /** One line per photographer, in page order, for the end credits. */
-export const CREDIT_ORDER: PhotoKey[] = ["reader", "notebook", "fogWalk", "lamp", "cubbon", "ggpark", "sfFog", "hill"];
+export const CREDIT_ORDER: PhotoKey[] = ["window", "notebook", "fogWalk", "lamp", "cubbon", "sfFog", "hill"];
 
 export const srcset = (v: Variant, fmt: "avif" | "webp") => v.widths.map((w) => `/photos/${v.base}-${w}.${fmt} ${w}w`).join(", ");
 export const fallback = (v: Variant) => `/photos/${v.base}-${v.widths[v.widths.length - 1]}.webp`;

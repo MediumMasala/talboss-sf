@@ -68,13 +68,12 @@ export function grade(r, g, b) {
 
 /** name: [desktop aspect or null, mobile 4:5 crop?, widths] */
 const PHOTOS = {
-  reader: { wide: 2.39, tall: true, widths: [1280, 1920, 2560], pos: "centre", tallX: 0.58, burn: true },
+  window: { wide: 2.39, tall: true, widths: [1280, 1920, 2560], pos: "centre", tallX: 0.85, burn: true },
   "sf-fog": { wide: 2.39, tall: true, widths: [1280, 1920, 2560], pos: "attention", tallPos: "attention", burn: true },
   notebook: { widths: [720, 1200], band: [0.42, 1] },
   "fog-walk": { widths: [720, 1200] },
   lamp: { widths: [720, 1200] },
   cubbon: { widths: [720, 1200] },
-  ggpark: { widths: [720, 1200] },
   hill: { wide: 2.39, widths: [1280, 1920], band: [0.26, 0.62], burn: true },
 };
 

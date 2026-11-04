@@ -1,18 +1,18 @@
 {
- "reader": {
+ "window": {
   "w": 2600,
-  "h": 1733,
+  "h": 1463,
   "files": [
-   "reader-wide-1280.avif 17KB",
-   "reader-wide-1280.webp 23KB",
-   "reader-wide-1920.avif 36KB",
-   "reader-wide-1920.webp 53KB",
-   "reader-wide-2560.avif 74KB",
-   "reader-wide-2560.webp 103KB",
-   "reader-tall-640.avif 17KB",
-   "reader-tall-640.webp 22KB",
-   "reader-tall-900.avif 32KB",
-   "reader-tall-900.webp 42KB"
+   "window-wide-1280.avif 19KB",
+   "window-wide-1280.webp 22KB",
+   "window-wide-1920.avif 36KB",
+   "window-wide-1920.webp 44KB",
+   "window-wide-2560.avif 57KB",
+   "window-wide-2560.webp 70KB",
+   "window-tall-640.avif 18KB",
+   "window-tall-640.webp 20KB",
+   "window-tall-900.avif 31KB",
+   "window-tall-900.webp 37KB"
   ],
   "wide": 2.39
  },
@@ -71,16 +71,6 @@
    "cubbon-720.webp 112KB",
    "cubbon-1200.avif 178KB",
    "cubbon-1200.webp 295KB"
-  ]
- },
- "ggpark": {
-  "w": 2600,
-  "h": 1733,
-  "files": [
-   "ggpark-720.avif 63KB",
-   "ggpark-720.webp 101KB",
-   "ggpark-1200.avif 151KB",
-   "ggpark-1200.webp 241KB"
   ]
  },
  "hill": {

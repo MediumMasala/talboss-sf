@@ -270,9 +270,15 @@ export function Stage() {
     }
     headingRef.current?.focus({ preventScroll: true });
     if (mode === "letter") {
-      const h = headingRef.current?.getBoundingClientRect();
-      if (h && (h.top < 0 || h.bottom > window.innerHeight * 0.8)) headingRef.current?.scrollIntoView({ behavior, block: "center" });
-      return;
+      // The next step sits under the letter, below the fold: once it has mounted (after the 220 ms exit), bring its heading up and focus it.
+      const t = setTimeout(() => {
+        const h = headingRef.current;
+        if (!h) return;
+        const r = h.getBoundingClientRect();
+        if (r.top < 0 || r.bottom > window.innerHeight * 0.85) h.scrollIntoView({ behavior, block: "center" });
+        h.focus({ preventScroll: true });
+      }, reduced() ? 0 : 240);
+      return () => clearTimeout(t);
     }
     const r = cardRef.current?.getBoundingClientRect();
     if (r && window.innerWidth < 1024 && (r.top < 0 || r.top > window.innerHeight * 0.5)) cardRef.current?.scrollIntoView({ behavior, block: "start" });
@@ -343,7 +349,9 @@ export function Stage() {
       : await Promise.race([fetchPitch(pitchBody({ answer })), sleep(PITCH_WAIT_MS).then(() => null)]);
     if (p) pitchReq.current = Promise.resolve(p);
     dispatch({ type: "sharpen", state: "done", pitch: p });
-    if (!p) dispatch({ type: "error", message: E.error });
+    if (!p) return dispatch({ type: "error", message: E.error });
+    // Their words are in the letter (highlighted just above); carry on to the resume step underneath it.
+    dispatch({ type: "go", step: "resume" });
   };
 
   const begin = async (body: Record<string, string>) => {
@@ -504,7 +512,7 @@ export function Stage() {
           <m.div key="frame" {...reveal(0.8)} className="relative lg:min-h-[max(100svh,800px)]">
             {/* The opening frame: a photograph and one word. */}
             <div className="relative aspect-[4/5] overflow-hidden md:aspect-[2.39/1] lg:absolute lg:inset-0 lg:aspect-auto">
-              <Photo k="reader" priority pushIn tallOnPhone className="absolute inset-0" />
+              <Photo k="window" priority pushIn tallOnPhone className="absolute inset-0" />
               <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-7 sm:px-8 lg:px-14 lg:pr-[540px] lg:pb-16">
                 <TitleLines preview={s.preview} />
               </div>
@@ -989,21 +997,21 @@ function CastingCard({ profile }: { profile: Profile }) {
           {profile.location && <p className="t-mono mt-2 text-ink-2">{profile.location}</p>}
         </div>
       </div>
-      {profile.headline && <p className="mt-4 line-clamp-3 text-[15px] leading-[1.5] text-ink">{profile.headline}</p>}
+      {profile.headline && <p className="mt-4 text-[15px] leading-[1.5] text-ink [overflow-wrap:anywhere]">{profile.headline}</p>}
       {exp.length > 0 && (
-        <ul className="mt-4 space-y-1.5">
+        <ul className="mt-4 space-y-2.5">
           {exp.map((e, i) => (
-            <li key={`${e.company}-${i}`} className="flex items-baseline justify-between gap-3 text-[14px] leading-snug">
-              <span className="min-w-0 truncate text-ink">
+            <li key={`${e.company}-${i}`} className="text-[14px] leading-snug">
+              <span className="block text-ink [overflow-wrap:anywhere]">
                 {e.title}
                 <span className="text-ink-2">, {e.company}</span>
               </span>
-              {e.duration && <span className="shrink-0 font-mono text-[11.5px] text-ink-2">{e.duration}</span>}
+              {e.duration && <span className="mt-0.5 block font-mono text-[11.5px] text-ink-2">{e.duration}</span>}
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-4 truncate font-mono text-[11.5px] text-ink-2">{profile.url.replace(/^https?:\/\/(www\.)?/, "")}</p>
+      <p className="mt-4 font-mono text-[11.5px] break-all text-ink-2">{profile.url.replace(/^https?:\/\/(www\.)?/, "")}</p>
     </div>
   );
 }
