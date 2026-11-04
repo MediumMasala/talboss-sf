@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { site } from "@/content/site";
-import { getStorage, type Application, type ResumeSubmission } from "@/lib/storage";
+import { cloudflareEnv, getStorage, type Application, type ResumeSubmission } from "@/lib/storage";
+import { readPhotoLink } from "@/lib/linkedin";
+import { syncLead } from "@/lib/leads";
+import { waitUntil } from "@/lib/env";
 import { extractContact } from "@/lib/extract";
 import { checkResumeFile } from "@/lib/validation";
 
@@ -47,7 +50,8 @@ function readApplication(raw: unknown): Application | null {
     linkedinUrl: /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\/in\//i.test(url) ? url : null,
     linkedinStatus: status === "confirmed" || status === "typed" ? status : "skipped",
     // Keep the confirmed card only if it's a sane size; never drop the application over it.
-    // The photo is shown only to the person on "Is this you?"; it is never stored with the application.
+    // The signed proxy link is dropped from the JSON; the LinkedIn photo URL behind it goes to applications.linkedin_photo
+    // (for the leads desk), set in POST below.
     linkedinProfile:
       r.linkedinProfile && typeof r.linkedinProfile === "object" && JSON.stringify(r.linkedinProfile).length < 20_000
         ? { ...(r.linkedinProfile as Record<string, unknown>), photo: undefined }
@@ -55,6 +59,17 @@ function readApplication(raw: unknown): Application | null {
     workAuth: null,
     email: validEmail(str("email", 254).toLowerCase()) ? str("email", 254).toLowerCase() : null,
   };
+}
+
+/** The media.licdn.com URL behind a photo link minted by /api/linkedin/poll, or null (unsigned, foreign or missing). */
+async function photoFromLink(secret: string, link: unknown): Promise<string | null> {
+  if (typeof link !== "string" || !link || link.length > 4000) return null;
+  try {
+    const q = new URL(link, "https://local.invalid").searchParams;
+    return await readPhotoLink(secret, q.get("u"), q.get("s"));
+  } catch {
+    return null;
+  }
 }
 
 function parseJson(value: FormDataEntryValue | null): unknown {
@@ -88,12 +103,15 @@ export async function POST(request: Request) {
   // Honeypot: real people never see this field. Pretend it worked.
   if (form.get("company_website")) return Response.json({ ok: true, id: "ok", email: null });
 
+  const rawApplication = parseJson(form.get("application"));
   let application: Application | null = null;
   try {
-    application = readApplication(parseJson(form.get("application")));
+    application = readApplication(rawApplication);
   } catch {
     application = null;
   }
+  // The card's photo is our signed proxy link (/api/linkedin/photo?u=&s=); keep the LinkedIn URL behind it for /leads.
+  const photo = (rawApplication as { linkedinProfile?: { photo?: unknown } } | null)?.linkedinProfile?.photo;
 
   // The resume is optional. An empty file input (no name, no bytes) counts as no resume.
   const picked = form.get("resume");
@@ -140,12 +158,18 @@ export async function POST(request: Request) {
     consent: { privacy: site.legal.privacyUrl, terms: site.legal.termsUrl },
   };
 
+  const env = await cloudflareEnv();
+  if (application && env?.LINK_SECRET) application.linkedinPhoto = await photoFromLink(env.LINK_SECRET, photo);
+
   try {
     await (await getStorage()).save(submission, bytes, application);
   } catch (error) {
     console.error("[upload] storage failed", error instanceof Error ? error.message : "unknown");
     return fail(500, errors.server);
   }
+
+  // Into the team's Google Sheet, after the reply. If it fails the row stays pending for /api/leads/resync.
+  if (env) await waitUntil(syncLead(env, new URL(request.url).origin, submission.id));
 
   return Response.json({ ok: true, id: submission.id, email: submission.email || null });
 }

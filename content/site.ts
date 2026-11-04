@@ -24,7 +24,6 @@ const claims = {
 const askTal = "Ask Tal to represent you";
 const pasteLink = "Paste my LinkedIn link";
 const pasteLinkInstead = "Paste my LinkedIn link instead";
-const free = "Free for you. Companies pay us when they hire someone we introduced.";
 
 export const site = {
   name: BRAND_NAME,
@@ -38,9 +37,9 @@ export const site = {
       "Tal is a talent agent for engineers, researchers, PMs and designers, for roles in San Francisco, the Bay Area, and remote. We ask you before anyone hears your name, and it's free for you.",
   },
 
-  /** The one funding claim. Top bar and footer only. */
+  /** The one funding claim. The pinned bar above the nav only (v4.1: cut from the footer). */
   funding: {
-    line: "We have raised $7 million from Peak XV (formerly Sequoia Capital).",
+    line: "We’ve raised $7 million from Peak XV (formerly Sequoia Capital).",
   },
 
   /** Resume upload rules and messages (resume step, app/api/upload, lib/validation). */
@@ -63,7 +62,7 @@ export const site = {
       multiple: "One file at a time, please.",
       network: "We couldn't reach Tal. Check your connection and try again.",
       server: "Something went wrong on our side. Please try again in a minute.",
-      tooBigForServer: "That file is too big to upload. A PDF under 4 MB will work.",
+      tooBigForServer: "That file is too big to upload. A PDF under 5 MB will work.",
     },
     /** Under the drop area and the email field. Links come from `legal`. */
     consent: { before: "By continuing, you agree to our", privacy: "Privacy Policy", and: "and", terms: "Terms" },
@@ -80,11 +79,11 @@ export const site = {
       siteName: BRAND_NAME,
     },
 
-    /** Social card text (the OG image is a generated still with "Talent."). */
+    /** Social card text. The OG image is the hero: the metallic tal wordmark over a glowing skyline at night. */
     og: {
-      line: "Talent.",
-      sub: "Tal is a talent agent, now opening in San Francisco.",
-      alt: "The word Talent. over a black and white photograph, with the line: Tal is a talent agent, now opening in San Francisco.",
+      line: "tal",
+      sub: "The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
+      alt: "The silver tal wordmark in a black sky above a glowing city skyline, with the line: The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
     },
 
     /** Top nav (landing) and header (flow). Funding line: site.funding.line. */
@@ -94,96 +93,110 @@ export const site = {
       questions: "Questions?",
       cta: askTal,
     },
-    sound: {
-      off: "SOUND OFF",
-      on: "SOUND ON",
-      turnOn: "Turn sound on",
-      turnOff: "Turn sound off",
-    },
-    /** Mobile bottom dock. */
-    dock: askTal,
 
     /* ------------------------------ Landing ------------------------------ */
 
-    /** L1. Hero. */
+    /** L1. Hero (Figma 4:43 / 5:65). The metallic tal wordmark is the headline; this is the line under it. */
     hero: {
-      word: "Talent.",
-      sub: "Tal is a talent agent for engineers, researchers, PMs and designers, now opening in San Francisco.",
+      sub: "The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
       cta: askTal,
-      note: free,
+      note: "Free for you. Companies pay when they hire.",
     },
 
-    /** L2. Glass chat card. An illustration, so it names no real company. */
+    /** L2. Glass chat card (4:80). Names no real company. The caption under the card says what it is. */
     chat: {
-      label: "An example",
       tal: "Tal",
-      you: "You",
+      role: "Your talent agent",
+      caption: "What a week with Tal looks like. Every intro waits for your yes.",
+      /** The thread types itself in when it scrolls into view. `after` is the pause before each message (ms). */
       messages: [
-        { from: "tal", text: "Found 3 roles that fit you this week." },
-        { from: "tal", text: "Staff engineer, Series B payments company, San Francisco." },
-        { from: "you", text: "Yes to the payments one. No to the other two." },
-        { from: "tal", text: "Intro sent to the founder. They'll write to you directly." },
-      ] as { from: "tal" | "you"; text: string }[],
+        {
+          from: "tal",
+          meta: "Tal · Monday",
+          text: "Three new roles for you. Two in SF, one remote.",
+          roles: [
+            ["Staff engineer", "a Series B payments company"],
+            ["Founding engineer", "a seed-stage dev tools company"],
+            ["ML engineer", "a Series A health company"],
+          ],
+          after: 400,
+        },
+        { from: "you", text: "Yes to the payments one. No to the other two.", after: 1500 },
+        { from: "tal", meta: "Tal · Tuesday", text: "Intro sent to the founder. They'll reply here.", after: 1100 },
+      ] as { from: "tal" | "you"; meta?: string; text: string; roles?: [string, string][]; after: number }[],
+      typing: "Tal is typing",
     },
 
-    /** L3. White card with four stats. Each claim number appears here and nowhere else. */
+    /** L3. Behind Tal (white card 4:124). Each claim number appears here and nowhere else. */
     stats: {
       heading: "Behind Tal",
+      body: "Tal just opened in San Francisco. Behind it is a network of 300,000+ tech professionals and 5,000+ AI and consumer startups, and a team that reads every profile.",
       items: [
-        { value: claims.network, label: "tech professionals in our network" },
+        { value: claims.network, label: "tech professionals" },
         { value: claims.startups, label: "AI and consumer startups" },
-        { value: "6 months", label: "of representation" },
-        { value: "$0", label: "in fees for you" },
       ],
-      /** One line under the stats. The only Sarvam mention. */
-      origin:
-        "Tal is built in Bengaluru by the team behind Grapevine and Round1. An engineer Round1 placed at Sarvam AI went on to become its CTO.",
     },
 
-    /** L4. How it works, numbered 01 to 04. */
+    /** The product mock inside the Behind Tal card (DS/Product Mock · Roles 19:923). */
+    mock: {
+      who: "Tal",
+      role: "Your talent agent",
+      eyebrow: "Monday · picked for you",
+      title: "3 roles that fit you this week",
+      yes: "Yes",
+      roles: [
+        { title: "Staff engineer", company: "Series B payments company", where: "San Francisco" },
+        { title: "Founding engineer", company: "Seed-stage dev tools", where: "Remote" },
+        { title: "ML engineer", company: "Series A health", where: "Bay Area" },
+      ],
+      notice: { who: "Tal", when: "now", title: "Intro sent to the founder.", body: "They'll write to you directly." },
+    },
+
+    /** L4. How it works, numbered 01 to 04 (4:154). */
     how: {
       heading: "How it works",
+      sub: "Three questions now. Tal does the rest.",
       steps: [
-        { title: "Tell Tal who you are", body: "Your name, company and title. It takes a minute." },
-        { title: "Tal finds your LinkedIn", body: "You confirm it's you. A resume is optional." },
-        { title: "Tal emails you roles that fit", body: "One role at a time, in San Francisco, the Bay Area, or remote." },
-        { title: "You say yes, Tal makes the intro", body: "Nobody hears your name until you say yes." },
+        { title: "Tell Tal who you are", body: "Your name, where you work and your title. That's all it asks." },
+        { title: "Tal finds your LinkedIn", body: "Your photo, roles and history fill in by themselves." },
+        { title: "Tal emails you roles that fit", body: "Only roles at AI and consumer startups that match what you do." },
+        { title: "You say yes, Tal makes the intro", body: "Nobody hears your name until you do." },
       ],
     },
 
-    /** L5. The terms, a short dark card. `paragraphs(date)` takes the computed end date, e.g. "4 May 2027". */
-    terms: {
-      heading: "The terms",
-      paragraphs: (date: string) => [
-        free,
-        "We ask you before your name goes to anyone.",
-        `We represent you for six months, until ${date}. Then we ask if you'd like us to keep going. If we don't hear back, we stop.`,
-        "Ask at support@gvine.app and we'll delete your profile and resume.",
-      ],
-    },
-
-    /** L6. Questions. Six, each answer two sentences or fewer. */
-    faq: {
-      heading: "Questions",
-      items: [
-        ["Where are the roles?", "In San Francisco, the Bay Area, and remote."],
-        ["I'm not looking right now. Should I sign up?", "Yes. You keep your job, and we only email you when a role fits."],
-        ["Will my company find out?", "Not from us. Your name goes to a company only after you say yes to that role."],
-        ["How will I hear from Tal?", "By email, one role at a time. You reply yes or no."],
-        ["What does it cost?", "Nothing. Companies pay us when they hire someone we introduced."],
-        ["What happens after six months?", "We ask if you'd like us to keep going. If you don't reply, we take it you're not looking right now, and we stop."],
+    /** L5. The deal (glass card 22:1165). Each row leads in white and continues in 64 % white. */
+    deal: {
+      heading: "The deal",
+      rows: [
+        ["Free for you.", " Companies pay Tal when they hire."],
+        ["Tal asks before every introduction.", " Nobody hears your name until you say yes."],
+        ["Tal represents you for six months.", " If you go quiet, Tal assumes you're not looking and stops."],
+        ["Roles are in San Francisco, the Bay Area, and remote.", ""],
       ] as [string, string][],
     },
 
-    /** L7. Footer (giant metallic "tal"). Funding: site.funding.line. Email: site.legal.supportEmail. */
+    /** L6. Questions (4:195). Each answer two sentences or fewer. */
+    faq: {
+      heading: "Questions",
+      items: [
+        ["Who is Tal for?", "Engineers, researchers, PMs and designers in San Francisco, the Bay Area or remote."],
+        ["Does it cost anything?", "Nothing. Companies pay Tal when they hire someone it introduced."],
+        ["Will my employer find out?", "Not from Tal. Your name goes to a company only after you say yes to that role."],
+        ["Which companies does Tal work with?", "AI and consumer startups, from seed to late stage. Tal only sends you roles that fit what you do."],
+        ["What happens after six months?", "Tal asks if you'd like it to keep going. If you don't reply, it takes it you're not looking right now, and stops."],
+        ["How do I delete my data?", "Write to support@gvine.app and Tal deletes your profile and resume."],
+      ] as [string, string][],
+    },
+
+    /** L7. Footer (4:224) and the giant wordmark. Email: site.legal.supportEmail. */
     credits: {
       cta: askTal,
-      made: "Made in Bengaluru by the team behind Grapevine",
+      copyright: "© 2026 Tal",
       privacy: "Privacy",
       terms: "Terms",
     },
 
-    /** Logo row caption, only if a logo row is shown. India bosses; never implies US openings. */
+    /** Logo marquee caption (21:965). India bosses; never implies US openings. */
     proofLine: "Bosses from these companies hire on Tal",
 
     /* -------------------------------- Flow -------------------------------- */
@@ -198,6 +211,8 @@ export const site = {
       /** Shared by every question screen. */
       continue: "Continue",
       enterHint: "or press Enter to continue",
+      /** v4.1: the footer's back pill (desktop). */
+      back: "Back",
 
       /** A1. */
       name: {
@@ -223,6 +238,8 @@ export const site = {
       /** A4. */
       search: {
         title: "Finding you on LinkedIn",
+        /** Under the title (v4.1, from the Figma frame). */
+        sub: "Tal is pulling your photo, role and work history so you don't have to type it.",
         wait: "This usually takes about 15 seconds.",
         manual: pasteLinkInstead,
       },
@@ -255,6 +272,9 @@ export const site = {
       rateLimited: {
         title: "Tal is getting a lot of requests from your network",
         sub: "Paste your LinkedIn link to keep going.",
+        /** v4.1: primary action on this state, per the Figma frame. `wait(s)` while the server's Retry-After runs. */
+        retry: "Try again",
+        wait: (s: string) => `Try again in ${s}`,
         manual: pasteLink,
         skip: "Skip, I'll add my resume",
       },
@@ -284,6 +304,8 @@ export const site = {
         drop: "Drop a PDF or DOCX, or click to choose",
         cta: "Continue",
         sending: "Saving your resume",
+        /** v4.1: under a chosen file's name. */
+        replace: "Click to choose another",
       },
       /** A6b. Reached from the quiet link under the drop area. */
       noResume: {
@@ -297,17 +319,19 @@ export const site = {
         emailMissing: "Add your email to continue.",
         emailInvalid: "That email doesn't look right.",
         cta: "Continue",
+        sending: "Saving",
         back: "Add a resume instead",
       },
 
-      /** A7. Their name, set large, then the credit line and three sentences. */
+      /** A7 (Figma 3:661 / 5:917). Their name, set large, the credit caps, one line about what's ahead, three chips. */
       done: {
         /** `date` like "4 May 2027". Set in tracked caps by CSS. */
         credit: (date: string) => `Represented by Tal · until ${date}`,
-        next: "We'll read your profile and start looking for roles that fit.",
-        email: (email: string) => `When one does, we'll email you at ${email}.`,
-        noEmail: "We couldn't find an email on your resume. Add one so we can write to you.",
-        private: "Nobody hears your name until you say yes.",
+        sub: "Tal is reading your profile now. Roles in San Francisco, the Bay Area and remote will reach your inbox as they fit, and every introduction waits for your yes.",
+        /** The three chips that float up under the line. */
+        places: ["San Francisco", "Bay Area", "Remote"],
+        email: (email: string) => `Tal will write to ${email}.`,
+        noEmail: "We couldn't find an email on your resume. Write to support@gvine.app so Tal can reach you.",
         close: "Done",
       },
     },

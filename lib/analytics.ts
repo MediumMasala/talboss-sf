@@ -4,22 +4,24 @@
  *   import mixpanel from "mixpanel-browser";
  *   mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN!);
  *   ...then inside track(): mixpanel.track(event, props);
+ *
+ * Funnel (v4.1): landing_view → flow_start → step_view (one per screen, prop `step`) → linkedin_found →
+ * linkedin_confirmed → resume_added | resume_skipped → done. The rest are diagnostics.
  */
 
 export type AnalyticsEvent =
-  | "resume_selected"
+  | "landing_view"
+  | "flow_start"
+  | "step_view"
+  | "linkedin_found"
+  | "linkedin_confirmed"
+  | "linkedin_rejected"
+  | "linkedin_failed"
+  | "resume_added"
   | "resume_rejected"
-  | "resume_uploaded"
+  | "resume_skipped"
   | "upload_failed"
-  | "match_shown"
-  | "jump_to_active_upload"
-  | "sticky_bar_click"
-  | "select_lookup_started"
-  | "select_lookup_found"
-  | "select_lookup_failed"
-  | "select_profile_confirmed"
-  | "select_profile_rejected"
-  | "select_apply_click";
+  | "done";
 
 export type AnalyticsProps = Record<string, string | number | boolean | string[] | null | undefined>;
 

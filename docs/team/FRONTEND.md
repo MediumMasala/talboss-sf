@@ -1,164 +1,110 @@
-# FRONTEND (v3)
+# Frontend (v4.1, 5 Nov 2026)
 
-Owner: frontend designer-engineer. 4 Nov 2026.
+The Tal US site, built to the Figma file **Tal US · v4** (`QjHT7mWSNvgeAuiQehZZNJ`) in the Tal Web Design System: black and white, the system font with Inter as the fallback, pill buttons, glass cards, one question per screen. The study behind the motion choices, with measured timings from J&J, Dex, Zero, Linear, Vercel, Stripe, Lusion and our India site, is `FRONTEND_STUDY.md`.
 
-## Step 0: the interaction study
+## Run it
+```bash
+npx next dev -p 3217                                   # http://localhost:3217
+npm run build && npx next start -p 3218                # production build
+./scripts/shots.sh                                     # every screen at 1440 and 390 → docs/team/shots-v4/ (needs dev on 3217)
+node scripts/art.mjs && node scripts/og.mjs            # art → public/art (AVIF + WebP, 3 widths); OG card
+```
+npm always with `--cache /Users/sanchittripathi/.claude/jobs/17f7f79e/tmp/npm-cache`.
 
-How I studied them: headless Chrome over CDP (`~/.claude/jobs/17f7f79e/tmp/fe-study.mjs`, extending Steve's `steve-frames.mjs`). On each site it waited for the hero, took two frames 1.5 s apart (does it breathe?), swept the mouse corner to corner (does it follow you?), hovered five kinds of element and read their computed styles at 0, 120 and 450 ms (what changes, how fast, which curve), wheeled down one and a half screens at a time and shot each screen at 110 ms and 900 ms (how things arrive), fast-scrolled to the bottom, then re-ran at 390 px. Site actions: clicked the Tal Boss / Tal Select pill and shot it at 150, 550 and 2,000 ms; drew a circle on Zero with the mouse held down; scrolled Jack & Jill's video carousel into view, hovered and clicked a clip. No logins, no forms, cookie banners left unanswered. Frames and per-site JSON are in `~/.claude/jobs/17f7f79e/tmp/fe-study/` (`SHEET-<site>.jpg` for the overview).
+## Architecture
+```
+app/
+  layout.tsx            fonts (Inter via next/font, not preloaded), metadata. No providers: the landing ships no animation library.
+  globals.css           DS tokens (surface/000…1100, glass, hairline, metal), type classes, pills, glass + glow, grain,
+                        wordmark + sheen, marquee, hero entrance, caret, reduced-motion overrides
+  page.tsx              the landing, server component; client islands only where something moves
+  start/page.tsx        the flow
+  preview/page.tsx      dev-only contact sheet (404 in production)
+components/
+  ds/                   LogoTile, TalAvatar, Magnetic, Wordmark, HeroField, Progress, useGlow
+  landing/              RaisedBar, Nav, Hero, Marquee, Chat, BehindTal (+ CountUp, ProductMock), How, Deal, Faq, Footer,
+                        StartLink (CTA + wipe), SmoothScroll (Lenis), LandingView (analytics), useSeen
+  flow/                 Flow (state machine + screens), Done, ProfileCard, LinkedInVisual, api (fetch + honest progress),
+                        motion (shared transitions), mock (preview data)
+content/site.ts         every word (components read only from here)
+lib/analytics.ts        track(): no-op, logs in dev
+```
+**Dependencies added:** `lenis` only. `framer-motion` (already there) is used **only by the flow** (`LazyMotion features={domMax}` inside `Flow`, synchronous, because a `layoutId` node only gets a projection if the feature is loaded when it mounts). The landing is CSS transitions, CSS scroll-driven animations and ~1 KB of vanilla pointer code. That is what got Lighthouse desktop from 77 to 100 and mobile to 96–97.
 
-**Tal India (tal-boss-web.vercel.app).** It breathes. Two frames 1.5 s apart differ: about thirty rounded face tiles drift on their own, and they move again when the mouse crosses the screen, so the crowd feels aware of you. Hovers are 160 ms on `cubic-bezier(0.16,1,0.3,1)`, a fast-out expo, so a button answers before you finish arriving (the nav link fills `#F5F5F8`, the dark CTA brightens to 1.12). The best moment is the pill: click Tal Select and by 150 ms the whole page is already night, by 550 ms the chat thread ("Pari · Tal Select Partner: Sent a shortlist of top 8…") has settled. No navigation, no reload; the room changes around you. The copy is plain and factual. The footer's giant gradient "tal Select" wordmark is the only heavy thing. At 390 px it holds, nothing overflows. What I felt: a busy, friendly lobby.
+**State (flow):** one `useReducer` in `Flow.tsx` (steps `name → company → title → search → confirm → resume | email → done`, plus `link`, `notFound`, `rateLimited`, `dailyCap`, `searchDown`, `offline`). A `history` stack drives Back (the transient `search` step is skipped). The lookup is the v3 logic, kept: `POST /api/linkedin/start`, poll `GET /api/linkedin/poll` (first poll 300 ms, then 1.7 s, always the latest token, give up at 120 s), `POST /api/linkedin/profile` for "No, not me", branch on `code` (429 `rate_limited` / `daily_cap` with `Retry-After`, 502 search down, 503/no network offline). Upload is the v4 seven-field payload (no pitch, no work authorization); the confirmed profile goes with its signed photo link (the backend keeps the LinkedIn URL behind it).
 
-**Jack & Jill (jackandjill.ai).** Marist serif at 72 px on white, Diatype for everything else. Mouse movement shifts small panels a few pixels (light parallax). Hover feedback is minimal and mostly instant (`0s ease`; "Back to top" just darkens from 72% to 88% ink). Scrolled into view, the testimonial carousel shows four portrait clips of people in real rooms (brick wall, plants, a window), each with a play glyph and yellow burned-in captions; nothing autoplays, every video is `muted`, and a click starts the clip still muted, so you read a person before you'd ever hear them. Further down, three numbers (6,388 / 428,625 / 122,210,821) count up in serif, and small dithered landscape photos are scattered beside "Making the job market run like clockwork". What I felt: the people in the videos are warm; everything around them is a SaaS template.
+## Figma → components
+| Figma | code |
+|---|---|
+| DS/Logo Tile 2:63 | `ds/LogoTile` (44.64 / 40 px, radius 12, shadow 0 4 6 @14 %) |
+| DS/Header 1440 2:165 · 390 2:208 | header in `Flow` (88 / 64 px, "Questions?" outline pill → `/#questions`) |
+| DS/Footer 1440 2:183 · 390 2:224 | `ds/Progress` + Back pill in `Flow` (desktop footer 88 px; phones: progress under the header, CTA pinned bottom) |
+| Input / Hero Field 1:764 | `ds/HeroField` (32/40, 28/34 on phones, DS caret 2 × 36) |
+| A1 2:237 / 5:263, A2 2:294 / 5:340, A3 2:344 / 5:395 | `Flow` screens `name`, `company`, `title` |
+| A4 2:444 / 5:509 | `search` + `flow/LinkedInVisual` |
+| A5 3:275 / 5:571, DS/Profile Card 3:244 | `confirm` + `flow/ProfileCard` |
+| A5b Not found 3:448 / 5:663 | `notFound` (and `link`, same layout, title "What's your LinkedIn link?") |
+| A5b Rate limited 3:523 / 5:731 | `rateLimited` (Try again with the server's Retry-After countdown) |
+| A5b Daily cap 3:592 / 5:793 | `dailyCap` (and `searchDown`, same layout) |
+| A6 3:388 / 5:855, A6b 2:394 / 5:451 | `resume`, `email` |
+| A7 3:661 / 5:917 | `flow/Done` |
+| Landing 4:42 / 5:64 | `app/page.tsx`: RaisedBar 20:964 · Nav 4:46 · Hero 4:43 · Marquee 21:964 (+ DS/Logo Marquee Row 18:1395) · Chat 4:79 · BehindTal 4:123 (+ DS/Product Mock · Roles 19:923) · How 4:154 · Deal 22:1164 · Faq 4:195 · Footer 4:224 |
 
-**Dex (meetdex.ai).** Cream ground, a halftone orange-dusk mountain bleeding into the hero, Easy Grotesk at 60 px. Nothing drifts and nothing follows the mouse; the life is inside the embedded product (a typing caret, job cards with "Why Dex matched you"). Every hover is Tailwind's default `0.15s cubic-bezier(0.4,0,0.2,1)`: the black CTA lightens to 85%, the "raises $5.3M" link fades to 80%. It's app tempo, competent and slightly cold. The bottom is the strongest frame: mountains dissolving under a ghosted outline logo, with a green "All systems operational" dot. At 390 px it stacks cleanly. What I felt: a calm product, a printed landscape doing the soulful work, and no people.
+Deviations from the frames, on purpose: the quiet answer trail above each question (it is how the typed answer travels, see below); a consent line on A6/A6b (legal); the `offline` and `searchDown` states (not drawn; built in the daily-cap layout); copy where `site.ts` differs from the interim Figma text (site.ts wins); A6's Figma progress showed step 1 (a frame slip), the code shows step 5.
 
-**Zero (why.zero.university).** One 900 px viewport, full WebGL, `cursor: none` everywhere and a drawn hand cursor instead. "DRAW A ZERO" in mono with a faint ring; holding the mouse and tracing a circle draws a glowing white stroke that follows the pointer exactly. On release the marble water blooms to white in about 300 ms, a gold spark and "+100 XP" appear at 1.5 s, and by 4 s a swash script "You Believed" has written itself. The wheel doesn't scroll a page, it moves through scenes (a ruler "-100 BZ" across the top, a green hand, petals, "College would… land You"). The dock ("Join Beta", "Beta is open to everyone. Start now") never leaves; its glass button lifts over 0.6 s `ease`. What I felt: I took part before I was told anything, and one gesture got a beautiful answer. Then it turns into a game.
+## Every animation (timing · easing · property)
+Vocabulary (`globals.css` `:root`, `flow/motion.ts`): `--ease-out` `cubic-bezier(0.16,1,0.3,1)` · `--ease-io` `cubic-bezier(0.7,0,0.3,1)` · `--ease-hover` `cubic-bezier(0.25,1,0.5,1)` · spring `travel` (stiffness 260, damping 30, mass 0.9, ≈500 ms) · spring `snap` (420 / 30 / 0.8, ≈350 ms, one small overshoot). Transform and opacity only, except a short blur on entry.
 
-**A24 (a24films.com).** A full-bleed close-up of a face in natural light, Neue Montreal at 225/180 px with -11 px tracking running off the right edge, one small outlined "BUY TICKETS →". It doesn't drift and doesn't follow the mouse. Hovers are instant (`0s`): a nav item just gains an underline, no fade at all. Wheeling down, frames stack like reels (two faces, then a pair), then shelves on thin rules with tiny mono labels. At 390 px the face goes portrait and the title drops to two lines at the bottom of the frame, still set on the image. No sound anywhere. What I felt: confidence. Nothing explains itself; the face is the hero.
+**Landing**
+- Hero art: `scale(1.08) → 1`, 2.4 s, `--ease-out` (CSS, runs before hydration; opacity never animates so the image counts for LCP at once). Grain: a 160 px PNG noise tile at 9 %, stepped on transform, 900 ms `steps(6)` loop. (An SVG feTurbulence grain cost ~700 ms of raster; replaced.)
+- Wordmark (hero 160 / 96 px tall, nav, footer): logo SVG as a mask over the silver ramp. Idle sheen: sweep in 1.6 s on the in-out curve every 5.2 s (first at 0.9 s). Pointer (fine pointers): sheen follows the cursor, 600 ms `--ease-out`; tilt up to 7° Y / 5° X, 500 ms; back to idle 1.2 s after the pointer stops.
+- Hero copy: logo rises 14 px + blur 6 → 0, 1.2 s at 150 ms; sub, CTA, fine print 0.9 s at 550 / 670 / 750 ms.
+- Nav: clear over the hero, wordmark hidden; when the hero logo leaves (IntersectionObserver, 120 px top margin) the bar turns to glass (black 60 % + blur, 300 ms) and the wordmark fades in (opacity + 6 px, 320 ms `--ease-out`).
+- Raised bar: sticky top 0, glass 6 % + hairline + blur; wraps after "Peak XV" on phones.
+- Marquee: two copies of the row, `translateX(0 → −50%)` 42 s linear, infinite; pauses on hover and focus; edge fades 96→320 px (desktop) and 24→96 px (phones); logos at 40 %, 18 px rows on phones.
+- Chat card: starts when 45 % in view. Per Tal message: typing dots (1.2 s loop, 160 ms apart) for its pause (≤ 900 ms), then the bubble lands `y 12 → 0, scale .98 → 1`, 520 ms `--ease-out`; role rows slide in 90 ms apart from 180 ms; your reply after 1.5 s. Pauses are data (`site.select.chat.messages[].after`). All bubbles are laid out from the start (CLS 0). Cursor-following highlight on the glass (`useGlow`, radial 420 px fill + 260 px rim, 300 ms fade).
+- Behind Tal: numbers count up from 0 when 80 % in view, 1.6 s easeOutExpo, tabular figures over an invisible copy of the final value (no width change). Product mock: phone floats `y +36 → −36 px` and the highlight drifts `x −30 % → 30 %` across the card's pass (CSS `animation-timeline: view()`; still elsewhere); at 50 % in view the three "Yes" pills pop (`scale 1 → 1.12 → 1`, 500 ms, 140 ms apart from 500 ms) and the "Intro sent" notification drops in at 1.1 s (`y −24 → 0`, 620 ms `cubic-bezier(.34,1.56,.64,1)`).
+- How it works: a step lights when its top passes 62 % of the viewport and stays lit: hairline fills `scaleX 0 → 1` in white, 700 ms `--ease-io`; number and title 46–50 % → 100 % white (still AA when dim).
+- The deal: glass card with the cursor highlight; the orb floats 6 px / 1.02 on a 9 s ease-in-out loop.
+- Questions: grid-rows `0fr ↔ 1fr`, 360 ms `--ease-io` (no measuring); answer fades 220 ms after 100 ms; the + bar turns 90° and collapses, 240 ms `--ease-out`.
+- Footer: giant wordmark rises `14 % → 0` as it scrolls in (scroll-driven), cropped by a mask that fades to 8 %.
+- Lenis: desktop only (fine pointer, no reduced motion), loaded on the first wheel event, `lerp 0.1`, anchors offset −124 px. Touch is native.
+- Magnetic pills (`ds/Magnetic`, every primary pill): 22 % of the cursor offset, clamped 8 px, follow 140 ms `--ease-out`, release 520 ms `cubic-bezier(.34,1.56,.64,1)`; mouse only.
+- CTA → flow: a white circle grows from the click point (`clip-path`, 560 ms `--ease-io`); `/start` is pushed at 380 ms and fades the wipe off once painted. `/start` is prefetched when idle after load (or on first hover/focus), never on the critical path.
 
-### Three interactions I'm taking
-1. **The answer to one gesture (Zero).** Zero rewards a drawn circle with beauty. Ours rewards typing your name: it's set live in Libre Caslon at the top of the card, keystroke by keystroke, with no lag, crossfading in from the placeholder on first focus. Plus Zero's dock: one action always within reach, as a slim mobile bar that hides while the form is on screen.
-2. **Type set on the photograph, one action per frame (A24).** The opening frame and the done title card are full-bleed graded photographs with the display word set on the image and one plain action. Nav and footer links answer instantly with a hairline underline that draws from the left in 250 ms (`cubic-bezier(0.215,0.61,0.355,1)`), a touch slower than A24's 0 s because ours draws.
-3. **The room changes around you (Tal India's pill).** No page navigation in the flow. The card's steps crossfade in place, and at the end the whole stage dissolves (1.2 s) into the title card with your name, the way the pill turns the India page to night without a reload.
+**Flow**
+- Screen change: enter `y ±18 → 0`, blur 6 → 0, opacity, 520 ms `--ease-out`; exit `y ∓12`, blur 4, 220 ms ease-in; `AnimatePresence mode="popLayout"` so both overlap. Children cascade 60 ms (heading, field, actions).
+- The typed answer travels: the field's visible text is a `layoutId` span (`ans-name`, `ans-company`, `ans-title`); on Continue it flies into the answer trail above the next question on the `travel` spring (measured 730,391 w171 → 778,263 w77 in ~600 ms). On A5 the name flies from the trail into the profile card; on A6 it flies back into the trail. While you type, re-centring is instant so the text never lags the caret.
+- Progress (DS/Footer): five 2 px segments, each fill is `scaleX`, 600 ms `--ease-io`, 40 ms stagger. Done segments full, the current one 25 %; on A4 the fourth segment is the real search progress.
+- Honest search progress (`flow/api.ts` `searchProgress`): each stage the poll reports sets a floor (search 8 %, people 45 %, profile 74 %, found 100 %); inside a stage the bar eases toward the next floor (τ 5 s, ≤ 85 % of the gap); 120 ms clock; on `found` it shows 100 % for 450 ms before A5.
+- LinkedIn visual: magnifier sweeps a small loop (2.8 s ease-in-out), a light band crosses the tile (2.2 s `--ease-io`) while searching.
+- Profile card: springs in (`snap`, y 24 → 0, scale .96 → 1); photo fades in on load (500 ms); experience rows cascade 60 ms from 180 ms.
+- Resume: drop area lifts the icon 2–4 px on hover/drag, scales 1.01 with a solid border while dragging; the chosen file fades in (350 ms).
+- Done: still rises `y 48 → 0` + fade, 1.8 s `--ease-out`; name letter by letter (34 ms stagger, 640 ms each, `y .35em → 0`, blur 8 → 0); credit caps, the line, then the three chips on a spring (stiffness 260, damping 20, 90 ms apart); Done pill last.
 
-### Three I'm refusing
-1. **Zero's custom cursor, WebGL and scroll scenes.** `cursor: none` and a drawn hand make a game; scroll-jacking takes the page away from the reader. Direction bans all three, and an engineer at night wants their own pointer.
-2. **Tal India's mouse-parallax floating faces.** It's the most alive thing we own, but floating real people around a sales line on the US site would read as "these are our members". The India faces get one honest, still contact sheet instead.
-3. **Counting numbers and logo walls (Jack & Jill, Dex).** Odometers and logo strips are the SaaS tells the founder rejected, and the India logos would imply US openings. One number, set once in text. Also refused: Dex's default 150 ms Tailwind ease on everything; that's app tempo, and we work at film tempo.
+**Reduced motion:** CSS animations off (hero, grain, marquee, sheen, caret, dots, orb, scroll-driven parallax), the chat thread, numbers, mock and steps render in their end state, Lenis is never loaded, Magnetic and the wipe do nothing, Motion's `MotionConfig reducedMotion="user"` drops transforms in the flow. `docs/team/shots-v4/landing-*-full-reduced.png` is that page.
 
+## Keyboard and a11y
+Enter continues on every question; Continue/Yes are real buttons; the field gets focus on new screens (fine pointers; on phones the heading gets focus instead so the keyboard doesn't jump mid-transition); headings are focusable for screen readers; errors are `role=alert`, linked with `aria-describedby`; the progress bars are labelled `progressbar`s; FAQ buttons carry `aria-expanded`/`aria-controls`; the marquee is focusable (focus pauses it); focus ring is the DS 2 px #222 (white on dark) with a 2 px gap.
 
-## v3 build (4 Nov 2026)
+## Preview tooling (development only)
+- `/start?state=` `A1 A2 A3 A4 A5 link notfound ratelimited dailycap searchdown offline A6 sending A6b A7` opens any screen with invented data (Aryan Mehta, Halcyon Labs). In preview, actions are simulated (no network); answering your way into A4 walks the search like the prototype (found at ~2.9 s); opening A4 directly holds it still.
+- `/preview`: every screen at 1440 × 900 and 390 × 844 in iframes. `/preview?s=<i>&w=390&bare=1` is one frameless screen (used by `scripts/shots.sh`, since headless Chrome can't go below 500 px wide).
 
-**Files.** Everything lives in `components/tal/`: `Stage.tsx` (the flow: the opening frame, the letter and the title card; the reducer, polling, pitch and upload logic carried over from v2's `Apply.tsx`), `Sections.tsx` (top bar, what an agent does, sample letter, where we come from, terms, questions, end credits), `Controls.tsx` (sound toggle and dock), `Photo.tsx` + `photos.ts` (graded `<picture>` with AVIF/WebP, explicit sizes, grain), `sound.ts`, `flow-store.ts`, `Reveal.tsx`, `fonts.ts`, `preview.ts`. `app/page.tsx` composes them; `app/opengraph-image.jpg` is static. Grade: `scripts/grade-photos.mjs` (one analytic grade, also written as `scripts/tal-grade.cube`), run with `node scripts/grade-photos.mjs`.
+## Analytics (`lib/analytics.ts`, no-op)
+`landing_view` (utm) · `flow_start` (from: hero | nav, and on /start mount with the referrer path) · `step_view` (step = Figma code, A1…A7, A5b-*) · `linkedin_found` (score, seconds) · `linkedin_confirmed` · `linkedin_rejected` · `linkedin_failed` (reason) · `resume_added` · `resume_rejected` · `resume_skipped` (email path) · `upload_failed` · `done`.
 
-**Deleted** (after checking that only `/v2` and `/drop` imported them): `app/v2`, `app/drop`, `components/select/*` (incl. the dot field), `GoldenGate`, `golden-gate-paths`, `Hands`, `BrandMarquee`, `HowItWorks`, `Hero`, `Nav`, `Footer`, `FundingBar`, `ui`, `components/light/*`, `components/resume-drop/*`, `public/img` (hands), `public/tal-boss-wordmark.svg`, and the dynamic `opengraph-image.tsx` (it fetched its own background over HTTP, which hung in dev).
+## How to add a landing section
+1. Copy: add a block under `site.select` in `content/site.ts` (plain lines, Tal is "it").
+2. Make `components/landing/<Name>.tsx` as a **server component**. If something must react to view, use `useSeen` in a small client component and toggle an `is-on` class; animate with CSS transitions on transform/opacity (or `animation-timeline: view()` for scroll-linked, inside `@supports`). Don't import framer-motion on the landing.
+3. Section padding: `px-4 md:px-12`, bottom `pb-24 md:pb-40`; headings 28/34 → 40/48 semibold −1 px; glass cards use `.glass` (+ `.glow` and `useGlow` for the highlight).
+4. Add it to `app/page.tsx` in Figma order, add a reduced-motion rule, and add its node id to the table above.
 
-**Work authorization:** gone from the UI, state, previews, payload and `track()`. Grep of `components/` and `app/` (excluding `app/api`) for `work.?auth|tal select`: no matches.
+## Budgets (measured 5 Nov 2026, `npm run build` + `next start`, Lighthouse 12, local)
+| page | perf | a11y | best practices | SEO | LCP | CLS | TBT |
+|---|---|---|---|---|---|---|---|
+| `/` mobile (3 runs) | 96–97 | 100 | 100 | 100 | 2.5–2.7 s (simulated; observed 0.12 s) | 0 | 10–50 ms |
+| `/` desktop | 100 | 100 | 100 | 100 | 0.7 s | 0 | 0 ms |
+| `/start` mobile | 98 | 100 | 100 | 66 (noindex on purpose) | 2.3 s | 0 | 40 ms |
 
-**How the three interactions were built.**
-- Name as a title: `LiveName` sets the name field in Libre Caslon Text italic at the top of the card on every keystroke (no animation on the letters; size steps down after 13 characters). "Your name" sits at 30% and dims to 20% on first focus (600 ms, film curve), then crossfades out on the first letter. Mono credit "REPRESENTED BY TAL" under it.
-- Type on the photograph: "Talent" at clamp(84px, 17vw, 250px) on the graded frame, 12 s push-in (1.00 to 1.04, linear), title and sentence fade up with CSS (700 ms, 120 ms stagger) so they show before hydration. The type reads because a darkroom burn is baked into the bottom of the title frames, not a CSS gradient.
-- The room changes around you: no navigation. Card steps crossfade in place (600 ms in, 220 ms out). The frame dissolves to the letter on forest night (800 ms) and the letter dissolves to the title card (1.2 s), with the two-note phrase.
-
-**Other motion.** Search shows only the stages the API reported (`search`, `people`, `profile`, `found`, Math.max on the index), each with its real start time and a real clock; "This usually takes about 15 seconds" fades in after 6 s. "Is this you?" develops like a print (opacity plus 6 px blur clearing over 500 ms). The letter types word by word at 35 ms a character, +120 ms at commas, +260 ms at full stops, scaled to finish within 2.5 s; instant under reduced motion and in previews. The person's own words are highlighted once (lamp wash settling to a lamp hairline over 2.4 s). Hovers: 250 ms `cubic-bezier(0.215,0.61,0.355,1)`; links draw a hairline from the left; photos warm about 3% on hover via a soft-light layer (no filters). Grain: one 160 px tile at 5.5%, stepping at 10 fps, still under reduced motion. Sections fade up 700 ms once.
-
-**Sound.** Off by default; `SOUND OFF / SOUND ON` bottom-left in mono, remembered in localStorage (try/catch). No audio element exists until it's on. Room tone fades in over 1.8 s; the felt-piano note plays on "Yes, that's me"; the phrase plays as the title card appears. Opus first, AAC-LC fallback. All original, -24 LUFS (see ASSETS.md).
-
-**Dock.** One fixed bar: the sound toggle always, plus "Ask Tal to represent you" once the stage is off screen (IntersectionObserver), hidden on the title card. Full-width bar on phones; on desktop only the button, bottom-right.
-
-**Logo row (founder decision, overrides DIRECTION.md).** One quiet row at the end of "Where we come from", caption `select.proofLine` ("Bosses from these companies hire on Tal"). Only the twelve verified companies: Google, Microsoft, Amazon, Uber, Salesforce, Adobe, LinkedIn, PayPal, Intuit, Spotify, Razorpay, Sarvam. Each mark is a CSS mask filled with linen at 70%, so it sits inside the grade. No marquee, no tiles. The NVIDIA/Stripe/Databricks/Okta/eBay files in `public/brands/` are not rendered.
-
-**Previews** (dev only, no network): `/?preview=you|search|confirm|notFound|rateLimited|dailyCap|searchDown|offline|pitch|sharpened|resume|noResume|sending|done`. All render cleanly at 1440 and at 390 with no horizontal overflow (checked by the shot script: desktop page 6,987 px, mobile 7,404 px, scrollWidth 390).
-
-**Shots** (fresh after round 1, from the live dev server): `docs/team/frontend-shots-v3/`: `sheet-desktop-states.jpg`, `sheet-mobile-states.jpg` (390 px iframe), `sheet-desktop-page.jpg`, `sheet-mobile-page.jpg`, `sheet-e2e.jpg`, plus every single frame. Scripts: `~/.claude/jobs/17f7f79e/tmp/fe-shots.mjs`, `fe-e2e.mjs`.
-
-**End to end, real API, once:** "Sanchit Tripathi" at "Grapevine" (cached lookup). The profile was found on the first poll (score-matched, correct person), the letter arrived and finished typing about 5 s after "Yes, that's me", the no-resume path with a@example.org posted, and the title card read "Sanchit Tripathi / REPRESENTED BY TAL · UNTIL 4 MAY 2027". The draft: "Sanchit builds Tal Boss at Grapevine after working as an investment professional for consumer tech and marketplaces at Elevation Capital. Earlier, Sanchit helped startups grow their businesses through ads as a Google account manager."
-
-**Round 1 fixes (Steve, STEVE_V3_ROUND_1.md §5).**
-- 1: new hero, Wesley Mc Lachlan's window photograph (Unsplash): no readable third-party text; *Talent* sits on the dark curtain at the lower left. The train-reader photo is deleted.
-- 3: after "Looks good as it is" or "Add it to the letter" (a successful rewrite now carries on to the resume step), the next heading scrolls to centre and takes focus 240 ms after the click (instant under reduced motion). Measured at 1440 x 812: in view and focused at 900 ms.
-- 4: on phones the sound toggle lives in the top bar. The shot script checks every state at 390 for any visible fixed element over an input: none.
-- 5: on the title card the funding line steps aside and the wordmark turns ink.
-- 7: casting-card rows wrap; the duration sits on its own line; no truncation or clamps. The e2e check for ellipsis or overflow on the founder's card returns false.
-- 8: one canopy (Cubbon) in "Where we come from"; Golden Gate Park photo deleted; tighter rhythm. `scrollHeight` at 1440 is 6,987 (mobile 7,404). Unverified logos okta, ebay, nvidia, stripe and databricks deleted from `public/brands/`.
-
-**Gotcha for whoever edits next.** Custom CSS lives in `@layer components` in `globals.css`. Unlayered rules beat Tailwind utilities in v4: an unlayered `.photo { position: relative }` silently beat `absolute`.
-
-**Not done / open.**
-- Lighthouse, LCP on throttled 4G and CLS were not measured on a production build (only the dev server ran). The hero is preloaded per breakpoint (AVIF 32 KB mobile, 37 KB desktop at 1920), all images carry explicit dimensions, and fonts swap.
-- The email/upload subject uses the LinkedIn title when no title was typed ("Sanchit Tripathi, Building at Grapevine"). That's honest but reads oddly; backend or copy may want a rule.
-- The deprecated v2 keys in `site.ts` (`hero.eyebrow`, `how`, `deal`, `about`, `final`, `light`, `howItWorks`, `proof.brands`, `upload.matching/done`) are no longer read by any component, and the copywriter can delete them.
-
----
-
-## v2 notes (superseded, kept for history)
-
-# Frontend: Tal Select US (round 3)
-
-## Round 3 (Steve R2 fixes 1, 2, 5, 6)
-- **1, load is not "not found".** A lookup error with `code: "rate_limited"` or `"daily_cap"` (from start, poll or "not me") opens its own `busy` step, using `apply.rateLimited` or `apply.dailyCap`. "Paste my LinkedIn link" is the primary action and skip is the quiet link. It never reaches "couldn't find you". Previews: `?preview=rateLimited` and `?preview=dailyCap`.
-- **2, the highlight marks the person's idea.** After a rewrite we highlight at most 2 runs of consecutive words that all come from the typed answer (stemmed, so "cuts" matches "cut"). Each run needs 2 or more content words, and stopwords are trimmed from both ends. It no longer diffs against the old draft.
-- **5, the button is always in reach.** The pitch step is tighter on desktop: "Looks good as is" ends at y≈853 at 1440×900, with the needsMore box open. On phones the button rides in a sticky bottom bar, portalled so the panel's transform can't trap it.
-- **6, the mobile nav is one row.** The funding line, verbatim, moves under the hero sub on phones as one quiet line.
-- `needsMore` now picks `needsMoreLinkedIn` when the profile is confirmed and `needsMoreThin` otherwise.
-
-
-## Round 2 (Steve must-fixes 2, 3, 4, 8, 9, 10 and the bold move)
-- **Bold move, the email step.** After "Yes, that's me", a new `pitch` step shows the intro as the email a founder would get: To ("a founder hiring for a <role> role"), From, Subject, then the draft written out as it arrives. Under it is the one-line question (`email.questions[0]`). It is always shown as optional; when `/api/pitch` returns `needsMore:true`, the box turns blue with the `email.needsMore` line above it. Submitting calls `/api/pitch` again with `answer`, dims the old draft ("Rewriting with your answer"), then types the new one, and every word that wasn't in the old draft glows blue and settles to ink. "Looks good as is" goes on to the resume step, which is now framed as the reward ("Want it sharper? Add your resume."). The no-resume path is unchanged. The upload sends the latest draft as `application.pitch` and `pitchSource`. The counter is now five steps: You, LinkedIn, Intro, Resume, Done.
-- **3, the field explains itself.** One sentence at 13.5px next to the "you" point: "Each dot is N people in the Tal network. You're the blue one." N is the live ratio. The ring breathes once on first paint, then holds still. The count-up and the corner legend are gone.
-- **4, done is honest.** The intro lines are dashed and still, with no pulses, and the targets are outlined, not filled. The line under the point becomes "Dashed lines are your first intros, when you say yes." The hero note hides from the intro step on; the nav and final-CTA "Join" buttons hide after done.
-- **8:** the Numbers section is deleted.
-- **9:** the sending ticks fill strictly top-down. Each line is done only when every line above it is.
-- **10, mobile.** The hero is compressed so the first input is fully visible at 390×844, and every step change scrolls the card's top into view on phones. That fixes a StrictMode bug where the page scrolled to the card on load.
-- **2:** `preview.ts` now holds verbatim `/api/pitch` output for the Jordan Avery fixture: the first draft (`source: ai`, `needsMore: true`, the same text as PITCH_SAMPLES.md) and the rewrite after the answer "Cut p99 latency on our inference stack from 900 ms to 180 ms". Both were recorded on 4 Nov.
-- **Tal, the agent (founder decision).** Tal gets an ink point in the field, the counterpart to the blue "you", labelled "Tal" in Geist. During search, the sweep goes out from Tal. Once LinkedIn confirms who you are, a solid ink line joins you to Tal, meaning he represents you. Every dashed intro line then runs from Tal to the startups, never straight from you. The email card's From row carries the same mark. No mascot, no face.
-- New previews: `?preview=pitch` and `?preview=sharpened`.
-
-## Round 1
-
-## Concept in five lines
-1. **The network, drawn to scale.** The hero is a canvas of the Tal network: every dot is a fixed number of people and every hollow square a fixed number of startups. The legend prints the exact ratio for your screen ("1 dot = 25 people").
-2. **You are the one blue point.** It shows up as an open ring that says "you". As you type your name it takes that name, and once LinkedIn confirms you it switches to your LinkedIn name.
-3. **The field follows the real state of the form.** The search sends a sonar ring out from you. The resume step dashes three intro lines toward nearby startups. Done turns them solid, with one quiet pulse on each. Nothing moves just for decoration.
-4. **Everything around it is quiet:** warm paper, ink, an editorial serif, one ultramarine for "you". Trust comes from Mercor and micro1. The nerve comes from zero.university, where the page is a world you're standing in.
-5. **The wait is honest, not dressed up.** There's a real clock, the real stages the server reports, and the literal Google query we ran. The AI pitch arrives last, typed out as a draft.
-
-## What was removed, and why
-- **Michelangelo hands, Golden Gate, scribble underline:** illustrations of "connection" and "SF". The field is the connection, and it holds the visitor's real data, so it doesn't need metaphors.
-- **Hero chips:** they repeated the sub. Their facts now live in "The deal".
-- **Silver shimmering funding bar:** the Sequoia line stays, word for word, as plain text in the nav and footer. A strong fact needs no glare.
-- **Black canvas:** replaced by paper. It's calmer and more editorial, and the dots read as data, not as a starfield.
-- **Logo strip:** dropped. Most of those bosses are in India, and on an SF page the logos read as US openings. It costs trust without adding much.
-- **Compare table:** replaced by `deal`, on the copywriter's advice. The table read as template SaaS.
-- **Timed fake progress** on "sending": every tick now matches a real event. The upload response ticks the first two lines, and the pitch promise resolving ticks the third.
-- **Scroll-reveal animation:** tried, then cut. It hid content from full-page captures and added nothing.
-
-The old components for `/drop` and `/v2` (Hands, GoldenGate, BrandMarquee, light/*) are untouched, and those routes still work.
-
-## Tokens
-Type (`next/font/google`, loaded only on `/` through `components/select/fonts.ts`):
-- **Newsreader** (variable, opsz, with italic): `font-serif`. Used for headlines, step titles, the pitch, numerals. The hero's line one is italic and muted, line two is roman ink.
-- **Geist**: `font-sans`. Used for the interface and body text.
-- **Geist Mono**: `font-mono`. Used for labels, the step counter, the search log, the legend, and the field's canvas labels.
-
-Scale: hero `clamp(46px, 7.4vw, 96px)` / 0.96; step title 28–30; done title 34–38; section index mono 11.5 / 0.1em uppercase; body 15–18.
-
-Colour (`:root:has(.ts-root)` in `app/globals.css`, exposed to Tailwind as `paper`, `paper-2`, `surface`, `line`, `line-strong`, `ink`, `ink-hover`, `body`, `muted`, `placeholder`, `signal`, `danger`):
-| token | value | use |
-|---|---|---|
-| paper | `#f4f2ec` | page, field |
-| paper-2 | `#ebe8df` | wells (pitch card, log, inputs at rest) |
-| surface | `#fffefb` | the form card |
-| line / line-strong | `#e2ddd1` / `#cbc4b4` | hairlines |
-| ink / body / muted | `#0e0e0c` / `#34322d` / `#6f6b62` | type |
-| signal | `#2b3cff` | "you" only: your point, intro lines, active step, the pitch tag |
-| danger | `#c2361f` | errors |
-
-## Components (`components/select/`)
-- `SelectHero.tsx`: nav, field host (pinned to the first screen's height so a taller card never resizes the field), headline, legend, the `data-field-you` anchor, the form card, `hero.note`.
-- `NetworkField.tsx`: one 2D canvas and one rAF loop. It pauses off-screen and in hidden tabs, and under reduced motion it draws one static frame per state change. It uses a seeded layout (no reshuffle) and dims dots under anything marked `data-field-avoid`. Intro lines never cross text or the card.
-- `network-store.ts`: a tiny external store, so the form tells the canvas `{step, label}` without re-rendering anything.
-- `FieldLegend.tsx`: the honest key, with a one-time count-up to `claims.network`.
-- `Apply.tsx`: the whole state machine. you → (manual) → search → confirm / notFound → resume / noResume → sending → done.
-  - Poll timing: the first poll waits 300 ms, later ones 1.7 s. It always uses the latest token and gives up at 120 s.
-  - The search log has three lines (`search.lines`): Google and people search run in parallel, then the profile is read, then a 450 ms "lining it up" beat before the card.
-  - `POST /api/pitch` fires once, when the resume step opens (right after "Yes, that's me", or after a skip or a typed link). The upload waits at most 6 s for it, then sends `application.pitch` and `application.pitchSource`.
-  - No-resume path: a small link under the drop zone (`noResume.link`, or `linkNoLinkedIn` when LinkedIn was skipped) leads to an email field. It submits without a `resume` part and with `application.email`.
-  - Resume: choose a file or drop it anywhere on the card, then press "Send my application". Work auth is optional and can be toggled off again.
-- `ProfileCard.tsx`: the "Is this you?" card (initials when there's no photo) and `MiniProfile`.
-- `Sections.tsx`: How it works, The deal, Numbers, Who's behind this, FAQ, Final CTA, Footer. Each has a mono index on the left and sits on a 12-column grid.
-- `ApplyLink.tsx`: the final CTA scrolls back to the card and focuses its first field.
-- `app/opengraph-image.tsx`: the same idea at 1200×630, with `select.og.*`.
-
-## Preview states (dev only)
-`npx next dev -p 3217`, then open `http://localhost:3217/?preview=<state>`:
-`you`, `search`, `confirm`, `notFound`, `pitch`, `sharpened`, `resume`, `noResume`, `sending`, `done`.
-- The mock person is fictional: Jordan Avery, Senior ML Engineer at Parallax Labs. There's no photo, so the card uses initials. The data lives in `components/select/preview.ts`.
-- Preview mode makes no network calls. Buttons still click through with mocks.
-- It is gated on `process.env.NODE_ENV === "development"`. It also turns off framer transitions and the field's fill-in, so headless Chrome captures each state at rest.
-- Desktop: `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars --window-size=1440,1000 --virtual-time-budget=7000 --screenshot=OUT.png "http://localhost:3217/?preview=done"`
-- Mobile: wrap the URL in a 390px iframe in a local HTML file, and use `--virtual-time-budget=14000`.
-
-## Open items for other roles
-- **Copy (temporary strings in code):** `WAIT_COPY` "Usually about 15 seconds." in `Apply.tsx`. Please move it to `apply.search.wait`, because the lookup is now ~12 s and the current key still says 30–60 s. Smaller ones: the step-counter labels "You / LinkedIn / Resume / Done", "Back" on the manual step, "tap to change" on the picked file, the section label "Numbers" (`stats` has no heading key), the legend lines, and the consent tail ", and to Tal Select representing you for six months."
-- **The search log's detail lines are literal** (`google site:linkedin.com/in "Name" Company`, `people "Name" Company`). They mirror `lib/linkedin.ts`. If the backend changes the query, update `Search` in `Apply.tsx`.
+LCP on mobile is the hero still; Lantern charges it for the ~170 KB of framework JS (React, the App Router) that downloads in parallel. The image itself is a 34 KB AVIF, preloaded at high priority.

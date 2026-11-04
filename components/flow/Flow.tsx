@@ -1,0 +1,820 @@
+"use client";
+
+import { AnimatePresence, domMax, LazyMotion, m, MotionConfig } from "framer-motion";
+import { useCallback, useEffect, useReducer, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
+import { HeroField } from "@/components/ds/HeroField";
+import { LogoTile } from "@/components/ds/LogoTile";
+import { Magnetic } from "@/components/ds/Magnetic";
+import { Progress } from "@/components/ds/Progress";
+import { site } from "@/content/site";
+import { track } from "@/lib/analytics";
+import type { Profile } from "@/lib/linkedin";
+import { checkResumeFile, formatBytes } from "@/lib/validation";
+import { busyCode, EMAIL_RE, LINKEDIN_RE, poll, post, searchProgress, stageIndex, untilDate, UTM_KEYS, type BusyCode, type Reply } from "./api";
+import { Done } from "./Done";
+import { LinkedInVisual } from "./LinkedInVisual";
+import { mockEmail, mockPerson, mockProfile } from "./mock";
+import { cascade, screen, travel } from "./motion";
+import { ProfileCard } from "./ProfileCard";
+
+/* eslint-disable @next/next/no-img-element -- local DS icons */
+
+const S = site.select;
+const A = S.apply;
+const errors = site.upload.errors;
+const accept = [...site.upload.extensions, ...site.upload.mimeTypes].join(",");
+const FIRST_POLL_MS = 300; // cache hits and "not me" answer on the first poll
+const POLL_MS = 1700;
+const GIVE_UP_MS = 120_000;
+
+export type Step =
+  | "name" | "company" | "title" | "search" | "confirm" | "link" | "notFound"
+  | "rateLimited" | "dailyCap" | "searchDown" | "offline" | "resume" | "email" | "done";
+type Status = "confirmed" | "typed" | "skipped";
+
+/** Figma frame codes, used for analytics (`step_view`) and the ?state= preview. */
+export const CODES: Record<Step, string> = {
+  name: "A1", company: "A2", title: "A3", search: "A4", confirm: "A5", link: "A5-link", notFound: "A5b-notfound",
+  rateLimited: "A5b-ratelimited", dailyCap: "A5b-dailycap", searchDown: "A5b-searchdown", offline: "A5b-offline",
+  resume: "A6", email: "A6b", done: "A7",
+};
+/** ?state= values → steps (dev preview). */
+export const PREVIEW: Record<string, Step> = {
+  a1: "name", a2: "company", a3: "title", a4: "search", a5: "confirm", link: "link", notfound: "notFound",
+  ratelimited: "rateLimited", dailycap: "dailyCap", searchdown: "searchDown", offline: "offline",
+  a6: "resume", a6b: "email", sending: "resume", a7: "done", done: "done",
+};
+
+const BUSY_STEP: Record<BusyCode, Step> = { rate_limited: "rateLimited", daily_cap: "dailyCap", search_down: "searchDown", offline: "offline" };
+
+type State = {
+  step: Step;
+  dir: number;
+  history: Step[];
+  name: string;
+  company: string;
+  title: string;
+  url: string;
+  email: string;
+  token: string | null;
+  stage: number;
+  stageAt: number;
+  startedAt: number;
+  profile: Profile | null;
+  next: string | null;
+  status: Status;
+  file: { name: string; size: number } | null;
+  error: string | null;
+  sending: boolean;
+  sentEmail: string | null;
+  retryAt: number;
+  checkingNext: boolean;
+  preview: boolean;
+  /** Bumped by a preview load so the screen swaps without a transition. */
+  epoch: number;
+};
+
+const initial: State = {
+  step: "name", dir: 1, history: [], name: "", company: "", title: "", url: "", email: "", token: null, stage: 0, stageAt: 0,
+  startedAt: 0, profile: null, next: null, status: "skipped", file: null, error: null, sending: false, sentEmail: null,
+  retryAt: 0, checkingNext: false, preview: false, epoch: 0,
+};
+
+type Action =
+  | { type: "field"; key: "name" | "company" | "title" | "url" | "email"; value: string }
+  | { type: "go"; step: Step; error?: string | null; push?: boolean }
+  | { type: "back" }
+  | { type: "searching"; token: string; index: number; restart?: boolean; checkingNext?: boolean }
+  | { type: "found"; profile: Profile; next: string | null }
+  | { type: "busy"; code: BusyCode; retryAfter?: number }
+  | { type: "status"; status: Status }
+  | { type: "file"; file: State["file"] }
+  | { type: "error"; message: string | null }
+  | { type: "sending"; on: boolean }
+  | { type: "done"; email: string | null }
+  | { type: "load"; state: State };
+
+/** Steps that Back skips over (they're transient). */
+const TRANSIENT: Step[] = ["search"];
+
+function reducer(s: State, a: Action): State {
+  switch (a.type) {
+    case "field":
+      return { ...s, [a.key]: a.value, error: null };
+    case "go": {
+      const history = a.push === false || TRANSIENT.includes(s.step) || s.step === a.step ? s.history : [...s.history, s.step];
+      return { ...s, step: a.step, dir: 1, history, error: a.error ?? null, sending: false };
+    }
+    case "back": {
+      const history = [...s.history];
+      const prev = history.pop() ?? "name";
+      return { ...s, step: prev, dir: -1, history, error: null, token: null, sending: false };
+    }
+    case "searching": {
+      const now = Date.now();
+      const index = a.restart ? a.index : Math.max(s.stage, a.index);
+      const history = s.step === "search" || TRANSIENT.includes(s.step) ? s.history : [...s.history, s.step];
+      return {
+        ...s, step: "search", dir: 1, history, token: a.token || null, error: null,
+        stage: index, stageAt: index !== s.stage || a.restart ? now : s.stageAt,
+        startedAt: a.restart ? now : s.startedAt, checkingNext: a.checkingNext ?? s.checkingNext,
+      };
+    }
+    case "found":
+      return { ...s, step: "confirm", dir: 1, profile: a.profile, next: a.next, token: null, checkingNext: false };
+    case "busy":
+      return {
+        ...s, step: BUSY_STEP[a.code], dir: 1, token: null, error: null,
+        retryAt: a.retryAfter ? Date.now() + a.retryAfter * 1000 : 0,
+        history: TRANSIENT.includes(s.step) ? s.history : [...s.history, s.step],
+      };
+    case "status":
+      return { ...s, status: a.status === "skipped" && s.url ? "typed" : a.status, step: "resume", dir: 1, history: [...s.history, s.step], token: null, error: null };
+    case "file":
+      return { ...s, file: a.file, error: null };
+    case "error":
+      return { ...s, error: a.message, sending: false };
+    case "sending":
+      return { ...s, sending: a.on, error: null };
+    case "done":
+      return { ...s, step: "done", dir: 1, sentEmail: a.email, sending: false, history: [...s.history, s.step] };
+    case "load":
+      return { ...a.state, epoch: s.epoch + 1 };
+  }
+}
+
+/** Progress fills per DS/Footer: done steps full, the current one a quarter, LinkedIn = the real search progress. */
+function fillsFor(s: State, searchP: number): { fills: number[]; n: number } {
+  const q = 0.25;
+  switch (s.step) {
+    case "name": return { fills: [q, 0, 0, 0, 0], n: 1 };
+    case "company": return { fills: [1, q, 0, 0, 0], n: 2 };
+    case "title": return { fills: [1, 1, q, 0, 0], n: 3 };
+    case "search": return { fills: [1, 1, 1, Math.max(q, searchP), 0], n: 4 };
+    case "confirm": return { fills: [1, 1, 1, 1, 0], n: 4 };
+    case "resume":
+    case "email": return { fills: [1, 1, 1, 1, s.sending ? 0.8 : q], n: 5 };
+    case "done": return { fills: [1, 1, 1, 1, 1], n: 5 };
+    default: return { fills: [1, 1, 1, q, 0], n: 4 };
+  }
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const clock = (ms: number) => {
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+};
+
+/* ------------------------------------------------------------------ pieces */
+
+function Heading({ title, sub, id }: { title: string; sub?: string; id?: string }) {
+  return (
+    <m.div variants={cascade} custom={0} className="flex w-full max-w-[560px] flex-col items-center gap-2.5 text-center">
+      <h1 id={id} tabIndex={-1} className="t-question text-balance text-s1000 outline-none">
+        {title}
+      </h1>
+      {sub ? <p className="t-sub text-balance text-s700">{sub}</p> : null}
+    </m.div>
+  );
+}
+
+/** Your answers so far, quiet, above the question. Each one is a layoutId, so it arrives from the field you typed it in. */
+function Trail({ items }: { items: { id: string; text: string }[] }) {
+  const shown = items.filter((i) => i.text.trim());
+  if (!shown.length) return null;
+  return (
+    <p className="t-helper -mb-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-s600" aria-label="Your answers">
+      {shown.map((it, i) => (
+        <span key={it.id} className="flex items-center gap-2">
+          {i > 0 ? <span aria-hidden className="text-s400">·</span> : null}
+          <m.span layoutId={it.id} transition={travel} className="whitespace-nowrap">
+            {it.text.trim()}
+          </m.span>
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function Primary({ children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <Magnetic className="flex w-full md:inline-flex md:w-auto">
+      <button className="pill pill-l pill-dark w-full md:w-auto" {...rest}>
+        {children}
+      </button>
+    </Magnetic>
+  );
+}
+
+function Secondary({ children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <Magnetic className="flex min-w-0 flex-1 md:inline-flex md:flex-none">
+      <button className="pill pill-l pill-outline w-full md:w-auto" {...rest}>
+        {children}
+      </button>
+    </Magnetic>
+  );
+}
+
+function TextButton({ children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button type="button" className="text-link" {...rest}>
+      {children}
+    </button>
+  );
+}
+
+function EnterHint() {
+  return <p className="t-helper hidden text-s700 md:block">{A.enterHint.replace("Enter", "⏎")}</p>;
+}
+
+/** Desktop: everything centred as one group. Phone: content from the top, actions pinned to the bottom (DS 390 anatomy). */
+function Screen({ children, actions, onSubmit, label }: { children: ReactNode; actions: ReactNode; onSubmit?: (e: FormEvent) => void; label: string }) {
+  const Tag = onSubmit ? "form" : "div";
+  return (
+    <Tag
+      onSubmit={onSubmit}
+      noValidate
+      aria-label={label}
+      className="flex min-h-full w-full flex-1 flex-col items-center px-6 pt-14 md:justify-center md:px-0 md:pt-0"
+    >
+      <div className="flex w-full flex-1 flex-col items-center gap-8 md:flex-none">{children}</div>
+      <m.div variants={cascade} custom={3} className="sticky bottom-0 mt-8 flex w-full flex-col items-center gap-3 bg-white pb-[max(34px,env(safe-area-inset-bottom))] pt-4 md:static md:w-auto md:bg-transparent md:pb-0 md:pt-0">
+        {actions}
+      </m.div>
+    </Tag>
+  );
+}
+
+/* --------------------------------------------------------------------- flow */
+
+/**
+ * The flow loads Motion's layout features synchronously (domMax): a layoutId element only gets a projection node
+ * if the feature is there when it mounts, and the very first field is one.
+ */
+export function Flow() {
+  return (
+    <LazyMotion features={domMax} strict>
+      <MotionConfig reducedMotion="user">
+        <FlowInner />
+      </MotionConfig>
+    </LazyMotion>
+  );
+}
+
+function FlowInner() {
+  const [s, dispatch] = useReducer(reducer, initial);
+  const [until, setUntil] = useState("");
+  const [now, setNow] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const pickedFile = useRef<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const polls = useRef(0);
+  const viewed = useRef<string>("");
+  const main = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setUntil(untilDate()), []);
+
+  // The landing's white wipe (StartLink) lands here; fade it off once the first screen is painted.
+  useEffect(() => {
+    const wipe = document.getElementById("tal-wipe");
+    if (!wipe) return;
+    wipe.style.transition = "opacity 240ms ease-out";
+    requestAnimationFrame(() => (wipe.style.opacity = "0"));
+    const t = setTimeout(() => wipe.remove(), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Dev preview: /start?state=A1…A7 | link | notfound | ratelimited | dailycap | searchdown | offline | A6b | sending
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const want = new URLSearchParams(window.location.search).get("state")?.toLowerCase();
+    if (!want || !PREVIEW[want]) return;
+    const step = PREVIEW[want];
+    const base: State = { ...initial, ...mockPerson, preview: true, step };
+    const confirmed = { profile: mockProfile, status: "confirmed" as const };
+    const states: Partial<Record<string, Partial<State>>> = {
+      a1: { name: "" },
+      a2: { company: "" },
+      a3: { title: "" },
+      a4: { stage: 1, stageAt: Date.now() - 1500, startedAt: Date.now() - 6000 },
+      a5: { profile: mockProfile, next: "mock" },
+      link: { url: "" },
+      ratelimited: { retryAt: Date.now() + 42_000 },
+      a6: confirmed,
+      a6b: { ...confirmed, email: mockEmail },
+      sending: { ...confirmed, file: { name: "aryan-mehta-resume.pdf", size: 214_000 }, sending: true },
+      a7: { ...confirmed, sentEmail: mockEmail },
+      done: { ...confirmed, sentEmail: mockEmail },
+    };
+    dispatch({ type: "load", state: { ...base, ...states[want] } });
+  }, []);
+
+  // Analytics: flow_start once, step_view per screen.
+  useEffect(() => {
+    track("flow_start", { source: document.referrer ? new URL(document.referrer).pathname : "direct" });
+  }, []);
+  useEffect(() => {
+    if (viewed.current === s.step) return;
+    viewed.current = s.step;
+    track("step_view", { step: CODES[s.step] });
+    if (s.step === "done") track("done", { linkedin: s.status, resume: Boolean(s.file), email: Boolean(s.sentEmail) });
+  }, [s.step, s.status, s.file, s.sentEmail]);
+  // Each new screen: focus its field (fine pointers; on phones that would throw the keyboard up mid-transition),
+  // otherwise its heading, so a screen reader lands on the new question.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const root = main.current;
+      if (!root) return;
+      const current = root.querySelector(`section[data-step="${s.step}"]`);
+      if (!current) return;
+      const field = current.querySelector<HTMLInputElement>("input:not([type=file])");
+      if (field && window.matchMedia("(pointer: fine)").matches) field.focus({ preventScroll: true });
+      else current.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [s.step]);
+
+  // A clock for the honest progress bar and the rate-limit countdown.
+  useEffect(() => {
+    if (s.step !== "search" && !(s.step === "rateLimited" && s.retryAt)) return;
+    const id = setInterval(() => setNow(Date.now()), 120);
+    setNow(Date.now());
+    return () => clearInterval(id);
+  }, [s.step, s.retryAt]);
+
+  // Preview: walk the search the way the prototype does (stage every ~0.9 s, found at ~2.6 s), but only when you
+  // got there by answering; /start?state=A4 holds still for screenshots.
+  useEffect(() => {
+    if (!s.preview || s.step !== "search" || s.history.length === 0) return;
+    const timers = [
+      setTimeout(() => dispatch({ type: "searching", token: "", index: 1 }), 900),
+      setTimeout(() => dispatch({ type: "searching", token: "", index: 2 }), 1800),
+      setTimeout(() => dispatch({ type: "searching", token: "", index: 3 }), 2500),
+      setTimeout(() => dispatch({ type: "found", profile: mockProfile, next: "mock" }), 2950),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [s.preview, s.step, s.history.length]);
+
+  // Poll the lookup while it runs. Always the token from the latest reply.
+  useEffect(() => {
+    if (s.step !== "search" || !s.token || s.preview) return;
+    const token = s.token;
+    const delay = polls.current++ === 0 ? FIRST_POLL_MS : POLL_MS;
+    const timer = setTimeout(async () => {
+      if (Date.now() - s.startedAt > GIVE_UP_MS) {
+        track("linkedin_failed", { reason: "timeout" });
+        return dispatch({ type: "go", step: "notFound", push: false });
+      }
+      const reply = await poll(token);
+      if (reply.state === "pending") {
+        dispatch({ type: "searching", token: reply.token, index: reply.stage ? stageIndex(reply.stage) : 0 });
+      } else if (reply.state === "found") {
+        track("linkedin_found", { score: reply.profile.score, seconds: Math.round((Date.now() - s.startedAt) / 1000) });
+        dispatch({ type: "searching", token: "", index: 3 });
+        await sleep(450); // the bar reaches 100 % and you see it
+        dispatch({ type: "found", profile: reply.profile, next: reply.next });
+      } else {
+        const code = busyCode(reply);
+        track("linkedin_failed", { reason: code ?? reply.state });
+        dispatch(code ? { type: "busy", code, retryAfter: reply.state === "error" ? reply.retryAfter : undefined } : { type: "go", step: "notFound", push: false });
+      }
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [s.step, s.token, s.startedAt, s.preview]);
+
+  const begin = useCallback(
+    async (body: Record<string, string>) => {
+      polls.current = 0;
+      dispatch({ type: "searching", token: "", index: body.url ? 2 : 0, restart: true, checkingNext: false });
+      if (s.preview) return;
+      const reply = await post("/api/linkedin/start", body);
+      const code = busyCode(reply);
+      if (reply.state === "pending") dispatch({ type: "searching", token: reply.token, index: stageIndex(reply.stage) });
+      else if (code) dispatch({ type: "busy", code, retryAfter: reply.state === "error" ? reply.retryAfter : undefined });
+      else dispatch({ type: "go", step: body.url ? "link" : "notFound", push: false, error: reply.state === "error" ? reply.message || null : null });
+    },
+    [s.preview],
+  );
+
+  const lookup = () => begin({ name: s.name.trim(), company: s.company.trim(), role: s.title.trim() });
+
+  /* ------------------------------------------------------------ handlers */
+  const submitName = (e: FormEvent) => {
+    e.preventDefault();
+    if (s.name.trim().length < 2 || !/\s/.test(s.name.trim())) return dispatch({ type: "error", message: A.name.missing });
+    dispatch({ type: "go", step: "company" });
+  };
+  const submitCompany = (e: FormEvent) => {
+    e.preventDefault();
+    if (s.company.trim().length < 2) return dispatch({ type: "error", message: A.company.missing });
+    dispatch({ type: "go", step: "title" });
+  };
+  const submitTitle = (e: FormEvent) => {
+    e.preventDefault();
+    lookup();
+  };
+  const submitLink = (e: FormEvent) => {
+    e.preventDefault();
+    const url = s.url.trim().replace(/^(?!https?:\/\/)/, "https://").replace(/^http:/, "https:");
+    if (!LINKEDIN_RE.test(url)) return dispatch({ type: "error", message: A.link.badUrl });
+    dispatch({ type: "field", key: "url", value: url });
+    begin({ name: s.name.trim(), company: s.company.trim(), role: s.title.trim(), url });
+  };
+  const yes = () => {
+    track("linkedin_confirmed", { score: s.profile?.score ?? null });
+    dispatch({ type: "status", status: "confirmed" });
+  };
+  const notMe = async () => {
+    track("linkedin_rejected", {});
+    if (!s.next) return dispatch({ type: "go", step: "notFound", error: A.confirm.outOfProfiles });
+    polls.current = 0;
+    dispatch({ type: "searching", token: "", index: 2, restart: true, checkingNext: true });
+    if (s.preview) return;
+    const reply = await post("/api/linkedin/profile", { next: s.next });
+    const code = busyCode(reply);
+    if (reply.state === "pending") dispatch({ type: "searching", token: reply.token, index: 2, checkingNext: true });
+    else if (code) dispatch({ type: "busy", code });
+    else dispatch({ type: "go", step: "notFound", push: false, error: A.confirm.outOfProfiles });
+  };
+  const skipLinkedIn = () => {
+    track("linkedin_failed", { reason: "skipped" });
+    dispatch({ type: "status", status: "skipped" });
+  };
+
+  const pick = (files: FileList | null) => {
+    if (!files?.length) return;
+    if (files.length > 1) return dispatch({ type: "error", message: errors.multiple });
+    const file = files[0];
+    const check = checkResumeFile(file);
+    if (!check.ok) {
+      track("resume_rejected", { reason: check.reason });
+      return dispatch({ type: "error", message: check.message });
+    }
+    pickedFile.current = file;
+    dispatch({ type: "file", file: { name: file.name, size: file.size } });
+  };
+  const onDrag = (e: DragEvent, over: boolean) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    setDragging(over);
+  };
+
+  const send = async (via: "resume" | "email") => {
+    const file = via === "resume" ? pickedFile.current : null;
+    const email = via === "email" ? s.email.trim() : null;
+    if (via === "resume" && !file && !s.preview) return fileRef.current?.click();
+    if (via === "email") {
+      if (!email) return dispatch({ type: "error", message: A.noResume.emailMissing });
+      if (!EMAIL_RE.test(email)) return dispatch({ type: "error", message: A.noResume.emailInvalid });
+    }
+    dispatch({ type: "sending", on: true });
+    if (s.preview) {
+      await sleep(1400);
+      return dispatch({ type: "done", email: email ?? mockEmail });
+    }
+    const params = new URLSearchParams(window.location.search);
+    const utm = Object.fromEntries(UTM_KEYS.flatMap((k) => (params.get(k) ? [[k, params.get(k)!]] : [])));
+    const body = new FormData();
+    if (file) body.append("resume", file);
+    body.append("utm", JSON.stringify(utm));
+    body.append(
+      "application",
+      JSON.stringify({
+        name: (s.status === "confirmed" && s.profile?.fullname) || s.name.trim(),
+        company: s.company.trim(),
+        designation: s.title.trim(),
+        linkedinUrl: (s.status === "confirmed" && s.profile?.url) || (s.status === "typed" ? s.url : ""),
+        linkedinStatus: s.status,
+        linkedinProfile: s.status === "confirmed" ? s.profile : null,
+        ...(email ? { email } : {}),
+      }),
+    );
+    const minWait = sleep(1100); // long enough to read "Saving your resume"
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; email?: string | null; error?: string } | null;
+      await minWait;
+      if (!res.ok || !data?.ok) {
+        track("upload_failed", { status: res.status });
+        return dispatch({ type: "error", message: res.status === 413 ? errors.tooBigForServer : data?.error ?? errors.server });
+      }
+      track(file ? "resume_added" : "resume_skipped", { linkedin: s.status, email_found: Boolean(data.email) });
+      dispatch({ type: "done", email: data.email ?? email ?? null });
+    } catch {
+      await minWait;
+      dispatch({ type: "error", message: errors.network });
+    }
+  };
+
+  /* ---------------------------------------------------------------- render */
+  const searchP = s.step === "search" ? searchProgress(s.stage, Math.max(0, now - s.stageAt)) : 0;
+  const { fills, n } = fillsFor(s, searchP);
+  const fullName = ((s.status === "confirmed" && s.profile?.fullname) || s.name).trim();
+  const trailAll = [
+    { id: "ans-name", text: s.name },
+    { id: "ans-company", text: s.company },
+    { id: "ans-title", text: s.title },
+  ];
+  const canBack = s.history.length > 0 && s.step !== "done";
+
+  const screens: Record<Step, () => ReactNode> = {
+    name: () => (
+      <Screen label={A.name.question} onSubmit={submitName} actions={<><Primary type="submit">{A.continue}</Primary><EnterHint /></>}>
+        <Heading title={A.name.question} sub={A.name.sub} />
+        <m.div variants={cascade} custom={1} className="w-full max-w-[560px]">
+          <HeroField id="f-name" value={s.name} onValue={(v) => dispatch({ type: "field", key: "name", value: v })} placeholder={A.name.placeholder} layoutId="ans-name" autoComplete="name" autoCapitalize="words" enterKeyHint="next" error={s.error} errorId="f-name-err" aria-label={A.name.question} />
+        </m.div>
+      </Screen>
+    ),
+    company: () => (
+      <Screen label={A.company.question} onSubmit={submitCompany} actions={<><Primary type="submit">{A.continue}</Primary><EnterHint /></>}>
+        <Trail items={trailAll.slice(0, 1)} />
+        <Heading title={A.company.question} sub={A.company.sub} />
+        <m.div variants={cascade} custom={1} className="w-full max-w-[560px]">
+          <HeroField id="f-company" value={s.company} onValue={(v) => dispatch({ type: "field", key: "company", value: v })} placeholder={A.company.placeholder} layoutId="ans-company" autoComplete="organization" enterKeyHint="next" error={s.error} errorId="f-company-err" aria-label={A.company.question} />
+        </m.div>
+      </Screen>
+    ),
+    title: () => (
+      <Screen label={A.title.question} onSubmit={submitTitle} actions={<><Primary type="submit">{A.continue}</Primary><EnterHint /></>}>
+        <Trail items={trailAll.slice(0, 2)} />
+        <Heading title={A.title.question} sub={A.title.sub} />
+        <m.div variants={cascade} custom={1} className="w-full max-w-[560px]">
+          <HeroField id="f-title" value={s.title} onValue={(v) => dispatch({ type: "field", key: "title", value: v })} placeholder={A.title.placeholder} layoutId="ans-title" autoComplete="organization-title" enterKeyHint="search" error={s.error} errorId="f-title-err" aria-label={A.title.question} />
+        </m.div>
+      </Screen>
+    ),
+    search: () => {
+      const pct = Math.round(searchP * 100);
+      return (
+        <Screen label={A.search.title} actions={<TextButton onClick={() => dispatch({ type: "go", step: "link", push: false })}>{A.search.manual}</TextButton>}>
+          <m.div variants={cascade} custom={0}>
+            <LinkedInVisual searching />
+          </m.div>
+          <Trail items={trailAll} />
+          <Heading title={s.checkingNext ? A.confirm.trying : A.search.title} sub={A.search.sub} />
+          <m.div variants={cascade} custom={2} className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="relative h-1.5 w-[220px] overflow-hidden rounded-[3px] bg-s300 md:w-[320px]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={A.search.title}>
+                <div className="absolute inset-0 origin-left rounded-[3px] bg-s1000 transition-transform duration-300 ease-linear motion-reduce:transition-none" style={{ transform: `scaleX(${searchP})` }} />
+              </div>
+              <p className="w-10 text-left text-[14px] font-medium tabular-nums leading-5 text-s1000">{pct}%</p>
+            </div>
+            <p className="text-[14px] leading-5 text-s700" aria-live="polite">
+              {A.search.wait}
+            </p>
+          </m.div>
+        </Screen>
+      );
+    },
+    confirm: () =>
+      s.profile ? (
+        <Screen
+          label={A.confirm.title}
+          actions={
+            <>
+              <div className="flex w-full gap-3 md:w-auto">
+                <Secondary type="button" onClick={notMe}>{A.confirm.no}</Secondary>
+                <Magnetic className="flex min-w-0 flex-1 md:inline-flex md:flex-none">
+                  <button type="button" className="pill pill-l pill-dark w-full md:w-auto" onClick={yes} autoFocus>
+                    {A.confirm.yes}
+                  </button>
+                </Magnetic>
+              </div>
+              <TextButton onClick={() => dispatch({ type: "go", step: "link" })}>{A.confirm.manual}</TextButton>
+            </>
+          }
+        >
+          <Heading title={A.confirm.title} sub={A.confirm.hint} />
+          <ProfileCard profile={s.profile} nameId="ans-name" />
+        </Screen>
+      ) : null,
+    link: () => linkScreen(A.link.question),
+    notFound: () => linkScreen(A.notFound.title, s.error ?? A.notFound.sub),
+    rateLimited: () => {
+      const left = s.retryAt ? s.retryAt - now : 0;
+      return (
+        <Screen
+          label={A.rateLimited.title}
+          actions={
+            <>
+              <Primary type="button" disabled={left > 0} onClick={lookup}>
+                {left > 0 ? A.rateLimited.wait(clock(left)) : A.rateLimited.retry}
+              </Primary>
+              <TextButton onClick={() => dispatch({ type: "go", step: "link" })}>{A.search.manual}</TextButton>
+            </>
+          }
+        >
+          <m.div variants={cascade} custom={0}><LinkedInVisual /></m.div>
+          <Heading title={A.rateLimited.title} sub={A.rateLimited.sub} />
+        </Screen>
+      );
+    },
+    dailyCap: () => busyScreen(A.dailyCap),
+    searchDown: () => busyScreen(A.searchDown),
+    offline: () => (
+      <Screen
+        label={A.offline.title}
+        actions={
+          <>
+            <Primary type="button" onClick={lookup}>{A.offline.retry}</Primary>
+            <TextButton onClick={() => dispatch({ type: "go", step: "link" })}>{A.offline.manual}</TextButton>
+          </>
+        }
+      >
+        <m.div variants={cascade} custom={0}><LinkedInVisual /></m.div>
+        <Heading title={A.offline.title} sub={A.offline.sub} />
+      </Screen>
+    ),
+    resume: () => (
+      <Screen
+        label={A.resume.title}
+        actions={
+          <>
+            <Primary type="button" onClick={() => send("resume")} disabled={s.sending} aria-busy={s.sending}>
+              {s.sending ? <Saving /> : A.resume.cta}
+            </Primary>
+            <TextButton onClick={() => dispatch({ type: "go", step: "email" })} disabled={s.sending}>
+              {s.status === "skipped" ? A.noResume.linkNoLinkedIn : A.noResume.link}
+            </TextButton>
+            <Consent />
+          </>
+        }
+      >
+        <Trail items={[{ id: "ans-name", text: fullName }]} />
+        <Heading title={A.resume.title} sub={A.resume.sub} />
+        <m.div variants={cascade} custom={1} className="relative w-full max-w-[560px]">
+          <label
+            htmlFor="f-resume"
+            onDragEnter={(e) => onDrag(e, true)}
+            onDragOver={(e) => onDrag(e, true)}
+            onDragLeave={(e) => onDrag(e, false)}
+            onDrop={(e) => {
+              onDrag(e, false);
+              pick(e.dataTransfer.files);
+            }}
+            className={`group flex h-40 w-full flex-col items-center justify-center gap-3 rounded-[16px] border px-6 text-center transition-[border-color,background-color,transform] duration-200 ease-[var(--ease-out)] focus-within:border-s1000 ${
+              dragging ? "scale-[1.01] border-solid border-s1000 bg-s100" : s.file ? "border-solid border-s300 bg-s100" : "border-dashed border-s400 hover:border-s1000"
+            }`}
+          >
+            <input ref={fileRef} id="f-resume" type="file" accept={accept} className="sr-only" onChange={(e) => pick(e.target.files)} aria-describedby="f-resume-hint" />
+            <img src="/ds/file-upload.svg" alt="" width={32} height={32} className={`size-8 transition-transform duration-300 ease-[var(--ease-out)] ${dragging ? "-translate-y-1" : "group-hover:-translate-y-0.5"}`} />
+            {s.file ? (
+              <m.div key={s.file.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col items-center">
+                <p className="max-w-full truncate text-[14px] font-medium leading-5 text-s1000">{s.file.name}</p>
+                <p className="t-helper text-s600">{formatBytes(s.file.size)} · {A.resume.replace}</p>
+              </m.div>
+            ) : (
+              <>
+                <p className="text-[14px] font-medium leading-5 text-s1000">{dragging ? site.upload.idle.dragging : A.resume.drop}</p>
+                <p id="f-resume-hint" className="t-helper text-s600">{site.upload.idle.hint}</p>
+              </>
+            )}
+          </label>
+          <p role={s.error ? "alert" : undefined} className={`t-helper absolute inset-x-0 top-full mt-2 text-center text-danger ${s.error ? "" : "hidden"}`}>
+            {s.error}
+          </p>
+        </m.div>
+      </Screen>
+    ),
+    email: () => (
+      <Screen
+        label={A.noResume.title}
+        onSubmit={(e) => {
+          e.preventDefault();
+          send("email");
+        }}
+        actions={
+          <>
+            <Primary type="submit" disabled={s.sending} aria-busy={s.sending}>{s.sending ? <Saving label={A.noResume.sending} /> : A.noResume.cta}</Primary>
+            <EnterHint />
+            <TextButton onClick={() => dispatch({ type: "back" })}>{A.noResume.back}</TextButton>
+            <Consent />
+          </>
+        }
+      >
+        <Trail items={[{ id: "ans-name", text: fullName }]} />
+        <Heading title={A.noResume.title} sub={A.noResume.sub} />
+        <m.div variants={cascade} custom={1} className="w-full max-w-[560px]">
+          <HeroField id="f-email" type="email" inputMode="email" autoComplete="email" enterKeyHint="done" value={s.email} onValue={(v) => dispatch({ type: "field", key: "email", value: v })} placeholder={A.noResume.emailPlaceholder} error={s.error} errorId="f-email-err" aria-label={A.noResume.emailLabel} />
+        </m.div>
+      </Screen>
+    ),
+    done: () => <Done name={fullName} email={s.sentEmail} until={until} />,
+  };
+
+  // Render helpers, not components: a component defined in here would remount (and drop focus) on every keystroke.
+  function linkScreen(title: string, sub?: string) {
+    return (
+      <Screen
+        label={title}
+        onSubmit={submitLink}
+        actions={
+          <>
+            <Primary type="submit">{A.continue}</Primary>
+            <TextButton onClick={skipLinkedIn}>{A.notFound.skip}</TextButton>
+          </>
+        }
+      >
+        <m.div variants={cascade} custom={0}><LinkedInVisual /></m.div>
+        <Heading title={title} sub={sub} />
+        <m.div variants={cascade} custom={1} className="w-full max-w-[560px]">
+          <HeroField id="f-link" type="url" inputMode="url" autoComplete="url" autoCapitalize="none" enterKeyHint="go" value={s.url} onValue={(v) => dispatch({ type: "field", key: "url", value: v })} placeholder={A.link.placeholder} error={s.error && s.step === "link" ? s.error : null} errorId="f-link-err" aria-label={A.link.question} />
+        </m.div>
+      </Screen>
+    );
+  }
+
+  function busyScreen(copy: { title: string; sub: string; manual: string; skip: string }) {
+    return (
+      <Screen
+        label={copy.title}
+        actions={
+          <>
+            <Primary type="button" onClick={() => dispatch({ type: "go", step: "link" })}>{copy.manual}</Primary>
+            <TextButton onClick={skipLinkedIn}>{copy.skip}</TextButton>
+          </>
+        }
+      >
+        <m.div variants={cascade} custom={0}><LinkedInVisual /></m.div>
+        <Heading title={copy.title} sub={copy.sub} />
+      </Screen>
+    );
+  }
+
+  const isDone = s.step === "done";
+
+  return (
+    <div className={`flex min-h-dvh flex-col ${isDone ? "bg-white" : "bg-white"}`}>
+      <header className="relative z-20 flex h-16 shrink-0 items-center justify-between px-6 md:h-[88px] md:px-12">
+        <LogoTile />
+        <a href="/#questions" className="pill pill-s pill-outline">
+          {S.topBar.questions}
+        </a>
+      </header>
+      {!isDone ? (
+        <div className="md:hidden">
+          <Progress fills={fills} step={n} />
+        </div>
+      ) : null}
+
+      <main ref={main} className="relative flex flex-1 flex-col">
+        <AnimatePresence key={s.epoch} mode="popLayout" initial={false} custom={s.dir}>
+          <m.section
+            key={s.step === "search" ? `search-${s.checkingNext}` : s.step}
+            custom={s.dir}
+            variants={screen}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            data-step={s.step}
+            className="flex w-full flex-1 flex-col"
+          >
+            {screens[s.step]()}
+          </m.section>
+        </AnimatePresence>
+      </main>
+
+      {!isDone ? (
+        <footer className="hidden h-[88px] shrink-0 flex-col md:flex">
+          <Progress fills={fills} step={n} />
+          <div className="flex flex-1 items-center pl-12">
+            {canBack ? (
+              <button type="button" onClick={() => dispatch({ type: "back" })} className="pill pill-l -ml-1 gap-0.5 px-4 text-s1000 hover:bg-s100" style={{ padding: "12px 16px" }}>
+                <img src="/ds/chevron-left.svg" alt="" width={20} height={20} className="size-5" />
+                <span className="px-1">{A.back}</span>
+              </button>
+            ) : null}
+          </div>
+        </footer>
+      ) : null}
+    </div>
+  );
+}
+
+function Saving({ label = A.resume.sending }: { label?: string }) {
+  return (
+    <span className="flex items-center gap-2.5">
+      <span className="relative size-3.5 animate-spin rounded-full border-[1.5px] border-white/30 border-t-white motion-reduce:animate-none" aria-hidden />
+      {label}
+    </span>
+  );
+}
+
+function Consent() {
+  const c = site.upload.consent;
+  return (
+    <p className="t-helper text-center text-s600">
+      {c.before}{" "}
+      <a className="underline underline-offset-2 hover:text-s1000" href={site.legal.privacyUrl} target="_blank" rel="noreferrer">
+        {c.privacy}
+      </a>{" "}
+      {c.and}{" "}
+      <a className="underline underline-offset-2 hover:text-s1000" href={site.legal.termsUrl} target="_blank" rel="noreferrer">
+        {c.terms}
+      </a>
+      .
+    </p>
+  );
+}

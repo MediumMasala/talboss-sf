@@ -1,68 +1,91 @@
 @import "tailwindcss";
 
 /*
- * Tal, the US site (v3). Film tempo, one grade, one lamp.
- * Forest night between photographs, linen for type on dark and for paper, ink on paper,
- * moss for rules and links on light, lamp only for the main action and the live moments.
+ * Tal US, v4.1. The Tal Web Design System, in code: black & white, the system font with Inter as the fallback,
+ * pill buttons, glass cards on dark, one question per screen. Tokens are DS_TOKENS.md, names kept.
  */
 :root {
-  --forest: #14261d;
-  --forest-2: #1a3024; /* a lifted forest for wells and hover */
-  --moss: #3f5b45;
-  --linen: #f6f1e7;
-  --linen-2: #ece5d6; /* paper shadow side */
-  --ink: #1c1b17;
-  --ink-2: #4a473e; /* secondary ink on paper (never on beige: paper is linen) */
-  --lamp: #e3a13b;
-  --lamp-deep: #c98a2a;
-  --danger: #b3412e;
-  --ease-film: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-hover: cubic-bezier(0.215, 0.61, 0.355, 1);
-  color-scheme: dark;
+  --surface-000: #ffffff;
+  --surface-100: #f7f7f7;
+  --surface-300: #ebebeb;
+  --surface-400: #dddddd;
+  --surface-500: #c1c1c1;
+  --surface-600: #8c8c8c;
+  --surface-700: #6a6a6a;
+  --surface-1000: #222222;
+  --surface-1100: #000000;
+  --canvas-dark: #000000;
+  --canvas-dark-2: #0b0b0b;
+  --glass: rgba(255, 255, 255, 0.06);
+  --hairline-dark: rgba(255, 255, 255, 0.12);
+  --text-dark-2: rgba(255, 255, 255, 0.64);
+  --danger: #c13515;
+
+  /* Motion vocabulary (FRONTEND_STUDY.md). */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-io: cubic-bezier(0.7, 0, 0.3, 1);
+  --ease-hover: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* The metal: silver ramp used by the wordmark, the CTA pill and the sheen. */
+  --metal: linear-gradient(180deg, #ffffff 0%, #dbdbdb 52%, #9a9a9a 100%);
+  --pill-metal: linear-gradient(180deg, #ffffff 0%, #d9dce2 55%, #a9aeb8 100%);
 }
 
 @theme inline {
-  --color-forest: var(--forest);
-  --color-forest-2: var(--forest-2);
-  --color-moss: var(--moss);
-  --color-linen: var(--linen);
-  --color-linen-2: var(--linen-2);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-lamp: var(--lamp);
-  --color-lamp-deep: var(--lamp-deep);
+  --color-s000: var(--surface-000);
+  --color-s100: var(--surface-100);
+  --color-s300: var(--surface-300);
+  --color-s400: var(--surface-400);
+  --color-s500: var(--surface-500);
+  --color-s600: var(--surface-600);
+  --color-s700: var(--surface-700);
+  --color-s1000: var(--surface-1000);
+  --color-s1100: var(--surface-1100);
   --color-danger: var(--danger);
+  --color-glass: var(--glass);
+  --color-hair: var(--hairline-dark);
+  --color-dim: var(--text-dark-2);
 
-  /* SF Pro via the system stack on Apple devices (never self-hosted), Inter elsewhere. */
-  --font-sans: -apple-system, BlinkMacSystemFont, var(--font-inter), "Segoe UI", sans-serif;
-  --font-display: var(--font-caslon), "Iowan Old Style", Georgia, serif;
-  --font-name: var(--font-caslon-italic), var(--font-caslon), Georgia, serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  /* SF Pro via the system stack on Apple devices (never shipped), Inter everywhere else. */
+  --font-sans: -apple-system, BlinkMacSystemFont, var(--font-inter), "Segoe UI", Roboto, sans-serif;
 }
 
 @layer base {
   html {
-    background: var(--forest);
     -webkit-text-size-adjust: 100%;
+    background: var(--surface-000);
   }
   body {
-    background: var(--forest);
-    color: var(--linen);
+    background: var(--surface-000);
+    color: var(--surface-1000);
     font-family: var(--font-sans);
-    font-size: 17px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: clip;
+    text-rendering: optimizeLegibility;
+  }
+  html:has(.on-dark),
+  html:has(.on-dark) body {
+    background: #000;
+    color: #fff;
+  }
+  .on-dark ::selection {
+    background: #fff;
+    color: #000;
   }
   ::selection {
-    background: var(--lamp);
-    color: var(--ink);
+    background: #222;
+    color: #fff;
   }
+  /* DS focus ring: 2px #222 with a 2px white gap (Airbnb geometry). On dark, inverted. */
   :focus-visible {
-    outline: 2px solid var(--lamp);
-    outline-offset: 3px;
-    border-radius: 2px;
+    outline: 2px solid var(--surface-1000);
+    outline-offset: 2px;
+  }
+  .on-dark :focus-visible {
+    outline-color: #fff;
   }
   button,
   summary,
@@ -72,200 +95,323 @@
 }
 
 @layer components {
-/* ---------------------------------------------------------------- type */
-.t-display {
-  font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 0.92;
-  font-feature-settings: "liga", "kern";
-}
-.t-name {
-  font-family: var(--font-name);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1;
-}
-.t-mono {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  line-height: 1.5;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.measure {
-  max-width: 64ch;
-}
-
-/* --------------------------------------------- links: a hairline that draws from the left */
-.hairline {
-  background-image: linear-gradient(currentColor, currentColor);
-  background-size: 0% 1px;
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  padding-bottom: 2px;
-  transition: background-size 250ms var(--ease-hover), color 250ms var(--ease-hover);
-}
-.hairline:hover,
-.hairline:focus-visible {
-  background-size: 100% 1px;
-}
-.hairline-on {
-  background-size: 100% 1px;
-}
-.hairline-on:hover {
-  background-size: 0% 1px;
-  background-position: 100% 100%;
-}
-
-/* -------------------------------------------------------------- photographs */
-.photo {
-  position: relative;
-  overflow: hidden;
-  background: var(--forest-2);
-}
-.photo picture {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* Exposure +3% on hover, as light (a screen layer), never a CSS filter. */
-.photo::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: #fff3df;
-  mix-blend-mode: soft-light;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 250ms var(--ease-hover);
-}
-.photo[data-warm]:hover::before {
-  opacity: 0.22;
-}
-/* 35 mm grain: one tiny tile at 5%, flickering at ~10 fps; still under reduced motion. */
-.photo::after,
-.grain::after {
-  content: "";
-  position: absolute;
-  inset: -40px;
-  z-index: 2;
-  pointer-events: none;
-  background-image: url("/photos/grain.png");
-  background-size: 160px 160px;
-  opacity: 0.055;
-  mix-blend-mode: overlay;
-  animation: grain 0.8s steps(8) infinite;
-}
-@keyframes grain {
-  0% { transform: translate(0, 0); }
-  12% { transform: translate(-17px, 9px); }
-  25% { transform: translate(11px, -23px); }
-  37% { transform: translate(-29px, -5px); }
-  50% { transform: translate(23px, 19px); }
-  62% { transform: translate(-7px, 31px); }
-  75% { transform: translate(31px, -13px); }
-  87% { transform: translate(-21px, -27px); }
-  100% { transform: translate(0, 0); }
-}
-/* Title frames: a slow push-in, 1.00 to 1.04 over 12 s, linear. */
-.push-in img {
-  animation: push 12s linear forwards;
-  transform-origin: 60% 55%;
-}
-@keyframes push {
-  from { transform: scale(1); }
-  to { transform: scale(1.04); }
-}
-
-/* --------------------------------------------------------------- paper */
-.paper {
-  background: var(--linen);
-  color: var(--ink);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.5) inset,
-    0 2px 3px rgb(8 18 12 / 0.18),
-    0 30px 60px -28px rgb(8 18 12 / 0.65);
-}
-
-/* ------------------------------------------------------------- the flow */
-.caret {
-  display: inline-block;
-  width: 1px;
-  height: 1em;
-  margin-left: 2px;
-  vertical-align: -0.12em;
-  background: currentColor;
-  animation: blink 1.05s steps(1) infinite;
-}
-@keyframes blink {
-  50% { opacity: 0; }
-}
-.breathe {
-  animation: breathe 1.6s var(--ease-film) infinite alternate;
-}
-@keyframes breathe {
-  from { opacity: 0.35; }
-  to { opacity: 1; }
-}
-/* Their own words, highlighted once: lamp light passing over the line, then settling to a hairline. */
-.own-words {
-  background-image: linear-gradient(rgb(227 161 59 / 0.32), rgb(227 161 59 / 0.32));
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  animation: settle 2.4s var(--ease-film) 0.4s forwards;
-}
-@keyframes settle {
-  to {
-    background-image: linear-gradient(var(--lamp), var(--lamp));
-    background-size: 100% 1px;
-    background-position: 0 100%;
+  /* ------------------------------------------------------------------ type */
+  .t-question {
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 500;
+    letter-spacing: -0.42px;
   }
-}
-/* Title lines fade up: 700 ms, the film curve; delays are set inline (120 ms stagger). */
-.rise {
-  animation: rise 700ms var(--ease-film) both;
-}
-@keyframes rise {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; }
-}
-/* A print developing: opacity and a slight blur clearing over 500 ms. */
-.develop {
-  animation: develop 500ms var(--ease-film) both;
-}
-@keyframes develop {
-  from { opacity: 0; filter: blur(6px); }
-  to { opacity: 1; filter: blur(0); }
+  .t-field {
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 400;
+    letter-spacing: -0.42px;
+  }
+  @media (min-width: 768px) {
+    .t-question {
+      font-size: 32px;
+      line-height: 40px;
+    }
+    .t-field {
+      font-size: 32px;
+      line-height: 40px;
+    }
+  }
+  .t-sub {
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.04px;
+  }
+  .t-helper {
+    font-size: 13px;
+    line-height: 20px;
+    letter-spacing: 0.01px;
+  }
+  .t-eyebrow {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ------------------------------------------------------------- the metal */
+  .metal-text {
+    background: var(--metal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ------------------------------------------------------------- pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 999px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 160ms var(--ease-hover),
+      border-color 160ms var(--ease-hover),
+      color 160ms var(--ease-hover),
+      box-shadow 160ms var(--ease-hover);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pill-l {
+    height: 48px;
+    padding: 0 20px;
+    min-width: 0;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.16px;
+  }
+  @media (min-width: 768px) {
+    .pill-l {
+      padding: 0 44px;
+    }
+  }
+  .pill-s {
+    height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+    line-height: 20px;
+    letter-spacing: 0.01px;
+  }
+  .pill-dark {
+    background: var(--surface-1000);
+    color: #fff;
+  }
+  .pill-dark:hover {
+    background: #000;
+  }
+  .pill-dark[aria-busy="true"] {
+    background: var(--surface-1000);
+    cursor: progress;
+  }
+  .pill-dark:disabled:not([aria-busy="true"]) {
+    background: var(--surface-300);
+    color: var(--surface-1000);
+    cursor: not-allowed;
+  }
+  .pill-outline {
+    background: #fff;
+    color: var(--surface-1000);
+    border: 1px solid var(--surface-400);
+  }
+  .pill-outline:hover {
+    border-color: var(--surface-1000);
+  }
+  .pill-white {
+    background: #fff;
+    color: #111;
+  }
+  .pill-metal {
+    background: var(--pill-metal);
+    color: #111;
+    box-shadow:
+      inset 0 -3px 6px rgba(138, 143, 153, 0.5),
+      inset 0 1px 0 #fff,
+      0 8px 24px rgba(255, 255, 255, 0.08);
+  }
+  .pill-metal:hover {
+    box-shadow:
+      inset 0 -3px 6px rgba(138, 143, 153, 0.5),
+      inset 0 1px 0 #fff,
+      0 10px 32px rgba(255, 255, 255, 0.18);
+  }
+  .pill-ghost-dark {
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .pill-ghost-dark:hover {
+    border-color: rgba(255, 255, 255, 0.36);
+  }
+  .text-link {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    letter-spacing: -0.14px;
+    color: var(--surface-700);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 3px;
+    border-radius: 999px;
+    padding: 6px 10px;
+    transition: color 120ms var(--ease-hover), text-decoration-color 120ms var(--ease-hover);
+  }
+  .text-link:hover {
+    color: var(--surface-1000);
+    text-decoration-color: currentColor;
+  }
+
+  /* ----------------------------------------------------- glass card (dark) */
+  .glass {
+    position: relative;
+    background: var(--glass);
+    border: 1px solid var(--hairline-dark);
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+  /* The cursor-following highlight (pointer position in --mx/--my, set by useGlow). */
+  .glow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, -20%), rgba(255, 255, 255, 0.09), transparent 60%);
+    opacity: var(--glow, 0);
+    transition: opacity 300ms var(--ease-out);
+  }
+  .glow::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    padding: 1px;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, -20%), rgba(255, 255, 255, 0.45), transparent 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: var(--glow, 0);
+    transition: opacity 300ms var(--ease-out);
+  }
+
+  /* ---------------------------------------------------------- film grain */
+  /* A pre-rendered 160 px noise tile (scripts: see FRONTEND.md), stepped around on transform only. An SVG
+     feTurbulence version cost ~700 ms of raster on the first frame (Lighthouse desktop TBT 480 ms), so: a PNG. */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    pointer-events: none;
+    background-image: url("/art/grain.png");
+    background-size: 160px 160px;
+    opacity: 0.09;
+    animation: grain 900ms steps(6) infinite;
+    will-change: transform;
+  }
+  @keyframes grain {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(-3%, 2%); }
+    40% { transform: translate(2%, -3%); }
+    60% { transform: translate(-2%, -1%); }
+    80% { transform: translate(3%, 3%); }
+    100% { transform: translate(0, 0); }
+  }
+
+  /* ---------------------------------------------- the metallic tal wordmark */
+  /* The logo SVG is the mask; inside, a silver base and a moving sheen band (transform only). */
+  .wordmark {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    -webkit-mask: url("/ds/tal-logo.svg") center / contain no-repeat;
+    mask: url("/ds/tal-logo.svg") center / contain no-repeat;
+    background: var(--metal);
+  }
+  .wordmark-sheen {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -100%;
+    width: 300%;
+    transform: translate3d(-33.333%, 0, 0);
+    background: linear-gradient(
+      100deg,
+      transparent 38%,
+      rgba(255, 255, 255, 0) 42%,
+      rgba(255, 255, 255, 0.95) 49%,
+      rgba(150, 150, 150, 0.25) 52%,
+      rgba(255, 255, 255, 0) 58%,
+      transparent 62%
+    );
+    will-change: transform;
+  }
+
+  .wordmark-idle {
+    animation: sheen 5.2s cubic-bezier(0.7, 0, 0.3, 1) 0.9s infinite;
+  }
+  @keyframes sheen {
+    0% { transform: translate3d(-33.333%, 0, 0); }
+    31%, 100% { transform: translate3d(33.333%, 0, 0); }
+  }
+
+  /* ------------------------------------------------------------- marquee */
+  /* Edge fades (Figma 21:1081/21:1082): solid black for the first 30 % of a 320 px fade; 24 / 96 px on phones. */
+  .marquee {
+    -webkit-mask: linear-gradient(90deg, transparent 0, transparent 24px, #000 96px, #000 calc(100% - 96px), transparent calc(100% - 24px));
+    mask: linear-gradient(90deg, transparent 0, transparent 24px, #000 96px, #000 calc(100% - 96px), transparent calc(100% - 24px));
+  }
+  @media (min-width: 768px) {
+    .marquee {
+      -webkit-mask: linear-gradient(90deg, transparent 0, transparent 96px, #000 320px, #000 calc(100% - 320px), transparent calc(100% - 96px));
+      mask: linear-gradient(90deg, transparent 0, transparent 96px, #000 320px, #000 calc(100% - 320px), transparent calc(100% - 96px));
+    }
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 42s linear infinite;
+  }
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+
+  /* ------------------------------------------------ hero entrance (CSS, so it runs before hydration) */
+  .hero-img {
+    transform-origin: 50% 60%;
+    animation: hero-img 2.4s var(--ease-out) both;
+  }
+  @keyframes hero-img {
+    from { transform: scale(1.08); }
+  }
+  .hero-logo {
+    animation: hero-rise 1.2s var(--ease-out) 0.15s both;
+  }
+  .hero-copy {
+    animation: hero-rise 0.9s var(--ease-out) 0.55s both;
+  }
+  @keyframes hero-rise {
+    from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  }
+
+  /* Custom caret for the hero field (DS: 2px black, 36px tall). */
+  .caret {
+    width: 2px;
+    border-radius: 1px;
+    background: var(--surface-1100);
+    animation: caret 1.05s steps(1) infinite;
+  }
+  @keyframes caret {
+    50% { opacity: 0; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .photo::after,
   .grain::after,
-  .push-in img,
+  .marquee-track,
   .caret,
-  .breathe,
-  .rise,
-  .develop {
+  .wordmark-idle,
+  .hero-img,
+  .hero-logo,
+  .hero-copy {
     animation: none !important;
   }
-  .own-words {
-    animation: none;
-    background-image: linear-gradient(var(--lamp), var(--lamp));
-    background-size: 100% 1px;
-    background-position: 0 100%;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
   }
-  .hairline,
-  .photo::before {
-    transition: none;
-  }
-}
 }

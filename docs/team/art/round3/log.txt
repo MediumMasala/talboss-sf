@@ -1,0 +1,37 @@
+round 3 · 2026-11-04 23:16 · gemini-3.1-flash-image via scripts/art/gen.mjs
+openai: OPENAI_API_KEY re-tested 4 Nov, GET /v1/models -> 401 Incorrect API key; skipped, Gemini used for all 24
+horizon-dawn-a-16x9 ok 8.7s gemini-3.1-flash-image
+horizon-dawn-b-16x9 ok 9.2s gemini-3.1-flash-image
+horizon-dawn-a-4x5 ok 10.4s gemini-3.1-flash-image
+horizon-dawn-b-4x5 ok 11.1s gemini-3.1-flash-image
+glass-tower-light-a-16x9 ok 9.1s gemini-3.1-flash-image
+glass-tower-light-a-4x5 ok 9.1s gemini-3.1-flash-image
+glass-tower-light-b-16x9 ok 8.7s gemini-3.1-flash-image
+glass-tower-light-b-4x5 ok 10.8s gemini-3.1-flash-image
+chrome-orb-a-16x9 ok 9.6s gemini-3.1-flash-image
+chrome-orb-b-16x9 ok 9.2s gemini-3.1-flash-image
+chrome-orb-a-4x5 ok 10.8s gemini-3.1-flash-image
+chrome-orb-b-4x5 ok 8.4s gemini-3.1-flash-image
+aperture-a-16x9 ok 8.1s gemini-3.1-flash-image
+aperture-a-4x5 ok 8.6s gemini-3.1-flash-image
+aperture-b-16x9 ok 9.3s gemini-3.1-flash-image
+aperture-b-4x5 ok 9.0s gemini-3.1-flash-image
+particle-horizon-a-16x9 ok 9.9s gemini-3.1-flash-image
+particle-horizon-a-4x5 ok 9.5s gemini-3.1-flash-image
+particle-horizon-b-16x9 ok 8.8s gemini-3.1-flash-image
+particle-horizon-b-4x5 ok 8.7s gemini-3.1-flash-image
+silk-light-a-4x5 ok 8.8s gemini-3.1-flash-image
+silk-light-a-16x9 ok 10.5s gemini-3.1-flash-image
+silk-light-b-16x9 ok 9.2s gemini-3.1-flash-image
+silk-light-b-4x5 ok 9.9s gemini-3.1-flash-image
+reroll 1: aperture-a (read as a sci-fi beam), horizon-dawn-b (grey vignette corners), particle-horizon-b (inset border on 4:5) re-prompted and re-rendered; v1 kept outside the repo
+horizon-dawn-b-4x5 ok 9.1s gemini-3.1-flash-image
+horizon-dawn-b-16x9 ok 9.3s gemini-3.1-flash-image
+aperture-a-4x5 ok 9.4s gemini-3.1-flash-image
+aperture-a-16x9 ok 10.3s gemini-3.1-flash-image
+particle-horizon-b-16x9 ok 9.0s gemini-3.1-flash-image
+particle-horizon-b-4x5 ok 9.5s gemini-3.1-flash-image
+grade: all 24 neutralised to true greyscale (R=G=B; removes the faint blue sky cast in aperture-b)
+og: og-a-1200x630.jpg, og-b-1200x630.jpg from particle-horizon-a-16x9
+sheet: sheet.jpg (24 candidates)
+DONE

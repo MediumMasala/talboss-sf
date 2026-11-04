@@ -5,6 +5,8 @@ import { site } from "./content/site";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The dev badge sits on the flow's Back pill; screenshots and the /preview sheet read cleaner without it.
+  devIndicators: false,
   // Pin the root to this folder; otherwise lockfiles in parent folders get picked up.
   turbopack: { root: path.join(__dirname) },
   // Privacy + terms live on grapevine.in; keep short local URLs that point there.

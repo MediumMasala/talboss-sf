@@ -9,7 +9,17 @@ export async function workerEnv(): Promise<CloudflareEnv | null> {
   }
 }
 
-export const clientIp = (request: Request) =>
+/** Keep `task` running after the response is sent (ctx.waitUntil on Workers). Outside Workers it just runs. */
+export async function waitUntil(task: Promise<unknown>): Promise<void> {
+  const safe = task.catch(() => {});
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { ctx } = await getCloudflareContext({ async: true });
+    if (ctx?.waitUntil) return ctx.waitUntil(safe);
+  } catch {}
+}
+
+export const clientIp =(request: Request) =>
   request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
 
 /** A small JSON body as an object, or null (bad JSON, not an object, or over `max` bytes). */

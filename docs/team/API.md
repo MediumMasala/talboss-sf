@@ -77,24 +77,56 @@ Fields: `resume` (file, **optional**), `utm` (JSON), `application` (JSON; commen
 
 Storage (migration `0003_optional_resume_and_pitch.sql`, additive only): `submissions.has_resume` (1 for every old
 row), and `applications.email`, `pitch` and `pitch_source` (the last two are no longer written since v4). Rows without a resume have no KV file, and their file
-columns are `''`/`0`. In `/sheet.csv`, their **Resume** column reads `no resume`, and Email falls back to the typed
-address. The column layout is unchanged.
+columns are `''`/`0`. In `/sheet.csv`, their **Resume link** column reads `no resume`, and Email falls back to the typed
+address.
 
-- **`workAuth` is deprecated (v3)** and no longer collected. Old clients may still send it: it is ignored, the request still returns `{ok:true}`, and new rows store `null`. Old rows keep their values, and the `work_auth` column and the sheet's "Work authorization" column stay (blank for new rows). Migrations remain additive only.
-- `linkedinProfile.photo` is stripped before storing: the photo is never kept with the application.
+- **`workAuth` is deprecated (v3)** and no longer collected. Old clients may still send it: it is ignored, the request still returns `{ok:true}`, and new rows store `null`. Old rows keep their values in the `work_auth` column. Since the leads desk, `/sheet.csv` no longer has a "Work authorization" column. Migrations remain additive only.
+- `linkedinProfile.photo` (the signed proxy link) is stripped from the stored JSON. Since the leads desk, the LinkedIn
+  photo URL behind it is verified (only links minted by poll, only `media.licdn.com`) and kept in
+  `applications.linkedin_photo`, so `/leads` can show it through the same proxy. Unsigned or foreign links store `NULL`.
+- **After the save** the lead is pushed to the team's Google Sheet in `ctx.waitUntil` (see **Leads** below). The reply
+  never waits on it, and a failed push never fails the upload.
 
 ## `GET /api/linkedin/photo?u=…&s=…` (v3, additive)
 In a `found` reply, `profile.photo` is now a **same-origin signed link** to this route, or `""` when there is no photo. Use it as the `<img src>` on "Is this you?".
 - On first use it fetches the photo from LinkedIn's CDN (≈ 0.4 s) and keeps it in KV for 6 h, the lookup's lifetime. After that it serves from KV in about 20 ms, with `cache-control: private, max-age=3600`.
 - Only links minted by poll (HMAC with `LINK_SECRET`) and only `media.licdn.com` URLs work; everything else is a 404, so it isn't an open proxy. The limit is 1 MB per image, and it never costs an Apify run.
-- Shown only to the person; never stored with the application.
+- Shown to the person on "Is this you?", and to the team on `/leads` (the URL behind the link is kept in `applications.linkedin_photo`; the image itself is never stored with the application).
 
 ## `POST /api/pitch`: removed in v4
 The AI intro was removed from the product. `app/api/pitch/` and `lib/pitch.ts` are deleted, so the route returns 404. They're in git history, and `docs/team/PITCH_SAMPLES.md` and `pitch-fixtures.json` stay as a record. `GEMINI_API_KEY` is no longer used.
 
+## Leads (v4 §9): `/leads`, `/api/leads/*`, the sheet push
+Full setup and the team view: `docs/team/LEADS.md`. Migration `0004_leads.sql` (additive): `submissions.notes`,
+`submissions.sheet_pending` (default 1), `submissions.sheet_synced_at`, `applications.linkedin_photo`.
+
+Access: everything below answers **404** unless `LEADS_KEY` is set and the request has `?key=<LEADS_KEY>` or the
+`tal_leads` cookie (HttpOnly, SameSite=Lax, 30 days; it holds a SHA-256 of the key, never the key). Writes require a
+JSON body, which a cross-site form can't send.
+
+- `GET /leads?key=…` → 307 to `/leads/login?key=…` → sets the cookie → 303 to `/leads` (the key leaves the address bar).
+- `GET /leads?q=&page=` → the desk: newest first, 50 per page, `q` searches name, company and email. Each card: photo,
+  name, title, company, LinkedIn link + status, headline and top 3 roles from the stored card, email, resume
+  (Download = `/r/<id>/<sig>?dl=1`, Open = inline), time in IST and PT, source (UTM), sheet status, notes.
+- `PATCH /api/leads/:id` `{notes: string}` (≤ 5000 chars) → `{ok:true, id, notes}`; 404 for an unknown id.
+- `POST /api/leads/resync` (cookie + JSON, or `?key=`) → pushes every `sheet_pending = 1` row, oldest first, 50 per
+  webhook call, ≤ 500 per request → `{ok, pushed, pending}`. 503 when the webhook isn't configured, 502 when the sheet
+  refuses. `GET /api/leads/resync?key=…` does the same.
+- **Webhook** (from `/api/upload` in `ctx.waitUntil`, and from resync): `POST LEADS_WEBHOOK_URL`
+  `{secret: LEADS_WEBHOOK_SECRET, rows: [{id, submittedIst, name, company, title, email, linkedinUrl, linkedinStatus,
+  headline, resumeUrl, resumeName, source}]}`. Success = HTTP 200 with JSON `{ok:true}` (after following Apps Script's
+  302). One retry after 1.5 s; on failure the row stays pending. The script (`scripts/leads-sheet.gs`) upserts by `id`.
+- `GET /sheet.csv` → `?key=<SHEET_KEY>` (the old IMPORTDATA sheet) **or** the leads cookie; `?download=1` adds
+  `content-disposition: attachment`. Columns: Uploaded (IST), Name, Company, Designation, Email, LinkedIn,
+  LinkedIn check, **Headline**, **Resume link** (signed), Source, Program, File, **Notes**, ID. "Work authorization" is gone.
+- `GET /r/<id>/<sig>` → the resume from KV under its original filename (`filename` + RFC 5987 `filename*`). The type
+  comes from the extension (PDF or DOCX). PDFs `inline`, DOCX and `?dl=1` `attachment`. The signature never expires
+  (HMAC of the id), so the sheet's links are permanent; a wrong signature is a 404.
+- **Upload limits (unchanged):** PDF or DOCX, real bytes checked, **≤ 5 MB** (`site.upload.maxBytes` in `content/site.ts`).
+
 ## Test locally
 ```bash
-npx next dev -p 3217        # reads .dev.vars at startup: APIFY_TOKEN, LINK_SECRET, SHEET_KEY
+npx next dev -p 3217        # reads .dev.vars at startup: APIFY_TOKEN, LINK_SECRET, SHEET_KEY (+ LEADS_* for /leads)
 npx --cache /Users/sanchittripathi/.claude/jobs/17f7f79e/tmp/npm-cache wrangler d1 migrations apply DB --local
 # the pitch route is gone: expect 404
 curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:3217/api/pitch -H 'content-type: application/json' -d '{}'
@@ -105,8 +137,13 @@ curl -s localhost:3217/api/upload -F 'application={"name":"Test B","company":"Ac
 # bad input fails before any paid run
 curl -s localhost:3217/api/linkedin/start -H 'content-type: application/json' -d '{"name":"12345","company":"Acme"}'
 ```
+The leads loop end to end (fake lead, local webhook listener, /leads, resume, notes, resync): `scripts/leads-smoke.sh`.
+
 Real lookups cost money. Test only with "Sanchit Tripathi" at "Grapevine". A repeat within 6 h is a free cache hit.
 
 ## Ship
-`npm run db:migrate` (applies 0003 to remote D1), then `npm run deploy`.
-**Run the migration before the deploy:** `/sheet.csv` selects the new columns.
+`npm run db:migrate` (applies 0004 to remote D1), then `npm run deploy`.
+**Run the migration before the deploy:** `/api/upload` writes `applications.linkedin_photo`, and `/leads` and
+`/sheet.csv` read the new columns, so a deploy without 0004 fails every upload.
+Secrets: `LEADS_KEY`, `LEADS_WEBHOOK_URL`, `LEADS_WEBHOOK_SECRET` (`npx wrangler secret put …`; see LEADS.md).
+Without the webhook pair, uploads still work and rows wait as pending until it's set and Resync runs.

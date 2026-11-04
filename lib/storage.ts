@@ -30,6 +30,8 @@ export type Application = {
   linkedinUrl: string | null;
   linkedinStatus: "confirmed" | "typed" | "skipped";
   linkedinProfile: unknown;
+  /** media.licdn.com URL of the confirmed card's photo (shown on /leads through the signed proxy), or null. */
+  linkedinPhoto?: string | null;
   /** Deprecated (v3): no longer collected. New rows store null; old rows keep their value in `work_auth`. */
   workAuth?: string | null;
   /** Typed by the person; required when there's no resume. */
@@ -78,13 +80,14 @@ function cloudflare(env: CloudflareEnv): ResumeStorage {
         .run();
       if (a) {
         await env.DB.prepare(
-          `INSERT INTO applications (id, created_at, submission_id, program, name, company, designation, linkedin_url, linkedin_status, linkedin_profile, work_auth, meta, email, pitch, pitch_source)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO applications (id, created_at, submission_id, program, name, company, designation, linkedin_url, linkedin_status, linkedin_profile, work_auth, meta, email, pitch, pitch_source, linkedin_photo)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
           .bind(
             crypto.randomUUID(), s.createdAt, s.id, a.program, a.name, a.company, a.designation, a.linkedinUrl, a.linkedinStatus,
             a.linkedinProfile ? JSON.stringify(a.linkedinProfile) : null, null, JSON.stringify({ utm: s.meta.utm, referrer: s.meta.referrer }),
             a.email, null, null, // pitch, pitch_source: the pitch was removed in v4; columns kept for old rows
+            a.linkedinPhoto ?? null,
           )
           .run();
       }
@@ -108,34 +111,4 @@ export async function getStorage(): Promise<ResumeStorage> {
   return env ? cloudflare(env) : localDisk;
 }
 
-export type SubmissionRow = {
-  id: string;
-  created_at: string;
-  email: string;
-  linkedin: string | null;
-  file_name: string;
-  file_size: number;
-  has_resume: number;
-  meta: string;
-  name: string | null;
-  company: string | null;
-  designation: string | null;
-  app_linkedin: string | null;
-  linkedin_status: string | null;
-  work_auth: string | null;
-  program: string | null;
-  app_email: string | null;
-};
-
-/** Newest first, with the Tal application details when there are any. */
-export async function listSubmissions(env: CloudflareEnv, limit = 500): Promise<SubmissionRow[]> {
-  const { results } = await env.DB.prepare(
-    `SELECT s.id, s.created_at, s.email, s.linkedin, s.file_name, s.file_size, s.has_resume, s.meta,
-            a.name, a.company, a.designation, a.linkedin_url AS app_linkedin, a.linkedin_status, a.work_auth, a.program, a.email AS app_email
-     FROM submissions s LEFT JOIN applications a ON a.submission_id = s.id
-     ORDER BY s.created_at DESC LIMIT ?`,
-  )
-    .bind(limit)
-    .all<SubmissionRow>();
-  return results;
-}
+// Reading rows back (the leads desk, /sheet.csv, the sheet push) lives in lib/leads.ts.

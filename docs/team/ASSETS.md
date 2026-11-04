@@ -37,3 +37,50 @@ Rules: Unsplash Licence, Pexels Licence, CC0 or original only. No film stills, p
 Download note: Unsplash's `/download?force=true` endpoint sits behind a bot check from curl, so the files were fetched from the photo's own images.unsplash.com URL (the same original, same licence). The Unsplash Licence doesn't require attribution; we credit every photographer by name in the end credits anyway.
 
 Removed 4 Nov (Steve round 1): the train-reader hero (patsanannnn; third-party book cover in frame) and the Golden Gate Park canopy (Anthony Sebbo; one canopy photo only). Neither is on the site or in the repo.
+
+## Round 3 (original, generated)
+
+Founder brief 4 Nov: bright, optimistic, "a world of opportunities ahead", clean Western-startup imagery; black, white, silver; no people, text or logos. Generated with `gemini-3.1-flash-image` via `scripts/art/gen.mjs` (OpenAI key still 401, not used), neutralised to greyscale. Prompts: `docs/team/art/round3/PROMPTS.md`; contact sheet: `docs/team/art/round3/sheet.jpg`. Candidates only; nothing is served from `public/` yet.
+
+| file | source | author | licence | grade | used where |
+|---|---|---|---|---|---|
+| `docs/team/art/round3/horizon-dawn-a-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/horizon-dawn-a-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/horizon-dawn-b-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/horizon-dawn-b-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | PICK: done screen |
+| `docs/team/art/round3/glass-tower-light-a-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/glass-tower-light-a-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/glass-tower-light-b-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/glass-tower-light-b-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/chrome-orb-a-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/chrome-orb-a-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/chrome-orb-b-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/chrome-orb-b-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/aperture-a-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/aperture-a-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/aperture-b-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/aperture-b-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/particle-horizon-a-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | PICK: hero (desktop) |
+| `docs/team/art/round3/particle-horizon-a-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | PICK: hero (mobile) |
+| `docs/team/art/round3/particle-horizon-b-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/particle-horizon-b-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/silk-light-a-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/silk-light-a-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | white page | candidate |
+| `docs/team/art/round3/silk-light-b-16x9.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/silk-light-b-4x5.png` | generated, gemini-3.1-flash-image, prompt in PROMPTS.md | Tal (AI-generated, original) | original work | dark page | candidate |
+| `docs/team/art/round3/og-a-1200x630.jpg` | derived from `particle-horizon-a-16x9.png` (centre crop) | Tal (AI-generated, original) | original work | dark | OG candidate |
+| `docs/team/art/round3/og-b-1200x630.jpg` | derived from `particle-horizon-a-16x9.png` (1.25x push-in) | Tal (AI-generated, original) | original work | dark | PICK: OG image |
+
+## Served by the v4.1 site (frontend, 5 Nov 2026)
+The v3 photographs (`public/photos/`), sound (`public/sound/`), the self-hosted SF Pro / Scotch Deck fonts (`public/india/fonts/`), the photo grade scripts and their Unsplash sources were deleted. No stock photography, no photographer credits, no serif.
+
+| file | source | licence | used where |
+|---|---|---|---|
+| `public/art/hero-16x9-{640,1024,1376}.{avif,webp}`, `hero-4x5-{480,768,928}.*` | round 3 `particle-horizon-a-*` (greyscale, `scripts/art.mjs`) | original (AI-generated) | landing hero |
+| `public/art/done-4x5-{480,720,928}.*` | round 3 `horizon-dawn-b-4x5` | original (AI-generated) | A7 Done |
+| `public/art/orb-4x5-{480,720,928}.*` | round 3 `chrome-orb-b-4x5` | original (AI-generated) | The deal card (desktop) |
+| `public/art/grain.png` (160 px RGBA noise tile) | generated in node (seeded LCG) | original | hero film grain |
+| `app/opengraph-image.jpg` | round 3 `og-b-1200x630` + the tal wordmark in the silver ramp (`scripts/og.mjs`) | original + Tal mark | social card |
+| `public/ds/{tal-logo,chevron-left,magnifier,file-upload,mock-highlight}.svg` | exported from Figma QjHT7mWSNvgeAuiQehZZNJ (Boss DS library: tal logo v2, Anron icons) | Tal-owned | logo tile, wordmark mask, Back, LinkedIn visual, resume drop, product mock |
+| `public/logos/*.svg` (12) | white vectors from Figma DS/Logo Marquee Row 18:1395 (made from the repo SVGs) | trademarks of their owners, nominative use, founder-verified 4 Nov 2026 | logo marquee, captioned "Bosses from these companies hire on Tal" |
+| Inter (via `next/font/google`, not preloaded) | Google Fonts | SIL OFL | text fallback after the system stack |

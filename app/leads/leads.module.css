@@ -1,0 +1,304 @@
+/* The leads desk: an internal tool. Black on white, Inter, the system stack. Clarity over flourish. */
+.desk {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  color-scheme: light;
+  min-height: 100vh;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-inter, Inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 32px 16px 64px;
+}
+
+.header,
+.list,
+.pager,
+.empty {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #000;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.search {
+  display: flex;
+  flex: 1 1 320px;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #000;
+  border-radius: 999px;
+  font: inherit;
+  color: #000;
+  background: #fff;
+}
+
+.button,
+.buttonSolid {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #000;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  color: #000;
+  background: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.buttonSolid {
+  color: #fff;
+  background: #000;
+}
+
+.button:hover {
+  background: #f2f2f2;
+}
+
+.buttonSolid:hover {
+  background: #333;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.resync {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(0, 280px);
+  gap: 16px;
+  align-items: start;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eee;
+  color: #000;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.who {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.role,
+.headline {
+  margin: 0;
+}
+
+.headline {
+  color: #444;
+}
+
+.chips {
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.chip,
+.chipSolid {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid #000;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chipSolid {
+  color: #fff;
+  background: #000;
+}
+
+.side {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+
+.email {
+  color: #000;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.link {
+  color: #000;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.muted {
+  color: #666;
+}
+
+.small {
+  color: #666;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.header .small {
+  margin: 0;
+}
+
+.exp {
+  margin: 0 0 0 72px;
+  padding: 0 0 0 16px;
+  list-style: decimal;
+  display: grid;
+  gap: 2px;
+}
+
+.notes {
+  margin-left: 72px;
+  display: grid;
+  gap: 4px;
+}
+
+.notesLabel {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.saveState {
+  font-weight: 400;
+  color: #666;
+}
+
+.notes textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #bbb;
+  border-radius: 10px;
+  font: inherit;
+  color: #000;
+  background: #fff;
+  resize: vertical;
+}
+
+.notes textarea:focus,
+.search input:focus {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+}
+
+.empty {
+  padding: 48px 0;
+  color: #666;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+}
+
+@media (max-width: 720px) {
+  .search {
+    flex-basis: 100%;
+  }
+
+  .top {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .side {
+    grid-column: 1 / -1;
+  }
+
+  .exp,
+  .notes {
+    margin-left: 0;
+  }
+}

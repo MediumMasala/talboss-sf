@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Providers } from "@/components/Providers";
-import { fontVars } from "@/components/tal/fonts";
 import { site } from "@/content/site";
+import { inter } from "@/lib/fonts";
 import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -14,13 +13,13 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: site.seo.title, description: site.seo.description },
 };
 
-export const viewport: Viewport = { themeColor: "#14261d", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#000000", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={fontVars}>
+    <html lang="en" className={inter.variable}>
       <body>
-        <Providers>{children}</Providers>
+        {children}
       </body>
     </html>
   );
