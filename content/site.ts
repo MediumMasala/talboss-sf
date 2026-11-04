@@ -11,28 +11,32 @@ export const site = {
   name: BRAND_NAME,
 
   seo: {
-    title: `${BRAND_NAME}: apply once, get represented in 1000+ job opportunities`,
-    description: "Upload your resume and talk to SF startup founders directly. No HR, ATS, agency BS.",
-    ogAlt: `${BRAND_NAME}: apply once, get represented in 1000+ job opportunities`,
+    title: `${BRAND_NAME}: apply in 60 seconds, get represented in 100+ companies`,
+    description: "Upload your resume and talk to SF hiring managers directly. No HR, ATS, agency BS.",
+    ogAlt: `${BRAND_NAME}: apply in 60 seconds, get represented in 100+ companies`,
   },
 
   funding: {
     before: "We have raised",
     amount: "$7 million",
-    after: "from Sequoia.",
+    after: "from Top VCs.",
   },
 
   hero: {
     /** lead / main / scribble (underlined) / tail. */
-    headline: { lead: "Apply once.", main: "Get represented in", scribble: "1000+", tail: "job opportunities." },
+    headline: { lead: "Apply in 60 seconds.", main: "Get represented in", scribble: "100+", tail: "companies." },
     trust: "We won't spam you.",
     /** Pill tags on the two hands. */
-    tags: { left: "FOUNDER", right: "YOU" },
+    tags: { left: "HIRING MANAGER", right: "YOU" },
   },
 
-  /** The light, idle.space-style page (preview at /v2). */
+  /** The light, idle.space-style home page (the old dark page lives at /dark). */
   light: {
     nav: { badge: "SAN FRANCISCO" },
+    /** The line under the headline. */
+    sub: "Upload your resume and be part of 300,000 top candidates.",
+    /** The bottom bar's button on phones, short so "Apply in 60 seconds." fits beside it. */
+    stickyButtonShort: "Upload resume",
     /** The one line under the upload button. */
     hint: "PDF or DOCX · We won't spam you.",
     stickers: ["NO ATS", "NO AGENCY BS", "SF STARTUPS"],
@@ -42,8 +46,8 @@ export const site = {
     heading: "How it works",
     steps: [
       { title: "Upload your resume" },
-      { title: "Our AI matches you with a founder" },
-      { title: "Intro chat with the founder" },
+      { title: "Our AI matches you with a hiring manager" },
+      { title: "Intro chat with the hiring manager" },
     ],
   },
 
@@ -77,14 +81,14 @@ export const site = {
 
     matching: {
       srLabel: "Matching your resume with startups",
-      lines: ["Reading your resume", "Finding SF startups that fit", "Lining up founders who'd want to talk"],
+      lines: ["Reading your resume", "Finding SF startups that fit", "Lining up hiring managers who'd want to talk"],
       waiting: "Almost there",
     },
 
     done: {
       title: "You're in.",
       body: "We will get back to you on this soon.",
-      noEmail: "One thing: we couldn't find an email on your resume. Add it and upload again so founders can reach you.",
+      noEmail: "One thing: we couldn't find an email on your resume. Add it and upload again so hiring managers can reach you.",
       restart: "Upload a different resume",
       reupload: "Upload again",
     },

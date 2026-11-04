@@ -545,7 +545,7 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
- * Light theme (the /v2 preview, after idle.space): off-white canvas, black type, black pill,
+ * Light theme (the home page, after idle.space): off-white canvas, black type, black pill,
  * highlighter stickers in mono, one orange scribble. Anything inside .theme-light picks it up.
  * ------------------------------------------------------------------------------------------- */
 :root:has(.theme-light) {

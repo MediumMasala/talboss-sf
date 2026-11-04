@@ -8,7 +8,7 @@ import { useResumeFlow, type FlowStage } from "./resume-drop";
 const REACH: Record<FlowStage, number> = { idle: 0, error: 0, matching: 0.6, done: 1 };
 
 /**
- * FOUNDER from the upper left, YOU from the right at the card's height (kept clear of the bridge below).
+ * HIRING MANAGER from the upper left, YOU from the right at the card's height (kept clear of the bridge below).
  * They drift closer as the person moves through the upload.
  */
 export function Hands() {
