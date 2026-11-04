@@ -58,7 +58,6 @@ How I studied them: headless Chrome over CDP (`~/.claude/jobs/17f7f79e/tmp/fe-st
 
 **Not done / open.**
 - Lighthouse, LCP on throttled 4G and CLS were not measured on a production build (only the dev server ran). The hero is preloaded per breakpoint (AVIF 32 KB mobile, 37 KB desktop at 1920), all images carry explicit dimensions, and fonts swap.
-- The FAQ now has eight items in `site.ts`; DIRECTION.md says at most six. Copywriter's call.
 - The email/upload subject uses the LinkedIn title when no title was typed ("Sanchit Tripathi, Building at Grapevine"). That's honest but reads oddly; backend or copy may want a rule.
 - The deprecated v2 keys in `site.ts` (`hero.eyebrow`, `how`, `deal`, `about`, `final`, `light`, `howItWorks`, `proof.brands`, `upload.matching/done`) are no longer read by any component, and the copywriter can delete them.
 
