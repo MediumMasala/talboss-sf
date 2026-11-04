@@ -53,11 +53,7 @@ export function LightHero() {
           {headline.tail}
         </h1>
 
-        <p className="mx-auto mt-4 max-w-[440px] text-[17px] leading-snug text-muted text-balance sm:mt-5 sm:text-[19px]">
-          {site.light.sub}
-        </p>
-
-        <div className="mx-auto mt-8 max-w-[400px] sm:mt-10">
+        <div className="mx-auto mt-10 max-w-[400px] sm:mt-12">
           <ResumeDrop id="hero" hint={site.light.hint} consent={false} />
         </div>
       </div>

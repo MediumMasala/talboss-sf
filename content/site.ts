@@ -33,8 +33,6 @@ export const site = {
   /** The light, idle.space-style home page (the old dark page lives at /dark). */
   light: {
     nav: { badge: "SAN FRANCISCO" },
-    /** The line under the headline. */
-    sub: "Upload your resume and be part of 300,000 top candidates.",
     /** The bottom bar's button on phones, short so "Apply in 60 seconds." fits beside it. */
     stickyButtonShort: "Upload resume",
     /** The one line under the upload button. */
