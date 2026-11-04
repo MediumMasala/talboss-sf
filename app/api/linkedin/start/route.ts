@@ -1,28 +1,44 @@
-import { allowLookup, cleanInput, slugFromUrl } from "@/lib/linkedin";
+import { cleanInput, slugFromUrl, type InputProblem } from "@/lib/linkedin";
+import { gateSearch, gateUrl } from "@/lib/limits";
 import { startFromSlug, startLookup } from "@/lib/linkedin-flow";
-import { clientIp, workerEnv } from "@/lib/env";
+import { clientIp, readJson, workerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
+
+const PROBLEMS: Record<InputProblem, string> = {
+  missing: "Add your full name and company.",
+  name: "That doesn't look like a name. Use the name on your LinkedIn.",
+  company: "Add the company you work at.",
+};
+
+const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
 
 /** POST { name, company, role, url? } → starts the LinkedIn lookup and returns a signed token to poll. */
 export async function POST(request: Request) {
   const env = await workerEnv();
-  if (!env?.APIFY_TOKEN || !env.LINK_SECRET) return Response.json({ state: "error", message: "Lookup is offline. Add your LinkedIn link instead." }, { status: 503 });
+  if (!env?.APIFY_TOKEN || !env.LINK_SECRET) return reply({ state: "error", message: "Lookup is offline. Paste your LinkedIn link instead." }, 503);
 
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  const input = cleanInput(body);
-  if (!input) return Response.json({ state: "error", message: "Add your full name and company." }, { status: 400 });
+  const body = await readJson(request);
+  const checked = cleanInput(body);
+  if (!checked.ok) return reply({ state: "error", message: PROBLEMS[checked.problem] }, 400);
 
-  if (!(await allowLookup(env.RESUMES, clientIp(request)))) {
-    return Response.json({ state: "error", message: "Too many lookups from here. Paste your LinkedIn link instead." }, { status: 429 });
-  }
+  const rawUrl = typeof body?.url === "string" ? body.url.trim().slice(0, 300) : "";
+  const slug = rawUrl ? slugFromUrl(rawUrl) : null;
+  if (rawUrl && !slug) return reply({ state: "error", message: "That isn't a LinkedIn profile link. It should look like linkedin.com/in/your-name." }, 400);
 
-  const keys = { apify: env.APIFY_TOKEN, secret: env.LINK_SECRET };
+  const keys = { apify: env.APIFY_TOKEN, secret: env.LINK_SECRET, kv: env.RESUMES };
+  const ip = clientIp(request);
   try {
-    const slug = typeof body?.url === "string" ? slugFromUrl(body.url) : null;
-    return Response.json(slug ? await startFromSlug(keys, input, slug) : await startLookup(keys, input));
+    // Limits are checked only when a paid run is about to start, so cached lookups never count.
+    const result = slug
+      ? await startFromSlug(keys, checked.input, slug, () => gateUrl(env.RESUMES, ip))
+      : await startLookup(keys, checked.input, () => gateSearch(env.RESUMES, ip, checked.input));
+    if (result.state === "error" && result.code) {
+      return Response.json(result, { status: 429, headers: { "cache-control": "no-store", "retry-after": String(result.retryAfter ?? 3600) } });
+    }
+    return reply(result);
   } catch (error) {
-    console.error("[linkedin/start]", error);
-    return Response.json({ state: "error", message: "We couldn't reach LinkedIn just now." }, { status: 502 });
+    console.error("[linkedin/start]", error instanceof Error ? error.message : "failed");
+    return reply({ state: "error", message: "We couldn't reach LinkedIn just now. Paste your link, or skip this step." }, 502);
   }
 }

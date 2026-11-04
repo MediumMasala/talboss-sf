@@ -1,0 +1,457 @@
+[
+ {
+  "id": "founder",
+  "kind": "real (founder's own cached LinkedIn profile)",
+  "request": {
+   "name": "Sanchit Tripathi",
+   "company": "Grapevine",
+   "role": "Strategy Lead",
+   "profile": {
+    "fullname": "Sanchit Tripathi",
+    "headline": "Join tal.club | Building Tal Boss | Ex Elevation, Google",
+    "photo": "",
+    "location": "Bengaluru, Karnataka, India",
+    "url": "https://linkedin.com/in/sanchit-tripathi",
+    "slug": "sanchit-tripathi",
+    "currentCompany": "tal BOSS",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Building",
+      "company": "tal by grapevine",
+      "duration": "Sep 2025 - Present · 1 yr 3 mos",
+      "location": "Bangalore Urban, Karnataka, India",
+      "current": true,
+      "logo": ""
+     },
+     {
+      "title": "Building",
+      "company": "Grapevine",
+      "duration": "May 2023 - Present · 3 yrs 7 mos",
+      "location": "Bengaluru, Karnataka, India",
+      "current": true,
+      "logo": ""
+     },
+     {
+      "title": "Investment Professional",
+      "company": "Elevation Capital",
+      "duration": "Sep 2021 - May 2023 · 1 yr 9 mos",
+      "location": "India",
+      "current": false,
+      "logo": "",
+      "description": "Focused on Consumer Tech, Marketplaces, Climate & Agri investments at Elevation"
+     },
+     {
+      "title": "Account Manager",
+      "company": "Google",
+      "duration": "May 2020 - Sep 2021 · 1 yr 5 mos",
+      "location": "India",
+      "current": false,
+      "logo": "",
+      "description": "Helped SMEs & startups grow their business through Ads"
+     }
+    ],
+    "about": "Mission - To help build and scale technology that positively impacts a sizeable number of people. Reach out at -",
+    "skills": [],
+    "projects": [
+     {
+      "name": "Android App Project - Radius",
+      "description": "Radius is a location based utility app that finds and sorts the places around you under various categories (cafe, bars, shopping etc.) based on their distance and ratings. My contribution to the project consisted of planning and organizing various app assets during it's formative stage, while after…"
+     }
+    ],
+    "education": [
+     {
+      "school": "St. Xavier's College",
+      "degree": "Bachelor of Management Studies(BMS)"
+     }
+    ],
+    "score": 1
+   }
+  }
+ },
+ {
+  "id": "ml-researcher",
+  "kind": "fictional: ML researcher",
+  "request": {
+   "name": "Noor Haddad",
+   "company": "Kestrel AI",
+   "role": "Research Scientist",
+   "profile": {
+    "fullname": "Noor Haddad",
+    "headline": "Research Scientist at Kestrel AI · post-training for code models",
+    "photo": "",
+    "location": "San Francisco Bay Area",
+    "url": "https://www.linkedin.com/in/noor-haddad-fixture",
+    "slug": "noor-haddad-fixture",
+    "currentCompany": "Kestrel AI",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Research Scientist",
+      "company": "Kestrel AI",
+      "duration": "1 yr 8 mos",
+      "location": "San Francisco",
+      "current": true,
+      "logo": "",
+      "description": "Post-training for code models. Built the execution-feedback reward pipeline and the eval harness the team uses to gate every model release."
+     },
+     {
+      "title": "Research Intern",
+      "company": "Lattice Research",
+      "duration": "4 mos",
+      "location": "Toronto",
+      "current": false,
+      "logo": "",
+      "description": "Studied long-context retrieval failures in transformer language models; paper accepted at NeurIPS 2023."
+     },
+     {
+      "title": "PhD Researcher",
+      "company": "University of Toronto",
+      "duration": "4 yrs 2 mos",
+      "location": "Toronto",
+      "current": false,
+      "logo": ""
+     }
+    ],
+    "education": [
+     {
+      "school": "University of Toronto",
+      "degree": "PhD, Computer Science"
+     }
+    ],
+    "about": "I work on post-training for code models: reward models built from unit-test and execution signals, and RL that rewards code that actually runs. Before industry I did a PhD on why long-context language models miss facts in the middle of their input.",
+    "skills": [
+     "PyTorch",
+     "JAX",
+     "Reinforcement Learning",
+     "LLM Evaluation",
+     "Distributed Training"
+    ],
+    "projects": [],
+    "score": 1
+   }
+  }
+ },
+ {
+  "id": "infra-engineer",
+  "kind": "fictional: infra engineer",
+  "request": {
+   "name": "Tomás Reyes",
+   "company": "Pylon Systems",
+   "role": "Senior Infrastructure Engineer",
+   "profile": {
+    "fullname": "Tomás Reyes",
+    "headline": "Senior Infrastructure Engineer at Pylon Systems | making deploys boring",
+    "photo": "",
+    "location": "Austin, Texas",
+    "url": "https://www.linkedin.com/in/tomas-reyes-fixture",
+    "slug": "tomas-reyes-fixture",
+    "currentCompany": "Pylon Systems",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Senior Infrastructure Engineer",
+      "company": "Pylon Systems",
+      "duration": "2 yrs 3 mos",
+      "location": "Austin",
+      "current": true,
+      "logo": "",
+      "description": "Moved 140 services from hand-rolled EC2 boxes onto a Kubernetes platform across three regions; cut median deploy time from 40 minutes to 6."
+     },
+     {
+      "title": "Site Reliability Engineer",
+      "company": "Cobalt Pay",
+      "duration": "3 yrs 1 mo",
+      "location": "Remote",
+      "current": false,
+      "logo": "",
+      "description": "Primary on-call for card authorization. Wrote the incident review process the company still uses."
+     }
+    ],
+    "education": [],
+    "about": "I like making deploys boring. I run the Kubernetes platform our product teams ship on, and I care a lot about on-call that doesn't burn people out.",
+    "skills": [
+     "Kubernetes",
+     "Terraform",
+     "Go",
+     "PostgreSQL",
+     "Observability"
+    ],
+    "projects": [],
+    "score": 1
+   }
+  }
+ },
+ {
+  "id": "product-manager",
+  "kind": "fictional: PM",
+  "request": {
+   "name": "Hannah Lindqvist",
+   "company": "Fathom Docs",
+   "role": "Senior Product Manager",
+   "profile": {
+    "fullname": "Hannah Lindqvist",
+    "headline": "Senior PM, real-time collaboration at Fathom Docs",
+    "photo": "",
+    "location": "New York, New York",
+    "url": "https://www.linkedin.com/in/hannah-lindqvist-fixture",
+    "slug": "hannah-lindqvist-fixture",
+    "currentCompany": "Fathom Docs",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Senior Product Manager",
+      "company": "Fathom Docs",
+      "duration": "2 yrs",
+      "location": "New York",
+      "current": true,
+      "logo": "",
+      "description": "Own real-time collaboration and comments. Launched offline mode for 2M weekly users after two failed attempts by other teams."
+     },
+     {
+      "title": "Product Manager",
+      "company": "Relay Freight",
+      "duration": "2 yrs 6 mos",
+      "location": "Chicago",
+      "current": false,
+      "logo": "",
+      "description": "Rebuilt carrier onboarding; activation went from 31% to 58%."
+     },
+     {
+      "title": "Software Engineer",
+      "company": "Relay Freight",
+      "duration": "1 yr 10 mos",
+      "location": "Chicago",
+      "current": false,
+      "logo": ""
+     }
+    ],
+    "education": [],
+    "about": "Former engineer turned PM. I like products where the hard part is invisible: sync, conflict resolution, offline. I write SQL and still read the code.",
+    "skills": [
+     "Product Strategy",
+     "SQL",
+     "User Research",
+     "Experimentation"
+    ],
+    "projects": [],
+    "score": 1
+   }
+  }
+ },
+ {
+  "id": "designer",
+  "kind": "fictional: designer",
+  "request": {
+   "name": "Kwame Asante",
+   "company": "Orchard",
+   "role": "Staff Product Designer",
+   "profile": {
+    "fullname": "Kwame Asante",
+    "headline": "Staff Product Designer at Orchard · money interfaces people trust",
+    "photo": "",
+    "location": "Brooklyn, New York",
+    "url": "https://www.linkedin.com/in/kwame-asante-fixture",
+    "slug": "kwame-asante-fixture",
+    "currentCompany": "Orchard",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Staff Product Designer",
+      "company": "Orchard",
+      "duration": "3 yrs",
+      "location": "New York",
+      "current": true,
+      "logo": "",
+      "description": "Lead designer for the card and budgeting app. Redesigned onboarding and identity verification; built and shipped Orchard's design system, Grove, in React."
+     },
+     {
+      "title": "Product Designer",
+      "company": "Tandem Travel",
+      "duration": "2 yrs 4 mos",
+      "location": "San Francisco",
+      "current": false,
+      "logo": "",
+      "description": "Mobile booking flows. Ran weekly usability sessions with travelers."
+     }
+    ],
+    "education": [],
+    "about": "I design money interfaces people trust, and I prototype in code because static mocks lie about how things feel.",
+    "skills": [
+     "Figma",
+     "Prototyping",
+     "React",
+     "Design Systems"
+    ],
+    "projects": [],
+    "score": 1
+   }
+  }
+ },
+ {
+  "id": "data-scientist",
+  "kind": "fictional: data scientist",
+  "request": {
+   "name": "Mei Tanaka",
+   "company": "Harbor Grocery",
+   "role": "Senior Data Scientist",
+   "profile": {
+    "fullname": "Mei Tanaka",
+    "headline": "Senior Data Scientist · forecasting and experimentation",
+    "photo": "",
+    "location": "Seattle, Washington",
+    "url": "https://www.linkedin.com/in/mei-tanaka-fixture",
+    "slug": "mei-tanaka-fixture",
+    "currentCompany": "Harbor Grocery",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Senior Data Scientist",
+      "company": "Harbor Grocery",
+      "duration": "2 yrs 7 mos",
+      "location": "Seattle",
+      "current": true,
+      "logo": "",
+      "description": "Built the demand forecasting models behind replenishment for 300 stores. Maintain the stats engine of our experimentation platform (CUPED, sequential testing)."
+     },
+     {
+      "title": "Data Analyst",
+      "company": "Northline Insurance",
+      "duration": "2 yrs",
+      "location": "Hartford",
+      "current": false,
+      "logo": "",
+      "description": "Claims fraud models and the dashboards investigators used every morning."
+     }
+    ],
+    "education": [],
+    "about": "Forecasting and experimentation. I like problems where a better model shows up as less food thrown away.",
+    "skills": [
+     "Python",
+     "Causal Inference",
+     "Forecasting",
+     "SQL",
+     "dbt"
+    ],
+    "projects": [],
+    "score": 1
+   }
+  }
+ },
+ {
+  "id": "frontend-mock",
+  "kind": "frontend preview mock (components/select/preview.ts), headline + jobs only",
+  "request": {
+   "name": "Jordan Avery",
+   "company": "Parallax Labs",
+   "role": "Senior ML Engineer",
+   "profile": {
+    "fullname": "Jordan Avery",
+    "headline": "Senior ML Engineer at Parallax Labs · inference, evals, and the boring parts that make models fast",
+    "photo": "",
+    "location": "San Francisco Bay Area",
+    "url": "https://www.linkedin.com/in/jordan-avery-example",
+    "slug": "jordan-avery-example",
+    "currentCompany": "Parallax Labs",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Senior ML Engineer",
+      "company": "Parallax Labs",
+      "duration": "2 yrs 4 mos",
+      "location": "San Francisco",
+      "current": true,
+      "logo": ""
+     },
+     {
+      "title": "ML Engineer",
+      "company": "Orbitline",
+      "duration": "2 yrs 9 mos",
+      "location": "Seattle",
+      "current": false,
+      "logo": ""
+     },
+     {
+      "title": "Software Engineer",
+      "company": "Fieldnote",
+      "duration": "1 yr 11 mos",
+      "location": "New York",
+      "current": false,
+      "logo": ""
+     }
+    ],
+    "score": 0.92
+   }
+  }
+ },
+ {
+  "id": "thin",
+  "kind": "thin: typed title only, no LinkedIn",
+  "request": {
+   "name": "Ana Ruiz",
+   "company": "Stripe",
+   "role": "Staff Engineer"
+  }
+ },
+ {
+  "id": "thin+answer",
+  "kind": "thin + one typed sentence (bold move)",
+  "request": {
+   "name": "Ana Ruiz",
+   "company": "Stripe",
+   "role": "Staff Engineer",
+   "answer": "I rebuilt our webhook retry system so merchants stop missing events during outages."
+  }
+ },
+ {
+  "id": "infra+answer",
+  "kind": "rich + one typed sentence",
+  "request": {
+   "name": "Tomás Reyes",
+   "company": "Pylon Systems",
+   "role": "Senior Infrastructure Engineer",
+   "answer": "The hardest thing I've shipped was a zero-downtime Postgres major-version upgrade under live payment traffic.",
+   "profile": {
+    "fullname": "Tomás Reyes",
+    "headline": "Senior Infrastructure Engineer at Pylon Systems | making deploys boring",
+    "photo": "",
+    "location": "Austin, Texas",
+    "url": "https://www.linkedin.com/in/tomas-reyes-fixture",
+    "slug": "tomas-reyes-fixture",
+    "currentCompany": "Pylon Systems",
+    "companyLogo": "",
+    "experience": [
+     {
+      "title": "Senior Infrastructure Engineer",
+      "company": "Pylon Systems",
+      "duration": "2 yrs 3 mos",
+      "location": "Austin",
+      "current": true,
+      "logo": "",
+      "description": "Moved 140 services from hand-rolled EC2 boxes onto a Kubernetes platform across three regions; cut median deploy time from 40 minutes to 6."
+     },
+     {
+      "title": "Site Reliability Engineer",
+      "company": "Cobalt Pay",
+      "duration": "3 yrs 1 mo",
+      "location": "Remote",
+      "current": false,
+      "logo": "",
+      "description": "Primary on-call for card authorization. Wrote the incident review process the company still uses."
+     }
+    ],
+    "education": [],
+    "about": "I like making deploys boring. I run the Kubernetes platform our product teams ship on, and I care a lot about on-call that doesn't burn people out.",
+    "skills": [
+     "Kubernetes",
+     "Terraform",
+     "Go",
+     "PostgreSQL",
+     "Observability"
+    ],
+    "projects": [],
+    "score": 1
+   }
+  }
+ }
+]

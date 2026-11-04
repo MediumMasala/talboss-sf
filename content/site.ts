@@ -7,8 +7,24 @@
 
 export const BRAND_NAME = "Tal Boss";
 
+/**
+ * Claims used in paid-ad copy. Change them here only.
+ * network: verified (~234K Tal app + ~1.04M Grapevine). Never say "active" or "every week".
+ * startups: founder-stated, not verified in our database.
+ * Each number appears once in the page body (select.about), plus the hero field legend.
+ */
+const claims = {
+  network: "300,000+",
+  startups: "5,000+",
+};
+
+/** DEPRECATED (founder decision, 4 Nov 2026): no named humans. Kept only so components compile. */
+export type TeamMember = { name: string; role: string; photo: string; linkedin: string };
+
 export const site = {
   name: BRAND_NAME,
+
+  claims,
 
   seo: {
     title: `${BRAND_NAME}: apply once, get represented in 1000+ job opportunities`,
@@ -19,7 +35,7 @@ export const site = {
   funding: {
     before: "We have raised",
     amount: "$7 million",
-    after: "from Sequoia.",
+    after: "from Peak XV (formerly Sequoia Capital).",
   },
 
   hero: {
@@ -123,55 +139,126 @@ export const site = {
     ] as [string, string, string, number][],
   },
 
-  /** Tal Select (US): the landing at "/" for US LinkedIn ads. */
+  /** Tal Select (US): the landing at "/" for US LinkedIn ads. Every key is mapped in docs/team/COPY.md. */
   select: {
     seo: {
-      title: "Tal Select: get represented for top SF and US tech roles",
-      description: "Apply once. For six months, Tal Select puts you forward by name for top SF and US tech roles, to the people who hire. Free for you.",
+      title: "Tal Select: an AI talent agent for engineers, now opening in SF",
+      description:
+        "Tal is a talent agent for top professionals, opening in SF now. Tal finds roles that fit and emails them to you. Nobody sees your name until you say yes. Free.",
     },
-    eyebrow: "Tal Select · San Francisco",
-    headline: { lead: "Apply once.", main: "We represent you for", scribble: "6 months.", tail: "" },
-    sub: "Tal Select is the talent agency inside Tal's network of 300,000+ tech professionals. We put you forward, by name, for top roles in SF and across the US, and set up the conversations with the people who hire.",
-    chips: ["Free for you", "Founders and hiring managers, not job boards", "Six months, every role that fits"],
-    tags: { left: "THE BOSS", right: "YOU" },
+
+    /** Social card (opengraph-image). */
+    og: {
+      line: "Keep building. Tal makes the intros.",
+      sub: "Tal Select is opening in SF. Free for engineers.",
+      alt: "Tal Select: keep building, Tal makes the intros.",
+    },
+
+    /** DEPRECATED (founder decision, 4 Nov): no named humans on the page. Leave empty; frontend should drop the team block. */
+    team: [] as TeamMember[],
+
+    hero: {
+      eyebrow: "Tal Select · now opening in SF",
+      /** Two lines. Line one sits quieter; line two carries the weight. */
+      title: ["Keep building.", "Tal makes the intros."] as [string, string],
+      sub: "Tal is a talent agent for top professionals, opening in SF now. For six months, Tal finds roles that fit you and emails them to you. Nobody sees your name until you say yes. Free.",
+      /** Small line under the form card. Hide after done. */
+      note: "You'll read the intro Tal would send a founder about you before he asks for your resume.",
+    },
 
     apply: {
       you: {
-        title: "Start with who you are",
-        hint: "We'll find your public LinkedIn profile, so you don't have to fill in a form.",
+        title: "Who should Tal represent?",
+        hint: "Name, company and title. Tal finds your LinkedIn and drafts your intro from it.",
         fields: {
-          name: { label: "Full name", placeholder: "Alex Chen" },
+          name: { label: "Full name", placeholder: "Your full name" },
           company: { label: "Company", placeholder: "Where you work now" },
-          role: { label: "Title", placeholder: "Senior Software Engineer" },
+          role: { label: "Title", placeholder: "Member of Technical Staff" },
         },
-        cta: "Find my LinkedIn",
+        cta: "Draft my intro",
         manual: "Paste my LinkedIn link instead",
-        manualLabel: "LinkedIn profile link",
+        manualLabel: "Your LinkedIn link",
         manualPlaceholder: "linkedin.com/in/your-name",
-        manualCta: "Use this profile",
-        badUrl: "That doesn't look like a LinkedIn profile link (linkedin.com/in/…).",
-        missing: "Add your full name and company.",
+        manualCta: "Draft my intro",
+        badUrl: "That isn't a LinkedIn profile link. It should look like linkedin.com/in/your-name.",
+        missing: "Tal needs your full name and company to find you.",
       },
       search: {
-        lines: ["Searching LinkedIn", "Reading your profile", "Matching your experience"],
-        wait: "Usually under a minute.",
-        skip: "Skip this, I'll just add my resume",
+        /** Index 0 = API stages "search" and "people", 1 = "profile", 2 = found and about to show. */
+        lines: ["Searching LinkedIn", "Reading the profile Tal found", "Lining it up for you to check"],
+        /** The only wait string on the page. */
+        wait: "Usually about 15 seconds.",
+        skip: "Skip this. I'll add my resume.",
       },
       confirm: {
         title: "Is this you?",
+        hint: "Tal only reads your public profile.",
         yes: "Yes, that's me",
-        no: "No, not me",
-        trying: "Checking the next profile",
+        no: "Not me",
+        trying: "Trying the next match",
       },
       notFound: {
-        title: "We couldn't find you on LinkedIn",
-        body: "Paste your profile link, or skip it and we'll work from your resume.",
-        skip: "Skip, I'll add my resume",
+        title: "Tal couldn't find you.",
+        body: "Some profiles don't show up in search. Paste your link, or skip it and Tal will work from your resume.",
+        manual: "Paste my LinkedIn link",
+        skip: "Skip. I'll add my resume.",
       },
+      /** API code "rate_limited" (per-IP or per-name limit). Never say "couldn't find you". Primary action = paste link. */
+      rateLimited: {
+        title: "Tal is getting a lot of requests from your network.",
+        body: "Lookups from your network are paused for now. Paste your LinkedIn link and Tal will carry on, or skip it and Tal will work from your resume.",
+        manual: "Paste my LinkedIn link",
+        skip: "Skip. I'll add my resume.",
+      },
+      /** Global daily lookup cap reached. Never say "couldn't find you". Primary action = paste link. */
+      dailyCap: {
+        title: "Tal's LinkedIn search is full for today.",
+        body: "Paste your LinkedIn link and Tal will carry on, or skip it and Tal will work from your resume.",
+        manual: "Paste my LinkedIn link",
+        skip: "Skip. I'll add my resume.",
+      },
+
+      /** Bold move: the email card shown right after "Yes, that's me". Pitch from /api/pitch streams into the body. */
+      email: {
+        label: "The intro Tal will send",
+        fromLabel: "From",
+        from: "Tal · Tal Select",
+        toLabel: "To",
+        /** `kind` is a short noun phrase for their kind of role, e.g. "an ML infrastructure role". */
+        to: (kind: string) => `a founder hiring for ${kind}`,
+        toFallback: "a founder hiring for a role like yours",
+        subjectLabel: "Subject",
+        subject: (first: string, role: string, company: string) =>
+          `Intro: ${first}${role ? `, ${role}` : ""}${company ? ` at ${company}` : ""}`,
+        drafting: "Tal is drafting your intro",
+        draftTag: "Draft",
+        note: "Tal drafted this from your LinkedIn. His team sharpens it, and it goes out only after you say yes to a role.",
+        /** One sharpening question. Show `questions[0]`; the rest are alternates to rotate or A/B. */
+        questions: [
+          "What's the hardest thing you've shipped?",
+          "What are you proudest of from the last two years?",
+          "What problem would you happily spend the next three years on?",
+          "What do teammates come to you for?",
+        ],
+        /** Shown with the question when /api/pitch returns needsMore:true. Pick by what Tal actually has. */
+        needsMoreThin: "Tal only has your title so far. One line from you changes that.",
+        needsMoreLinkedIn: "Tal only has your LinkedIn so far. One line from you changes that.",
+        /** DEPRECATED alias of needsMoreThin; never show it once LinkedIn is confirmed. */
+        needsMore: "Tal only has your title so far. One line from you changes that.",
+        placeholder: "One sentence is plenty.",
+        submit: "Rewrite it",
+        rewriting: "Tal is rewriting it with your answer",
+        rewritten: "Rewritten with your answer.",
+        keep: "Looks good as is",
+        error: "Tal couldn't rewrite it just now. Try once more?",
+      },
+
+      /** The resume, asked for as a reward. */
       resume: {
-        title: "Last step: your resume",
-        hint: "PDF or DOCX, up to 5MB. We read it so we can pitch you well.",
+        title: "Want it sharper? Give Tal your resume.",
+        hint: "PDF or DOCX, up to 5MB. More for Tal to work from means a better intro.",
         authLabel: "US work authorization",
+        authOptional: "Optional",
         auth: [
           ["citizen", "US citizen"],
           ["green_card", "Green card"],
@@ -179,67 +266,106 @@ export const site = {
           ["needs_sponsorship", "Will need sponsorship"],
           ["outside_us", "Based outside the US"],
         ] as [string, string][],
-        sending: ["Saving your resume", "Building your Tal Select profile", "Lining up the roles that fit"],
+        cta: "Represent me",
+        sending: ["Saving your details", "Setting up your Tal Select profile", "Starting your six months"],
+      },
+      /** The quiet path for people without a resume on hand. Shown as a small text link under the drop zone. */
+      noResume: {
+        link: "No resume handy? Tal will work from your LinkedIn.",
+        /** Use when LinkedIn was skipped, so the line stays true. */
+        linkNoLinkedIn: "No resume handy? Your email is enough for now.",
+        title: "Where should Tal reach you?",
+        hint: "Tal emails you when a role fits. You reply yes or no.",
+        emailLabel: "Email",
+        emailPlaceholder: "you@example.com",
+        emailMissing: "Add an email so Tal can reach you.",
+        emailInvalid: "That email doesn't look right. Check for a typo?",
+        cta: "Represent me",
+        back: "Add a resume instead",
       },
       done: {
         title: "You're in Tal Select.",
-        lead: (first: string) => `Welcome${first ? `, ${first}` : ""}. Here's what happens next.`,
+        lead: (first: string) => `Welcome${first ? `, ${first}` : ""}. Tal takes it from here.`,
+        early: "You're early. Tal's first US intros go to the first members.",
+        /** The intro card on the done screen, if it is shown again there. */
+        pitch: {
+          label: "The intro Tal will send",
+          tag: "Draft",
+          loading: "Tal is drafting your intro",
+          note: "Tal drafted this from your LinkedIn and title. His team sharpens it before any founder reads it.",
+          /** When the API returns source:"fallback". */
+          fallbackNote: "A starting point. Tal writes the real one after reading your profile.",
+        },
         steps: [
-          { when: "This week", what: "A person on our talent team reads your profile and resume. No keyword filters." },
-          { when: "Next", what: "We write your Tal Select pitch: a short, specific case for you, in our words." },
-          { when: "For 6 months", what: "We put you forward for top SF and US roles that fit, to the founders and hiring managers who make the call." },
-          { when: "When it clicks", what: "You get an intro and a direct chat with the person hiring. You decide who to talk to." },
+          { when: "Tonight", what: "Tal reads your profile and sharpens your intro." },
+          { when: "As roles come in", what: "Tal emails you the ones that fit. Each email is one role, and you reply yes or no." },
+          { when: "When you say yes", what: "Nobody sees your name before then. Tal sends your intro to the founder or hiring manager and sets up the conversation." },
+          { when: "For 6 months", what: "Tal keeps looking while you keep building." },
         ],
-        until: (date: string) => `Your representation runs until ${date}.`,
-        email: (email: string) => `We'll reach you at ${email}.`,
-        noEmail: "We couldn't find an email on your resume. Add one and upload again so we can reach you.",
-        free: "Free for you. Companies pay us when they hire.",
+        until: (date: string) => `Tal represents you until ${date}.`,
+        email: (email: string) => `Tal will write to you at ${email}.`,
+        noEmail: "Tal couldn't find an email on your resume. Add one and upload again so he can reach you.",
+        free: "Free for you. Companies pay when they hire.",
       },
     },
 
-    stats: [
-      { value: "300K+", label: "tech professionals in the Tal network" },
-      { value: "6 months", label: "of active representation from one application" },
-      { value: "1:1", label: "intros to the person hiring, not a recruiter queue" },
-    ],
+    /** Proof section 1: how it works. */
+    how: {
+      heading: "How Tal works",
+      steps: [
+        { title: "Tell Tal who you are", body: "Name, company and title. Tal finds your LinkedIn and drafts your intro on the spot." },
+        { title: "Sharpen it in one line", body: "Answer one question and Tal rewrites the draft with your detail in it." },
+        { title: "Tal finds the roles", body: "Tal and his team work round the clock to find roles that fit, then email them to you." },
+        { title: "You say yes, then meet the boss", body: "Your name stays private until you say yes. Then Tal sets up the conversation with the founder or hiring manager." },
+      ],
+    },
 
-    compare: {
-      heading: "Represented, not filtered",
-      cols: ["Applying on your own", "With Tal Select"],
-      rows: [
-        ["Who reads you first", "A keyword filter", "A person on our talent team"],
-        ["How you show up", "One resume in a pile", "By name, with a pitch written for you"],
-        ["Who you talk to first", "A recruiter screen", "The founder or hiring manager"],
-        ["How long it works", "One job at a time", "Every role that fits, for 6 months"],
-      ] as [string, string, string][],
+    /** Proof section 2: the terms, stated plainly. */
+    deal: {
+      heading: "The deal",
+      items: [
+        { title: "Free for you", body: "Companies pay when they hire someone Tal introduced. You never pay." },
+        { title: "Your yes, every time", body: "Tal asks before putting you forward for any role, one role at a time." },
+        { title: "Six months, then you decide", body: "Representation ends on a date you can see. Want more time? Tal will ask." },
+        { title: "Your data has one job", body: "Tal uses your profile and resume to represent you. Ask and we delete them." },
+      ],
+    },
+
+    /** Numbers section is cut (each claim appears once, in `about.more`). Kept empty so Sections.tsx compiles until it is removed. */
+    stats: [] as { value: string; label: string }[],
+
+    /** Proof section 3: Meet Tal. The only body copy that uses the claim numbers (in `more`). */
+    about: {
+      heading: "Meet Tal",
+      body: "An AI agent with a human team behind him. He reads every profile, finds the roles that fit, and emails them to you.",
+      /** Second paragraph, smaller. */
+      more: `Tal comes from a hiring network built in Bengaluru, with ${claims.network} tech professionals and ${claims.startups} AI and consumer startups. Tal Select is opening in SF now, and the first members get Tal's first US intros.`,
+      /** DEPRECATED with `team`; unused. */
+      teamLabel: "",
     },
 
     proofLine: "Bosses from these companies hire on Tal",
 
-    how: {
-      heading: "How it works",
-      steps: [
-        { title: "Tell us who you are", body: "Name, company and title. We pull your LinkedIn so there's no form." },
-        { title: "Add your resume", body: "One upload finishes your application." },
-        { title: "We pitch you", body: "For six months we put you forward, by name, for roles that fit." },
-        { title: "Talk to the boss", body: "When a founder or hiring manager wants to meet, we set up the chat." },
-      ],
-    },
-
     faq: {
       heading: "Questions",
       items: [
-        ["Who is Tal Select for?", "Engineers, product managers, designers, and data and ML people with a strong track record who want roles at top startups and tech companies in San Francisco and across the US."],
-        ["What does it cost?", "Nothing. Tal Select is free for you. Companies pay us when they hire someone we introduced."],
-        ["Will you send my resume anywhere without asking?", "No. We ask you before we put you forward for a specific role."],
-        ["What happens after six months?", "Your representation ends. If you're still looking, we'll ask whether you want to keep going."],
-        ["What about work authorization?", "Tell us your status when you apply. We only put you forward for roles where it fits."],
-        ["Who is behind Tal?", "Tal is built by Grapevine (Watercooler Chat Private Limited). Our network of 300,000+ tech professionals is where Tal Select comes from."],
-        ["What do you do with my data?", "We use your LinkedIn profile and resume to represent you, and nothing else. You can ask us to delete them at any time."],
+        ["Who is Tal?", "The agent behind Tal Select. Tal drafts your intro, his team sharpens it, and together they pitch you to the founders and hiring managers who make the call."],
+        ["How does Tal find roles?", "Tal and his team search for roles that match your experience, your level and your work authorization, and bring you only the ones that fit."],
+        ["How will I hear from Tal?", "By email. When a role fits, Tal writes to you about it, and you reply yes or no."],
+        ["I'm not looking. Should I join?", "That's the best time. You keep your job, and you decide on each role Tal brings you."],
+        ["What does it cost?", "Nothing. Companies pay when they hire someone Tal introduced. Representation lasts six months, then Tal asks if you want more."],
+        ["Will my company find out?", "Your name goes to a company only after you say yes to that specific role. Tal asks every time."],
+        ["What about work authorization?", "Tell Tal your status when you join. Tal only puts you forward for roles where it works."],
+        ["Who runs Tal, and what happens to my data?", "Tal is built by Grapevine (Watercooler Chat Private Limited) in Bengaluru. Your LinkedIn and resume are used to represent you, nothing else. Email support@gvine.app and we delete them."],
       ] as [string, string][],
     },
 
-    final: { heading: "Six months of introductions start with one application.", cta: "Apply to Tal Select" },
+    /** Also the nav button label. Hide both after done. */
+    final: {
+      heading: "Your name, in front of the right founder.",
+      sub: "Free. Six months. Your name goes out only with your yes.",
+      cta: "Join Tal Select",
+    },
   },
 
   /** Runs under Grapevine's policies (Watercooler Chat Private Limited). /privacy and /terms redirect here. */

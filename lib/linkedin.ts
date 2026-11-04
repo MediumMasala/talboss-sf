@@ -2,12 +2,15 @@
  * LinkedIn lookup via Apify, ported from boss-live (lookup.py), built for Workers:
  * runs start asynchronously and the browser polls, so no request waits on an actor.
  *
- *   1. search  apify~google-search-scraper   site:linkedin.com/in "Name" "Company"  → /in/ slugs
- *   2. people  apimaestro~linkedin-profile-search-scraper (fallback when Google finds nothing)
- *   3. profile apimaestro~linkedin-profile-detail on the best slug → the card the person confirms
+ *   search  apify~google-search-scraper   site:linkedin.com/in "Name" Company  → ranked /in/ slugs
+ *   people  apimaestro~linkedin-profile-search-scraper  first + last name → up to 10 FULL profiles
+ *   profile apimaestro~linkedin-profile-detail  one slug → one full profile (only when search found a
+ *           slug the people search didn't return)
  *
- * The browser only ever holds a signed token naming one run, so it can't read anyone else's lookup.
- * Every pay-per-event run is capped (maxItems + maxTotalChargeUsd). Worst case ≈ $0.15 per person.
+ * search and people start together; whichever produces a confident match first wins (see linkedin-flow.ts).
+ * The browser only ever holds a signed token naming its own runs, so it can't read anyone else's lookup.
+ * Every pay-per-event run is capped (maxItems + maxTotalChargeUsd). Worst case ≈ $0.07 per person
+ * (people ≤ $0.05, ≤ 3 profile pulls at $0.005, one SERP page).
  */
 
 const APIFY = "https://api.apify.com/v2";
@@ -20,7 +23,11 @@ export type Stage = keyof typeof ACTORS;
 
 export type LookupInput = { name: string; company: string; role: string };
 
-export type Experience = { title: string; company: string; duration: string; location: string; current: boolean; logo: string };
+export type Experience = {
+  title: string; company: string; duration: string; location: string; current: boolean; logo: string;
+  /** What they wrote about the role (≤ 400 chars), when they wrote anything. */
+  description?: string;
+};
 export type Profile = {
   fullname: string;
   headline: string;
@@ -31,6 +38,14 @@ export type Profile = {
   currentCompany: string;
   companyLogo: string;
   experience: Experience[];
+  /** Up to two schools, when LinkedIn lists them. Optional: older cards and previews may not have it. */
+  education?: { school: string; degree: string }[];
+  /** Their "About" text (≤ 800 chars, emails, links and phone numbers removed). Feeds /api/pitch. */
+  about?: string;
+  /** Top skills, from the profile and its roles (≤ 10). */
+  skills?: string[];
+  /** Up to two projects they list. */
+  projects?: { name: string; description: string }[];
   score: number;
 };
 
@@ -46,7 +61,29 @@ async function mac(secret: string, value: string) {
   return Array.from(sig.subarray(0, 16), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export type RunToken = { stage: Stage; run: string; input: LookupInput; slugs: string[]; tried: string[]; exp: number };
+/** A slug we might show. h: Google listed it with the company in the snippet. r: its Google rank.
+ *  sc: profile score (0–1) once we hold its full profile; b: tie-break bonus (role in headline, photo). */
+export type Cand = { s: string; h?: 1; r?: number; sc?: number; b?: number };
+
+/** Everything a lookup needs between polls. Signed (not encrypted): it names run ids and public slugs, never profile data. */
+export type RunToken = {
+  v: 2;
+  /** Random id of this lookup's server-side profile store (KV "li:d:<id>"). */
+  id: string;
+  input: LookupInput;
+  runs: { search?: string; people?: string; profile?: string };
+  /** Slug the in-flight profile run is pulling. */
+  pull?: string;
+  pulls: number;
+  cands: Cand[];
+  shown: string[];
+  dead: string[];
+  manual?: 1;
+  t0: number;
+  /** Stop waiting on Google for a better match at this time (ms). Set short after "not me". */
+  until?: number;
+  exp: number;
+};
 
 export async function signToken(secret: string, t: RunToken) {
   const body = b64url(JSON.stringify(t));
@@ -64,7 +101,7 @@ export async function readToken(secret: string, token: string | null): Promise<R
   if (diff) return null;
   try {
     const t = JSON.parse(unb64url(body)) as RunToken;
-    return t.exp > Date.now() ? t : null;
+    return t.v === 2 && t.exp > Date.now() ? t : null;
   } catch {
     return null;
   }
@@ -75,7 +112,7 @@ export async function readToken(secret: string, token: string | null): Promise<R
 type Run = { id: string; status: string; defaultDatasetId: string };
 
 export async function startRun(token: string, stage: Stage, input: Record<string, unknown>): Promise<Run> {
-  const params = new URLSearchParams({ token, timeout: "90", memory: "512" });
+  const params = new URLSearchParams({ token, timeout: stage === "search" ? "60" : "75", memory: "512" });
   // Pay-per-event actors take hard caps; the Google SERP actor rejects them (its cost is bounded by the input).
   if (stage === "people") {
     params.set("maxItems", "10");
@@ -89,19 +126,20 @@ export async function startRun(token: string, stage: Stage, input: Record<string
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`apify start ${stage} ${res.status}`);
   return ((await res.json()) as { data: Run }).data;
 }
 
 export async function getRun(token: string, run: string): Promise<Run> {
-  const res = await fetch(`${APIFY}/actor-runs/${encodeURIComponent(run)}?token=${token}`);
+  const res = await fetch(`${APIFY}/actor-runs/${encodeURIComponent(run)}?token=${token}`, { signal: AbortSignal.timeout(8_000) });
   if (!res.ok) throw new Error(`apify run ${res.status}`);
   return ((await res.json()) as { data: Run }).data;
 }
 
 export async function items<T = Record<string, unknown>>(token: string, dataset: string): Promise<T[]> {
-  const res = await fetch(`${APIFY}/datasets/${encodeURIComponent(dataset)}/items?token=${token}&clean=true&format=json`);
+  const res = await fetch(`${APIFY}/datasets/${encodeURIComponent(dataset)}/items?token=${token}&clean=true&format=json&limit=20`, { signal: AbortSignal.timeout(8_000) });
   if (!res.ok) throw new Error(`apify dataset ${res.status}`);
   const data = await res.json();
   return Array.isArray(data) ? (data as T[]) : [];
@@ -125,7 +163,7 @@ export function searchInput({ name, company }: LookupInput) {
 
 export function peopleInput({ name }: LookupInput) {
   const parts = name.trim().split(/\s+/);
-  return { firstname: parts[0], lastname: parts.length > 1 ? parts[parts.length - 1] : "" };
+  return { firstname: parts[0], lastname: parts.length > 1 ? parts[parts.length - 1] : "", max_profiles: 10 };
 }
 
 export const profileInput = (slug: string) => ({ username: slug });
@@ -133,7 +171,11 @@ export const profileInput = (slug: string) => ({ username: slug });
 /* ------------------------------------------------------------------ matching */
 
 const STOP = new Set(["pvt", "ltd", "private", "limited", "inc", "llc", "corp", "the", "of", "and", "at", "by", "in", "co", "technologies", "technology", "labs", "hq"]);
-export const tokens = (s: string) => new Set((s || "").toLowerCase().match(/[a-z0-9]+/g)?.filter((t) => t.length > 1 && !STOP.has(t)) ?? []);
+export const tokens = (s: string) =>
+  new Set(
+    (s || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "") // José → jose
+      .match(/[\p{L}\p{N}]+/gu)?.filter((t) => t.length > 1 && !STOP.has(t)) ?? [],
+  );
 const overlap = (a: Set<string>, b: Set<string>) => [...a].filter((t) => b.has(t)).length;
 
 const IN_URL = /https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/in\/([A-Za-z0-9\-%_À-ɏ]+)\/?/i;
@@ -145,50 +187,97 @@ export function slugFromUrl(url: string): string | null {
 
 type Serp = { organicResults?: { url?: string; title?: string; description?: string }[] };
 
-/** Google results → up to 4 slugs, those whose title or snippet mention the company first. */
-export function slugsFromSerp(pages: Serp[], { name, company }: LookupInput): string[] {
+/** Google results → up to 4 candidates, flagged when the title or snippet mentions the company. */
+export function candsFromSerp(pages: Serp[], { name, company }: LookupInput): Cand[] {
   const comp = tokens(company), who = tokens(name);
-  const hits: string[] = [], rest: string[] = [];
+  const out: Cand[] = [];
   for (const page of pages)
     for (const r of page.organicResults ?? []) {
       const slug = slugFromUrl(r.url ?? "");
-      if (!slug || hits.includes(slug) || rest.includes(slug)) continue;
+      if (!slug || out.some((c) => c.s === slug)) continue;
       const text = tokens(`${r.title ?? ""} ${r.description ?? ""}`);
-      if (who.size && !overlap(who, text)) continue; // the name must appear somewhere
-      (overlap(comp, text) ? hits : rest).push(slug);
+      if (who.size && !text.has(firstToken(name))) continue; // the first name must appear (a shared surname isn't a match)
+      out.push(overlap(comp, text) ? { s: slug, h: 1, r: out.length } : { s: slug, r: out.length });
     }
-  return [...hits, ...rest].slice(0, 4);
+  return out.slice(0, 4);
 }
 
-type Raw = {
+export type Raw = {
   basic_info?: {
     fullname?: string; headline?: string; profile_picture_url?: string; public_identifier?: string; profile_url?: string;
     current_company?: string; current_company_logo_url?: string; about?: string; location?: { full?: string } | string;
+    top_skills?: string[];
   };
-  experience?: { title?: string; company?: string; duration?: string; location?: string; is_current?: boolean; company_logo_url?: string }[];
+  experience?: {
+    title?: string; company?: string; duration?: string; location?: string; is_current?: boolean; company_logo_url?: string;
+    description?: string; skills?: string[];
+  }[];
+  education?: { school?: string; degree?: string; degree_name?: string; field_of_study?: string; duration?: string }[];
+  projects?: { name?: string; description?: string }[];
 };
 
-export function slugsFromPeople(rows: Raw[], { company, role }: LookupInput): string[] {
-  const comp = tokens(company), r = tokens(role);
-  return rows
-    .filter((x) => x.basic_info?.public_identifier)
-    .map((x) => {
-      const hl = tokens(x.basic_info?.headline ?? "");
-      return { slug: x.basic_info!.public_identifier!.toLowerCase(), s: (overlap(comp, hl) ? 2 : 0) + (overlap(r, hl) ? 1 : 0) + (x.basic_info?.profile_picture_url ? 0.2 : 0) };
-    })
-    .sort((a, b) => b.s - a.s)
-    .map((x) => x.slug)
-    .slice(0, 3);
+const str = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : undefined);
+
+/** Free text from a profile, minus contact details (emails, links, phone numbers), whitespace collapsed. */
+export function scrub(v: unknown, n: number): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const t = v
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, " ")
+    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, " ")
+    .replace(/\+?\d[\d\s().-]{8,}\d/g, " ")
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return t ? (t.length > n ? `${t.slice(0, n).replace(/\s+\S*$/, "")}…` : t) : undefined;
+}
+const strings = (v: unknown, n: number, each = 60) =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "").slice(0, n).map((x) => x.trim().slice(0, each)) : [];
+
+/** Keep only what we score and show (≈2 KB a profile), so the KV store stays small. */
+export function trimRaw(p: Raw): Raw {
+  const bi = p.basic_info ?? {};
+  const loc = typeof bi.location === "string" ? bi.location : bi.location?.full;
+  return {
+    basic_info: {
+      fullname: str(bi.fullname, 120), headline: str(bi.headline, 300), profile_picture_url: str(bi.profile_picture_url, 600),
+      public_identifier: str(bi.public_identifier, 120)?.toLowerCase(), profile_url: str(bi.profile_url, 300),
+      current_company: str(bi.current_company, 120), current_company_logo_url: str(bi.current_company_logo_url, 600),
+      about: scrub(bi.about, 800), location: str(loc, 120), top_skills: strings(bi.top_skills, 10),
+    },
+    experience: (p.experience ?? []).slice(0, 6).map((e) => ({
+      title: str(e.title, 120), company: str(e.company, 120), duration: str(e.duration, 80), location: str(e.location, 120),
+      is_current: Boolean(e.is_current), company_logo_url: str(e.company_logo_url, 600),
+      description: scrub(e.description, 400), skills: strings(e.skills, 6),
+    })),
+    projects: (p.projects ?? []).slice(0, 2).map((x) => ({ name: str(x.name, 100), description: scrub(x.description, 300) })).filter((x) => x.name),
+    education: (p.education ?? []).slice(0, 3).map((e) => ({
+      school: str(e.school, 160), degree: str(e.degree_name || e.degree, 160), field_of_study: str(e.field_of_study, 160), duration: str(e.duration, 40),
+    })),
+  };
 }
 
-/** 0–1: 0.6 for the name, 0.4 if the company shows up anywhere on the profile. */
+export const slugOf = (p: Raw) => (p.basic_info?.public_identifier ?? "").toLowerCase();
+
+/** Small tie-break among equal scores (ten people share a name): role words in the headline, then a photo. */
+export function bonus(p: Raw, { role }: LookupInput): number {
+  const hl = tokens(`${p.basic_info?.headline ?? ""} ${(p.experience ?? [])[0]?.title ?? ""}`);
+  return (overlap(tokens(role), hl) ? 0.05 : 0) + (p.basic_info?.profile_picture_url ? 0.01 : 0);
+}
+
+const firstToken = (name: string) => [...tokens(name)][0] ?? "";
+
+/**
+ * 0–1: 0.6 for the name, 0.4 if the company shows up anywhere on the profile. A different first name
+ * (a colleague who shares the surname) scales the score below the show threshold.
+ */
 export function scoreProfile(p: Raw, { name, company }: LookupInput): number {
   const bi = p.basic_info ?? {};
   const want = tokens(name), got = tokens(bi.fullname ?? "");
   const nameSim = want.size ? overlap(want, got) / want.size : 0;
   const comp = tokens(company);
   const hay = [bi.headline, bi.current_company, bi.about, ...(p.experience ?? []).map((e) => e.company)].map((h) => tokens(h ?? ""));
-  return 0.6 * nameSim + (comp.size && hay.some((h) => overlap(comp, h)) ? 0.4 : 0);
+  const score = 0.6 * nameSim + (comp.size && hay.some((h) => overlap(comp, h)) ? 0.4 : 0);
+  return got.has(firstToken(name)) ? score : score * 0.4;
 }
 
 export function shapeProfile(p: Raw, score: number): Profile {
@@ -206,26 +295,51 @@ export function shapeProfile(p: Raw, score: number): Profile {
     experience: (p.experience ?? []).slice(0, 4).map((e) => ({
       title: e.title ?? "", company: e.company ?? "", duration: e.duration ?? "", location: e.location ?? "",
       current: Boolean(e.is_current), logo: e.company_logo_url ?? "",
+      ...(e.description ? { description: scrub(e.description, 400) } : {}),
     })),
+    about: scrub(bi.about, 800),
+    skills: [...new Set([...strings(bi.top_skills, 10), ...(p.experience ?? []).flatMap((e) => strings(e.skills, 6))])].slice(0, 10),
+    projects: (p.projects ?? []).slice(0, 2).filter((x) => x.name).map((x) => ({ name: x.name ?? "", description: scrub(x.description, 300) ?? "" })),
+    education: (p.education ?? []).slice(0, 2).map((e) => ({ school: e.school ?? "", degree: [e.degree, e.field_of_study].filter(Boolean).join(", ") })),
     score: Math.round(score * 100) / 100,
   };
 }
 
 /* ------------------------------------------------------------------ validation + rate limit */
 
-export function cleanInput(raw: unknown): LookupInput | null {
-  if (!raw || typeof raw !== "object") return null;
-  const g = (k: string) => String((raw as Record<string, unknown>)[k] ?? "").replace(/["\n\r]/g, " ").trim().slice(0, 80);
+export type InputProblem = "missing" | "name" | "company";
+
+/**
+ * Trim and sanity-check the form. Fails fast on input no lookup could match (a URL or email as a name,
+ * digits, one letter), so we never pay for a run that can't succeed.
+ */
+export function cleanInput(raw: unknown): { ok: true; input: LookupInput } | { ok: false; problem: InputProblem } {
+  if (!raw || typeof raw !== "object") return { ok: false, problem: "missing" };
+  const g = (k: string) => String((raw as Record<string, unknown>)[k] ?? "").replace(/["\n\r\t]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
   const input = { name: g("name"), company: g("company"), role: g("role") };
-  return input.name.length >= 2 && input.company.length >= 2 ? input : null;
+  if (input.name.length < 2 || input.company.length < 2) return { ok: false, problem: "missing" };
+  const letters = (input.name.match(/\p{L}/gu) ?? []).length;
+  if (letters < 2 || /[0-9@/:]|www\.|https?/i.test(input.name)) return { ok: false, problem: "name" };
+  if (!/[\p{L}\p{N}]/u.test(input.company)) return { ok: false, problem: "company" };
+  return { ok: true, input };
 }
 
-/** At most `limit` lookups per IP per hour, counted in KV. Fails open if KV is missing (local dev). */
-export async function allowLookup(kv: KVNamespace | undefined, ip: string, limit = 6): Promise<boolean> {
+/** At most `limit` calls per IP per hour in `bucket`, counted in KV. Fails open if KV is missing. */
+export async function allow(kv: KVNamespace | undefined, bucket: string, ip: string, limit: number): Promise<boolean> {
   if (!kv) return true;
-  const key = `rl:linkedin:${ip}:${Math.floor(Date.now() / 3_600_000)}`;
+  const key = `rl:${bucket}:${ip}:${Math.floor(Date.now() / 3_600_000)}`;
   const n = Number((await kv.get(key)) ?? 0);
   if (n >= limit) return false;
   await kv.put(key, String(n + 1), { expirationTtl: 3700 });
   return true;
 }
+
+
+/** Hex SHA-256, for cache keys that shouldn't carry names in the clear. */
+export async function sha(value: string): Promise<string> {
+  const d = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(value)));
+  return Array.from(d.subarray(0, 16), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export const queryKey = async ({ name, company }: LookupInput) =>
+  `li:q:v4:${await sha(`${name}|${company}`.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}|]+/gu, ""))}`;

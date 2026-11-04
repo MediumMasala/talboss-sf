@@ -17,6 +17,11 @@
   --cta-ring: #ffffff26;
   --live: #30d158;
   --danger: #ff6961;
+  --paper: #f4f2ec;
+  --paper-2: #ebe8df;
+  --ink-hover: #2a2925;
+  --placeholder: #a39e92;
+  --signal: #2b3cff;
   color-scheme: dark;
 }
 
@@ -35,7 +40,15 @@
   --color-cta-ink: var(--cta-ink);
   --color-cta-hover: var(--cta-hover);
 
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink-hover: var(--ink-hover);
+  --color-placeholder: var(--placeholder);
+  --color-signal: var(--signal);
+
+  --font-sans: var(--font-geist, var(--font-inter)), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
   /* SF Pro on Apple devices (it can't be served), Inter everywhere else. */
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), sans-serif;
 }
@@ -759,4 +772,119 @@
   background: radial-gradient(closest-side, #ffffff14, transparent 70%);
   filter: blur(10px);
   pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Tal Select (the page at "/"): warm paper, ink, one ultramarine signal for "you".
+ * The network field is a canvas; everything here is the quiet type and paper around it.
+ * ------------------------------------------------------------------------------------------- */
+:root:has(.ts-root) {
+  --canvas: #f4f2ec;
+  --paper: #f4f2ec;
+  --paper-2: #ebe8df;
+  --surface: #fffefb;
+  --surface-sunk: #f7f5ef;
+  --line: #e2ddd1;
+  --line-strong: #cbc4b4;
+  --ink: #0e0e0c;
+  --ink-hover: #2a2925;
+  --body: #34322d;
+  --muted: #6f6b62;
+  --placeholder: #a39e92;
+  --signal: #2b3cff;
+  --danger: #c2361f;
+  color-scheme: light;
+}
+
+.ts-root {
+  letter-spacing: -0.006em;
+  font-feature-settings: "ss01", "cv11";
+}
+
+.ts-root .font-serif {
+  letter-spacing: -0.012em;
+  font-optical-sizing: auto;
+}
+
+.ts-root ::selection {
+  background: #2b3cff;
+  color: #fffefb;
+}
+
+.ts-root :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.ts-root .apply-card {
+  box-shadow:
+    0 1px 0 rgb(14 14 12 / 0.04),
+    0 2px 6px -2px rgb(14 14 12 / 0.06),
+    0 40px 80px -40px rgb(14 14 12 / 0.28);
+}
+
+.ts-root .spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.ts-root .shimmer {
+  background: linear-gradient(100deg, var(--line) 30%, #f7f5ef 50%, var(--line) 70%);
+  background-size: 220% 100%;
+}
+
+.caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.14em;
+  background: var(--signal);
+  animation: caret 1s steps(1) infinite;
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.indeterminate {
+  animation: indeterminate 1.3s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+
+@keyframes indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* The field fades out at its bottom edge, so a tall card never shows where the canvas ends. */
+.field-host {
+  -webkit-mask-image: linear-gradient(#000 78%, transparent);
+  mask-image: linear-gradient(#000 78%, transparent);
+}
+
+/* Step headings take focus for screen readers; they don't need a ring. */
+.ts-root [tabindex="-1"]:focus,
+.ts-root [tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
+/* Words a sharpening rewrite added: blue for a moment, then ink. */
+.fresh {
+  color: var(--signal);
+  animation: fresh 2.6s 0.6s ease forwards;
+}
+
+@keyframes fresh {
+  to {
+    color: var(--ink);
+  }
+}
+
+[data-preview] .fresh {
+  animation: none;
 }

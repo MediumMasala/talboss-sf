@@ -1,20 +1,46 @@
-import { Container, Wordmark } from "../ui";
+import { site } from "@/content/site";
+import { HideFrom } from "./Phase";
+
+/** "tal" in the interface face, "Select" in the voice face: the agency inside the network. */
+export function Lockup({ className = "" }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-baseline gap-[0.18em] text-ink ${className}`}>
+      <span className="font-sans text-[1em] font-semibold tracking-[-0.045em]">tal</span>
+      <span className="font-serif text-[1.02em] italic tracking-[-0.01em]">Select</span>
+    </span>
+  );
+}
+
+/** Phones: the same funding line, verbatim, as one quiet line under the hero sub. */
+export function FundingLine({ className = "" }: { className?: string }) {
+  const { before, amount, after } = site.funding;
+  return (
+    <p className={`text-[clamp(10.5px,2.95vw,12px)] whitespace-nowrap text-muted ${className}`}>
+      {before} <span className="font-medium text-ink">{amount}</span> {after}
+    </p>
+  );
+}
 
 export function SelectNav() {
+  const { before, amount, after } = site.funding;
   return (
-    <header>
-      <Container className="flex items-center justify-between py-5 sm:py-6">
-        <a href="/" aria-label="Tal Select home" className="flex items-center gap-3 rounded-md">
-          <Wordmark className="w-11 sm:w-14" />
-          <span className="hidden h-6 w-px bg-line-strong sm:block" aria-hidden="true" />
-          <span className="hidden text-[13px] font-semibold tracking-[0.14em] text-ink uppercase sm:block">Select</span>
+    <header className="relative z-10 mx-auto flex w-full max-w-[1280px] items-center justify-between gap-4 px-4 pt-4 sm:px-8 sm:pt-6">
+      <a href="/" data-field-avoid className="rounded-md text-[22px] leading-none sm:text-[24px]" aria-label="Tal Select home">
+        <Lockup />
+      </a>
+      <div data-field-avoid className="flex items-center gap-5">
+        <p className="hidden text-right text-[13px] leading-tight text-muted sm:block">
+          {before} <span className="font-medium text-ink">{amount}</span> {after}
+        </p>
+        <HideFrom phases={["done"]}>
+        <a
+          href="#apply"
+          className="hidden h-9 items-center rounded-[9px] border border-line-strong px-3.5 text-[13.5px] font-medium text-ink transition-colors hover:border-ink lg:inline-flex"
+        >
+          {site.select.final.cta}
         </a>
-        <nav aria-label="Page" className="flex items-center gap-5 text-[14px] text-muted">
-          <a href="#how" className="transition-colors hover:text-ink">How it works</a>
-          <a href="#faq" className="hidden transition-colors hover:text-ink sm:inline">FAQ</a>
-          <a href="#apply" className="rounded-full border border-line-strong px-4 py-2 font-medium text-ink transition-colors hover:border-ink">Apply</a>
-        </nav>
-      </Container>
+        </HideFrom>
+      </div>
     </header>
   );
 }

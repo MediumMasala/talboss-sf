@@ -17,11 +17,23 @@ function fail(status: number, error: string) {
 
 const WORK_AUTH = new Set(["citizen", "green_card", "visa_no_sponsorship", "needs_sponsorship", "outside_us"]);
 
+/** Plain English until copy keys exist in content/site.ts. */
+const NO_RESUME = {
+  details: "We lost your name and company. Go back a step and try again.",
+  email: "Add an email so we can reach you, or upload your resume.",
+};
+
+const EMAIL_RE = /^[^\s@<>(),;:"]{1,64}@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,24}$/i;
+const validEmail = (v: string) => v.length <= 254 && EMAIL_RE.test(v);
+
+/** Collapse control characters and runs of spaces. */
+const tidy = (v: string) => v.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+
 /** The Tal Select details sent with the resume. Everything is trimmed; nothing here is trusted for logic. */
 function readApplication(raw: unknown): Application | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  const str = (k: string, n = 120) => (typeof r[k] === "string" ? (r[k] as string).trim().slice(0, n) : "");
+  const str = (k: string, n = 120) => (typeof r[k] === "string" ? tidy(r[k] as string).slice(0, n) : "");
   const name = str("name"), company = str("company"), designation = str("designation");
   if (!name || !company) return null;
   const status = str("linkedinStatus");
@@ -36,6 +48,9 @@ function readApplication(raw: unknown): Application | null {
     // Keep the confirmed card only if it's a sane size; never drop the application over it.
     linkedinProfile: r.linkedinProfile && typeof r.linkedinProfile === "object" && JSON.stringify(r.linkedinProfile).length < 20_000 ? r.linkedinProfile : null,
     workAuth: WORK_AUTH.has(str("workAuth")) ? str("workAuth") : null,
+    email: validEmail(str("email", 254).toLowerCase()) ? str("email", 254).toLowerCase() : null,
+    pitch: str("pitch", 800) || null,
+    pitchSource: str("pitchSource") === "ai" || str("pitchSource") === "fallback" ? (str("pitchSource") as "ai" | "fallback") : null,
   };
 }
 
@@ -68,19 +83,35 @@ export async function POST(request: Request) {
   }
 
   // Honeypot: real people never see this field. Pretend it worked.
-  if (form.get("company_website")) return Response.json({ ok: true, id: "ok" });
+  if (form.get("company_website")) return Response.json({ ok: true, id: "ok", email: null });
 
-  const file = form.get("resume");
-  if (!(file instanceof File)) return fail(400, errors.wrongType(""));
+  let application: Application | null = null;
+  try {
+    application = readApplication(parseJson(form.get("application")));
+  } catch {
+    application = null;
+  }
 
-  const check = checkResumeFile(file);
-  if (!check.ok) return fail(check.reason === "size" ? 413 : 400, check.message);
+  // The resume is optional. An empty file input (no name, no bytes) counts as no resume.
+  const picked = form.get("resume");
+  const file = picked instanceof File && (picked.size > 0 || picked.name) ? picked : null;
+  if (picked !== null && !(picked instanceof File) && picked !== "") return fail(400, errors.wrongType(""));
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  if (!hasResumeSignature(bytes, check.ext)) return fail(400, errors.corrupt);
-
-  // No form: read the email and LinkedIn off the resume itself.
-  const contact = await extractContact(bytes, check.ext);
+  let bytes: Uint8Array | null = null;
+  let fileInfo: ResumeSubmission["file"] = null;
+  let contact = { email: null as string | null, linkedin: null as string | null };
+  if (file) {
+    const check = checkResumeFile(file);
+    if (!check.ok) return fail(check.reason === "size" ? 413 : 400, check.message);
+    bytes = new Uint8Array(await file.arrayBuffer());
+    if (!hasResumeSignature(bytes, check.ext)) return fail(400, errors.corrupt);
+    // Read the email and LinkedIn off the resume itself.
+    contact = await extractContact(bytes, check.ext);
+    fileInfo = { name: file.name.slice(0, 200), type: file.type, size: file.size, ext: check.ext };
+  } else {
+    if (!application) return fail(400, NO_RESUME.details);
+    if (!application.email) return fail(400, NO_RESUME.email);
+  }
 
   const utmRaw = parseJson(form.get("utm"));
   const utm: Record<string, string> = {};
@@ -94,9 +125,10 @@ export async function POST(request: Request) {
   const submission: ResumeSubmission = {
     id: randomUUID(),
     createdAt: new Date().toISOString(),
-    email: contact.email ?? "",
-    linkedin: contact.linkedin,
-    file: { name: file.name.slice(0, 200), type: file.type, size: file.size, ext: check.ext },
+    // The resume's email wins; a typed one fills in when the resume has none (or there's no resume).
+    email: contact.email ?? application?.email ?? "",
+    linkedin: contact.linkedin ?? application?.linkedinUrl ?? null,
+    file: fileInfo,
     meta: {
       userAgent: request.headers.get("user-agent"),
       referrer: request.headers.get("referer"),
@@ -105,19 +137,12 @@ export async function POST(request: Request) {
     consent: { privacy: site.legal.privacyUrl, terms: site.legal.termsUrl },
   };
 
-  let application: Application | null = null;
-  try {
-    application = readApplication(parseJson(form.get("application")));
-  } catch {
-    application = null;
-  }
-
   try {
     await (await getStorage()).save(submission, bytes, application);
   } catch (error) {
-    console.error("[upload] storage failed", error);
+    console.error("[upload] storage failed", error instanceof Error ? error.message : "unknown");
     return fail(500, errors.server);
   }
 
-  return Response.json({ ok: true, id: submission.id, email: contact.email });
+  return Response.json({ ok: true, id: submission.id, email: submission.email || null });
 }

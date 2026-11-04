@@ -42,8 +42,9 @@ export async function GET(request: Request) {
         return {};
       }
     })();
-    const link = `${url.origin}/r/${r.id}/${await signResumeId(env.LINK_SECRET, r.id)}`;
-    lines.push([ist(r.created_at), r.name, r.company, r.designation, r.email, r.app_linkedin || r.linkedin, r.linkedin_status, r.work_auth, link, utm.utm_source, r.program, r.file_name, r.id].map(cell).join(","));
+    // Applications without a resume (they left an email instead) say so in the Resume column.
+    const link = r.has_resume === 0 ? "no resume" : `${url.origin}/r/${r.id}/${await signResumeId(env.LINK_SECRET, r.id)}`;
+    lines.push([ist(r.created_at), r.name, r.company, r.designation, r.email || r.app_email, r.app_linkedin || r.linkedin, r.linkedin_status, r.work_auth, link, utm.utm_source, r.program, r.file_name, r.id].map(cell).join(","));
   }
 
   return new Response(lines.join("\n") + "\n", {
