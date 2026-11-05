@@ -52,7 +52,7 @@ Hiring managers from these companies hire on Tal *(exact, FEEDBACK_V4_3)*
 ### L3 The numbers wall
 - THE PEOPLE BEHIND TAL
 - **300,000+ tech professionals in Tal's network.** (beside it, eight Tal faces, no names, no caption)
-- Here's who they are, by what they do. Tal is in early preview within the SF Bay Area.
+- Engineers, product managers, designers and founders, from Google to seed-stage startups. Tal is opening in the SF Bay Area first.
 - Five tiles from `network.json`, in this order: Software engineers 200,000+ · Product managers 29,000+ · Designers 13,000+ · AI and ML engineers 7,000+ · Founders 8,300+.
 - People from these companies are in Tal's network. (over the 12 verified marks; NETWORK_NUMBERS: 53,744 current employees of those companies)
 

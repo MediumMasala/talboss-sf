@@ -145,7 +145,7 @@ export const site = {
        */
       total: claims.network,
       headline: "tech professionals in Tal's network.",
-      body: "Here's who they are, by what they do. Tal is in early preview within the SF Bay Area.",
+      body: "Engineers, product managers, designers and founders, from Google to seed-stage startups. Tal is opening in the SF Bay Area first.",
       /**
        * FEEDBACK_V4_3: five tiles, not ten. Keys from content/network.json, shown in this order; the other rows stay in
        * the JSON, off the page.
