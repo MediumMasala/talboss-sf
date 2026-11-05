@@ -3,7 +3,9 @@
  *
  * - On Cloudflare (and `next dev`, via OpenNext's local bindings): file in KV (`RESUMES`, key
  *   "resume:<id>"), one row per submission in D1 (`DB`, table `submissions`).
- * - Anywhere else (plain `next start`): ./.uploads/<id>/, gitignored because it's personal data.
+ * - Railway (plain `next start` with DATA_DIR): the same code path over SQLite + files (lib/node-bindings.ts):
+ *   rows in ${DATA_DIR}/talboss.sqlite, resumes in ${DATA_DIR}/resumes/. See docs/team/RAILWAY.md.
+ * - Anywhere else (bare `next start`, no DATA_DIR, no Cloudflare): ./.uploads/<id>/, gitignored because it's personal data.
  *
  * One lead per person (migration 0005): the no-email path sends the same resume twice, first without an email (the
  * reply has `email: null`, so the flow asks for one), then again with the typed address. On D1, an upload whose resume
@@ -12,6 +14,7 @@
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { nodeEnv, useNodeBindings } from "./node-bindings";
 
 export type ResumeSubmission = {
   id: string;
@@ -93,8 +96,12 @@ function mergeMeta(old: string, next: Record<string, unknown>, at: string): stri
   return JSON.stringify({ ...prev, ...next, utm, mergedAt: at });
 }
 
-/** The Worker's bindings, or null when not running on Cloudflare. */
+/**
+ * The Worker's bindings, or null when not running on Cloudflare. On a Node server with DATA_DIR set (Railway) it's the
+ * same shape over SQLite + files (lib/node-bindings.ts), so everything below (merging, leads, resync, sheet) is shared.
+ */
 export async function cloudflareEnv(): Promise<CloudflareEnv | null> {
+  if (useNodeBindings()) return nodeEnv();
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const { env } = await getCloudflareContext({ async: true });
@@ -176,7 +183,7 @@ const localDisk: ResumeStorage = {
     if (file && submission.file) await writeFile(path.join(dir, `resume${submission.file.ext}`), file);
     await writeFile(path.join(dir, "submission.json"), JSON.stringify({ ...submission, application: application ?? null }, null, 2));
     console.info(`[storage] saved ${submission.id} (${submission.email}) -> ${dir}`);
-    return { id: submission.id, merged: false }; // no merging on local disk: D1 only
+    return { id: submission.id, merged: false }; // no merging on local disk: D1 / DATA_DIR only
   },
 };
 

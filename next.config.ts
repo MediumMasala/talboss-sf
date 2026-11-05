@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // Pin the root to this folder; otherwise lockfiles in parent folders get picked up.
   turbopack: { root: path.join(__dirname) },
+  // Railway (Node) keeps rows in SQLite through this native module (lib/node-bindings.ts); never bundle it.
+  serverExternalPackages: ["better-sqlite3"],
   // Privacy + terms live on grapevine.in; keep short local URLs that point there.
   async redirects() {
     return [
@@ -21,4 +23,5 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 
 // Gives `next dev` local versions of the Cloudflare bindings (KV, D1, ADMIN_KEY from .dev.vars).
-initOpenNextCloudflareForDev();
+// Not with DATA_DIR (Railway / a local Node run): there the bindings come from SQLite, and wrangler must not start.
+if (!process.env.DATA_DIR) initOpenNextCloudflareForDev();

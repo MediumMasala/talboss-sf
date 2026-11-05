@@ -182,7 +182,8 @@ Fields: `resume` (file, **optional**), `utm` (JSON), `application` (JSON; commen
   - the earlier row has **no email** (none on the resume, none typed);
   - name, company and designation are the same after normalising (Unicode NFKC, lower case, spaces collapsed).
 
-  The reply carries the **earlier row's id**. The resume stays under that row's KV key (it isn't written again), and
+  The reply carries the **earlier row's id**. The resume stays under that row's KV key (on Railway, its file in
+  `${DATA_DIR}/resumes/`; it isn't written again), and
   `created_at` stays the first upload's. The update sets email, LinkedIn URL/status/card (the photo only if the new one
   has one), and meta (the new values on top, UTM tags from both visits kept, plus `mergedAt`). The frontend needs no
   change. Rows from before 0005 have no hash, so they are never merged into.
@@ -236,7 +237,7 @@ JSON body, which a cross-site form can't send.
 - `GET /sheet.csv` → `?key=<SHEET_KEY>` (the old IMPORTDATA sheet) **or** the leads cookie; `?download=1` adds
   `content-disposition: attachment`. Columns: Uploaded (IST), Name, Company, Designation, Email, LinkedIn,
   LinkedIn check, **Headline**, **Resume link** (signed), Source, Program, File, **Notes**, ID. "Work authorization" is gone.
-- `GET /r/<id>/<sig>` → the resume from KV under its original filename (`filename` + RFC 5987 `filename*`). The type
+- `GET /r/<id>/<sig>` → the resume from KV (Railway: `${DATA_DIR}/resumes/`) under its original filename (`filename` + RFC 5987 `filename*`). The type
   comes from the extension (PDF or DOCX). PDFs `inline`, DOCX and `?dl=1` `attachment`. The signature never expires
   (HMAC of the id), so the sheet's links are permanent; a wrong signature is a 404.
 - **Upload limits (unchanged):** PDF or DOCX, real bytes checked, **≤ 5 MB** (`site.upload.maxBytes` in `content/site.ts`).
@@ -270,9 +271,18 @@ upload: one row, with the email, one sheet push): `scripts/leads-smoke.sh`.
 
 Real lookups cost money. Test only with "Sanchit Tripathi" at "Grapevine". A repeat within 6 h is a free cache hit.
 
+## Storage: Cloudflare or Railway
+Every "D1" and "KV" above means the `DB` and `RESUMES` bindings. On Cloudflare they are D1 and KV. On Railway (a Node
+server with `DATA_DIR` set) `lib/node-bindings.ts` provides the same two bindings over `${DATA_DIR}/talboss.sqlite`
+(rows, plus a `_kv` table with expiry for the rate limits, lookup cache, jobs and photos) and `${DATA_DIR}/resumes/`,
+so every route above behaves the same, including the one-lead merge. Client IP for the limits:
+`cf-connecting-ip`, else `x-real-ip`, else the first `x-forwarded-for`. Setup, backups and the differences:
+`docs/team/RAILWAY.md`.
+
 ## Ship
-`npm run db:migrate` (applies **0004 and 0005** to remote D1), then `npm run deploy`.
-**Run the migration before the deploy:** `/api/upload` writes `applications.linkedin_photo` (0004) and
+Cloudflare: `npm run db:migrate` (applies **0004 and 0005** to remote D1), then `npm run deploy`.
+Railway: push; the server applies new migrations itself at boot (`docs/team/RAILWAY.md`).
+**On Cloudflare, run the migration before the deploy:** `/api/upload` writes `applications.linkedin_photo` (0004) and
 `submissions.resume_sha256` (0005), and `/leads` and `/sheet.csv` read the 0004 columns, so a deploy without both
 fails every upload. Locally: `npm run db:migrate:local` (the smoke script runs it too).
 Secrets: `LEADS_KEY`, `LEADS_WEBHOOK_URL`, `LEADS_WEBHOOK_SECRET` (`npx wrangler secret put …`; see LEADS.md).

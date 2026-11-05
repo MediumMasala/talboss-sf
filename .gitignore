@@ -22,3 +22,6 @@ next-env.d.ts
 # 4K raw takes (667 MB); the graded picks are committed
 docs/team/art/round6/raw/
 docs/team/art/*/raw/
+
+# Railway-style local data dir (DATA_DIR=./data)
+/data/

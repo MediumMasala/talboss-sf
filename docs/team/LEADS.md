@@ -8,7 +8,9 @@ Every application (name, company, LinkedIn, email, resume) lands in three places
 | **Google Sheet** (tab "Leads") | The sheet the team already lives in. A new row arrives seconds after each application, with the resume as a link | The sheet you set up below |
 | **CSV** `/sheet.csv` | Exports, and the old `=IMPORTDATA` sheet (still works) | "Download CSV" on `/leads`, or `/sheet.csv?key=<SHEET_KEY>` |
 
-The source of truth is D1 (`submissions` + `applications`) and KV (`resume:<id>`, the file under its original name).
+The source of truth is the database (`submissions` + `applications`) and the resume store (`resume:<id>`, the file
+under its original name): D1 + KV on Cloudflare, or on Railway `${DATA_DIR}/talboss.sqlite` + `${DATA_DIR}/resumes/`
+(same tables, same code; see `docs/team/RAILWAY.md`).
 The sheet is a copy: deleting a row there deletes nothing. Team notes typed in the sheet go in **column L onward**; the
 script only ever writes columns A–K, so they survive every update.
 
@@ -46,7 +48,8 @@ Back in the editor, pick `setup` in the function menu → Run → allow access. 
 login; the secret in the body is what keeps strangers out. Each later edit to the script needs Deploy → Manage
 deployments → edit → Version: New version, or the old code keeps running.
 
-**4. Give the Worker the three secrets** (from the repo folder):
+**4. Give the Worker the three secrets** (from the repo folder). On Railway, set the same three as service variables
+instead; migrations apply at boot, so skip `db:migrate` and `deploy` there (`docs/team/RAILWAY.md`):
 ```bash
 npx wrangler secret put LEADS_WEBHOOK_URL      # paste the /exec URL
 npx wrangler secret put LEADS_WEBHOOK_SECRET   # the same value as the Script property
@@ -70,7 +73,9 @@ isn't "Anyone" or the URL isn't the `/exec` one.
 
 ## Local test
 `scripts/leads-smoke.sh` runs the whole loop on your machine against a python stand-in for the Apps Script
-(instructions at the top of the file: three lines in `.dev.vars`, restart `npx next dev -p 3217`). It submits a fake
+(instructions at the top of the file: three lines in `.dev.vars`, restart `npx next dev -p 3217`). For the Railway
+build, export the same three values plus `DATA_DIR`, run `npm run build && PORT=3219 npm start`, then
+`BASE=http://localhost:3219 scripts/leads-smoke.sh` (it then checks rows in `${DATA_DIR}/talboss.sqlite`). It submits a fake
 lead with a PDF, shows the webhook payload, finds the lead on `/leads`, downloads the resume, saves a note, then stops the
 listener, submits a second lead, sees it pending, and resyncs it. Last, it uploads a resume with no email and then the
 same resume with a typed email, and checks there is one row, with the email, and one sheet push.

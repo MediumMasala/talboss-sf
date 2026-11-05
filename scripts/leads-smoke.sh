@@ -9,6 +9,11 @@
 #   LEADS_WEBHOOK_URL=http://127.0.0.1:8977/hook      <- the python listener this script starts
 # Then (re)start the dev server so it reads them:  npx next dev -p 3217
 # Run:  scripts/leads-smoke.sh            (BASE=http://localhost:3217 by default)
+#
+# Railway mode (a Node server with DATA_DIR, docs/team/RAILWAY.md): export the same three values plus DATA_DIR in
+# this shell (they win over .dev.vars), start `npm run build && PORT=3219 npm start` with them, then
+#   BASE=http://localhost:3219 DATA_DIR=<same folder> scripts/leads-smoke.sh
+# Migrations then run at server boot, and step 9 reads ${DATA_DIR}/talboss.sqlite instead of the local D1.
 # Nothing secret is printed; the fake lead is "Ana Ruiz (TEST)".
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -18,17 +23,25 @@ NPM_CACHE=${NPM_CACHE:-/Users/sanchittripathi/.claude/jobs/17f7f79e/tmp/npm-cach
 TMP=$(mktemp -d)
 HOOK_LOG="$TMP/hook.jsonl"
 JAR="$TMP/cookies.txt"
-var() { sed -n "s/^$1=//p" .dev.vars | tail -1; }
+# A value from this shell's environment, else from .dev.vars.
+var() { if [ -n "${!1:-}" ]; then printf '%s' "${!1}"; else sed -n "s/^$1=//p" .dev.vars 2>/dev/null | tail -1; fi; }
 
 LEADS_KEY=$(var LEADS_KEY); SECRET=$(var LEADS_WEBHOOK_SECRET); HOOK=$(var LEADS_WEBHOOK_URL)
-[ -n "$LEADS_KEY" ] && [ -n "$SECRET" ] && [ -n "$HOOK" ] || { echo "Add LEADS_KEY, LEADS_WEBHOOK_SECRET and LEADS_WEBHOOK_URL to .dev.vars (see the top of this file)."; exit 1; }
-case "$HOOK" in http://127.0.0.1:*|http://localhost:*) ;; *) echo "LEADS_WEBHOOK_URL in .dev.vars must point at localhost for this test (it would write to the real sheet)."; exit 1;; esac
+[ -n "$LEADS_KEY" ] && [ -n "$SECRET" ] && [ -n "$HOOK" ] || { echo "Add LEADS_KEY, LEADS_WEBHOOK_SECRET and LEADS_WEBHOOK_URL to .dev.vars or the environment (see the top of this file)."; exit 1; }
+case "$HOOK" in http://127.0.0.1:*|http://localhost:*) ;; *) echo "LEADS_WEBHOOK_URL must point at localhost for this test (it would write to the real sheet)."; exit 1;; esac
+DATA_DIR=${DATA_DIR:-}
 PORT=$(printf '%s' "$HOOK" | sed -E 's#^http://[^:/]+:([0-9]+).*#\1#')
 
 step() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
-step "1. Local D1 migrations (same as npm run db:migrate:local)"
-npx --cache "$NPM_CACHE" wrangler d1 migrations apply DB --local 2>&1 | grep -E "Migrations to be applied|No migrations|✅|0004|0005" || true
+if [ -n "$DATA_DIR" ]; then
+  step "1. Migrations: applied by the server at boot (DATA_DIR mode)"
+  node -e 'const D=require("better-sqlite3"); const db=new D(process.argv[1]+"/talboss.sqlite",{readonly:true}); console.log("  applied:", db.prepare("SELECT name FROM d1_migrations ORDER BY id").all().map(r=>r.name).join(", "))' "$DATA_DIR" \
+    || { echo "FAIL: no migrated database in $DATA_DIR (is the server running with this DATA_DIR?)"; exit 1; }
+else
+  step "1. Local D1 migrations (same as npm run db:migrate:local)"
+  npx --cache "$NPM_CACHE" wrangler d1 migrations apply DB --local 2>&1 | grep -E "Migrations to be applied|No migrations|✅|0004|0005" || true
+fi
 
 step "2. A local stand-in for the Apps Script web app on :$PORT (checks the secret, logs rows, answers {ok:true})"
 start_listener() {
@@ -121,14 +134,19 @@ grep "$ID3" "$HOOK_LOG" | python3 -c 'import json,sys; r=json.loads(sys.stdin.re
 RURL=$(grep "$ID3" "$HOOK_LOG" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["resumeUrl"])')
 curl -s -o "$TMP/cara-got.pdf" "$RURL?dl=1"
 cmp -s "$TMP/cara-got.pdf" "$TMP/Cara Diaz Resume.pdf" && echo "  ok  the sheet's resume link opens the one stored file (resume:$ID3)" || { echo "FAIL: resume link"; exit 1; }
-ROWS=$(npx --cache "$NPM_CACHE" wrangler d1 execute DB --local --json --command \
-  "SELECT s.id, s.email, a.email AS app_email, s.sheet_pending, s.resume_sha256 IS NOT NULL AS hashed FROM submissions s JOIN applications a ON a.submission_id = s.id WHERE a.name LIKE 'Cara%Diaz (TEST)' AND s.resume_sha256 = (SELECT resume_sha256 FROM submissions WHERE id = '$ID3')" 2>/dev/null)
+Q="SELECT s.id, s.email, a.email AS app_email, s.sheet_pending, s.resume_sha256 IS NOT NULL AS hashed FROM submissions s JOIN applications a ON a.submission_id = s.id WHERE a.name LIKE 'Cara%Diaz (TEST)' AND s.resume_sha256 = (SELECT resume_sha256 FROM submissions WHERE id = '$ID3')"
+if [ -n "$DATA_DIR" ]; then
+  # Same JSON shape as wrangler's --json output.
+  ROWS=$(node -e 'const D=require("better-sqlite3"); const db=new D(process.argv[1]+"/talboss.sqlite",{readonly:true}); console.log(JSON.stringify([{results: db.prepare(process.argv[2]).all()}]))' "$DATA_DIR" "$Q")
+else
+  ROWS=$(npx --cache "$NPM_CACHE" wrangler d1 execute DB --local --json --command "$Q" 2>/dev/null)
+fi
 printf '%s' "$ROWS" | python3 -c '
 import json,sys
 rows=json.load(sys.stdin)[0]["results"]
-print("  D1 rows for this resume:", json.dumps(rows))
+print("  rows for this resume:", json.dumps(rows))
 assert len(rows)==1 and rows[0]["email"]=="cara.test@example.com" and rows[0]["sheet_pending"]==0, "expected one complete, synced row"
-print("  ok  one row in D1, with the email, synced")' || { echo "FAIL: D1 does not have exactly one complete row"; exit 1; }
+print("  ok  one row in the database, with the email, synced")' || { echo "FAIL: the database does not have exactly one complete row"; exit 1; }
 curl -s -b "$JAR" "$BASE/leads?q=Cara" | grep -oF "cara.test@example.com" | head -1 | sed 's/^/  ok  on \/leads: /'
 
-step "Done. Fake leads: $ID, $ID2, $ID3 (local D1 only)"
+WHERE_=${DATA_DIR:+$DATA_DIR/talboss.sqlite}; step "Done. Fake leads: $ID, $ID2, $ID3 (${WHERE_:-local D1} only)"
