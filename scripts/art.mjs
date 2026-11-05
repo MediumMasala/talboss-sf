@@ -1,5 +1,5 @@
 // Converts the chosen stills into AVIF + WebP in public/art/.
-//   hero: round 6b "The fog is thinking", coder on a bench (docs/team/art/round6/PICK.md, 6b), 16:9 at 1440 / 2880 / 3840, 4:5 at 800 / 1600.
+//   hero: round 6c "The fog is thinking", coder on a bench, more SF (docs/team/art/round6/PICK.md, 6c), 16:9 at 1440 / 2880 / 3840, 4:5 at 800 / 1600.
 //   Done + orb: round 3. Numbers wall: round 5. Those three are unchanged.
 // Run: node scripts/art.mjs   (sharp is already in node_modules via next)
 // Never upscales: a width larger than the source is skipped (and logged).
@@ -22,8 +22,8 @@ const HERO = { avif: 72, webp: 82 };
 
 /** name in public/art → source file, the widths we serve, encoder quality. */
 const JOBS = [
-  { name: "hero-16x9", src: `${R6}/fog-f1-16x9.png`, widths: [1440, 2880, 3840], q: HERO },
-  { name: "hero-4x5", src: `${R6}/fog-f1-4x5.png`, widths: [800, 1600], q: HERO },
+  { name: "hero-16x9", src: `${R6}/fog-g1-16x9.png`, widths: [1440, 2880, 3840], q: HERO },
+  { name: "hero-4x5", src: `${R6}/fog-g1-4x5.png`, widths: [800, 1600], q: HERO },
   { name: "done-4x5", src: `${R3}/horizon-dawn-b-4x5.png`, widths: [480, 720, 928], q: STD },
   { name: "orb-4x5", src: `${R3}/chrome-orb-b-4x5.png`, widths: [480, 720, 928], q: STD },
   // Faint full-bleed background for the numbers wall (round 5 PICK.md); not wired into a component yet.

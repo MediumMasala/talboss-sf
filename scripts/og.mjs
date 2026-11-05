@@ -1,6 +1,6 @@
-// Builds app/opengraph-image.jpg: the round-6b OG still ("The fog is thinking": a coder on a bench on a hill as the glowing
-// fog pours over the ridge into San Francisco; docs/team/art/round6/og-b-1200x630.jpg, the fog-f1 16:9 plate, 1.1x push-in
-// (1320 wide, crop x22 y15) so the tower clears the "l") with the metallic tal wordmark composited in the black sky.
+// Builds app/opengraph-image.jpg: the round-6c OG still ("The fog is thinking": a coder on a bench on a hill as the glowing
+// fog pours over the ridge into San Francisco, downtown faint in the fog; docs/team/art/round6/og-c-1200x630.jpg, the fog-g1 16:9 plate, 1.04x push-in (1250 wide, crop x0 y20) so the tower clears the "l" and the downtown stays in frame
+// with the metallic tal wordmark composited in the black sky.
 // Run: node scripts/og.mjs
 import sharp from "sharp";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -16,12 +16,12 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   ${paths.map((d) => `<path d="${d}" fill="url(#m)"/>`).join("")}
 </svg>`;
 const mark = await sharp(Buffer.from(svg)).png().toBuffer();
-await sharp("docs/team/art/round6/og-b-1200x630.jpg")
+await sharp("docs/team/art/round6/og-c-1200x630.jpg")
   .composite([{ input: mark, left: Math.round((1200 - W) / 2), top: 58 }])
   .jpeg({ quality: 84, mozjpeg: true })
   .toFile("app/opengraph-image.jpg");
 writeFileSync(
   "app/opengraph-image.alt.txt",
-  "The silver tal wordmark in a black sky over San Francisco at night: a young coder works on a laptop on a bench at the top of a hill as glowing fog pours over the ridge toward the city lights. The talent agent for engineers, researchers, PMs and designers. In early preview within the SF Bay Area.",
+  "The silver tal wordmark in a black sky over San Francisco at night: a young coder works on a laptop on a bench at the top of a hill as glowing fog pours over the ridge toward the city lights, downtown faint in the fog. The talent agent for engineers, researchers, PMs and designers. In early preview within the SF Bay Area.",
 );
 console.log("ok", W, H);

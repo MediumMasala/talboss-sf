@@ -76,6 +76,14 @@ Edit this photograph. Replace the flat grey rectangle with a young person coding
 
 g1 also drew the coder and bench at 20–30 % of the frame height. The model draws the subject well and ignores the size, so `fog-f1` is a composite: the `fog-e1` plates (old figure box from `raw/fog-rm-*-a.png`), with the coder and bench from `raw/fog-g1-16x9-a.png` matted by difference, the laptop screen dimmed, scaled down (×0.36 / ×0.48) and seated on the crest. The grade adds `--filaments` (28 % softer) and `--depaint` (fine grain in the city band). See PICK.md, 6b.
 
+## Round 6c: more SF (takes sf-16x9-a/b/c, sf-4x5-a/b/c → `fog-g1-*`)
+
+Founder: "LOVE THE HERO CREATIVE... any way to make the city look more like SF?" Reference = the clean plates (`raw/fog-clean-*.png`: the 6b plate without the coder), so the model cannot move the person; the same coder is composited back by `round6b-composite.py --plates ... --tag g1`, then the 6b grade. Prompt:
+
+Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos.
+
+Picks: `fog-sf-16x9-a`, `fog-sf-4x5-b`. Grade as 6b plus `--veil` on the downtown (16:9 box 0.78,0.33,0.97,0.50; 4:5 box 0.78,0.40,0.99,0.50) so it stays small and soft. See PICK.md, 6c.
+
 ## Grade (`scripts/art/round6-grade.py`)
 
 Run on the pick only (the candidates on the sheet are raw, shown in greyscale). 16:9: Rec.709 luminance to R=G=B, black point 16, mid lift gamma 0.92, soft shoulder from 195 toward 230 (peak lands at 224), top fade x (0.12 + 0.88 smoothstep(0.24, 0.41, y)). 4:5 (`--light`, because its reference was already graded): black point 4, no mid lift, same shoulder, fade smoothstep(0.22, 0.40). Measurements: PICK.md.

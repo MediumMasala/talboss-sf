@@ -12,6 +12,8 @@ subject well and ignores the size. So:
   3. The subject is scaled DOWN (never up) to the target height and composited with premultiplied alpha, its base on
      the crest. The same subject goes into both crops (same person).
 Output: raw/fog-f1-16x9-comp.png, raw/fog-f1-4x5-comp.png (ungraded); then round6-grade.py grades them.
+Also writes the clean plates raw/fog-clean-{16x9,4x5}.png. Round 6c: --plates 16x9=<raw>,4x5=<raw> --tag g1 seats the
+same coder, at the same place and size, on an SF-city edit of the clean plate.
 
 usage: python3 scripts/art/round6b-composite.py
 """
@@ -93,6 +95,11 @@ def place(plate, target_h, person_x, base_y):
     return (left / Wp, (left + tw) / Wp, top / Hp, (top + th) / Hp)
 
 
+# usage: round6b-composite.py [--plates 16x9=<raw name>,4x5=<raw name>] [--tag f1]
+import sys
+PLATES = dict(kv.split("=") for kv in sys.argv[sys.argv.index("--plates") + 1].split(",")) if "--plates" in sys.argv else {}
+TAG = sys.argv[sys.argv.index("--tag") + 1] if "--tag" in sys.argv else "f1"
+
 for crop, e1, rm, oldbox, target_h_frac, person_x, base_y in (
     ("16x9", "fog-e1-16x9.png", "fog-rm-16x9-a.png", (0.18, 0.55, 0.30, 0.73), 0.115, 0.205, 0.700),
     ("4x5", "fog-e1-4x5-a.png", "fog-rm-4x5-a.png", (0.07, 0.55, 0.30, 0.73), 0.102, 0.240, 0.700),
@@ -101,7 +108,11 @@ for crop, e1, rm, oldbox, target_h_frac, person_x, base_y in (
     Hp, Wp = P.shape[:2]
     m = box_mask(Hp, Wp, oldbox, 30)[..., None]
     plate = P * (1 - m) + Rm * m
+    Image.fromarray(np.clip(np.round(plate), 0, 255).astype(np.uint8)).save(
+        os.path.join(RAW, f"fog-clean-{crop}.png"), optimize=True)
+    if PLATES.get(crop):  # round 6c: composite the same coder onto another (already clean) plate
+        plate = load(PLATES[crop])
     bb = place(plate, int(target_h_frac * Hp), person_x, base_y)
-    out = os.path.join(RAW, f"fog-f1-{crop}-comp.png")
+    out = os.path.join(RAW, f"fog-{TAG}-{crop}-comp.png")
     Image.fromarray(np.clip(np.round(plate), 0, 255).astype(np.uint8)).save(out, optimize=True)
     print(crop, "bench+person box x %.3f-%.3f y %.3f-%.3f" % bb, "->", out)

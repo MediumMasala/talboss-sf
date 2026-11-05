@@ -151,3 +151,14 @@ The founder on `fog-e1` asked, "Why is a depressed guy looking over a hill?" He 
 | `docs/team/art/round6/og-b-1200x630.jpg` | derived from `fog-f1-16x9.png` (1.1x push-in) | Tal (AI-generated, original) | original work | PICK 6b: OG background → `app/opengraph-image.jpg` via `scripts/og.mjs` |
 | `docs/team/art/round6/paths.json` (rewritten for 6b) | authored on `fog-f1` | Tal | original work | frontend: three pulse paths per crop; the last point is the coder's laptop |
 | `public/art/hero-16x9-{1440,2880,3840}.{avif,webp}`, `public/art/hero-4x5-{800,1600}.{avif,webp}` | round 6b `fog-f1-*` via `scripts/art.mjs` (2880 AVIF 121 KB) | Tal (AI-generated, original) | original work | landing hero (replaces the 6a export at the same paths) |
+
+### Round 6c: more SF (founder, 5 Nov 2026)
+The founder on 6b said: "LOVE THE HERO CREATIVE... any way to make the city look more like SF?" `fog-g1` changes only the city of `fog-f1`, using a gemini-3-pro-image 4K edit of the person-free plate. The city now has a street grid running downhill, row houses, one cable-car-like line of lights, a faint small downtown in the fog (one slim tower and one small pyramid spire, softened by `--veil`) and, on 4:5, a faint East Bay shoreline. The same coder and bench are composited back at the same place and size. Notes: `docs/team/art/round6/PICK.md` (6c). The downtown silhouette is a generic skyline shape, not a logo or a trademark.
+
+| file | source | author | licence | used where |
+|---|---|---|---|---|
+| `docs/team/art/round6/fog-g1-16x9.png` (5504 × 3072, graded) | composite: `raw/fog-sf-16x9-a` (city edit of `raw/fog-clean-16x9`) + the 6b coder/bench | Tal (AI-generated, original) | original work | PICK 6c: hero (desktop) → `public/art/hero-16x9-*` |
+| `docs/team/art/round6/fog-g1-4x5.png` (3712 × 4608, graded) | composite: `raw/fog-sf-4x5-b` (city edit of `raw/fog-clean-4x5`) + the same coder/bench | Tal (AI-generated, original) | original work | PICK 6c: hero (phones) → `public/art/hero-4x5-*` |
+| `docs/team/art/round6/raw/fog-sf-*.png`, `raw/fog-clean-*.png`, `raw/fog-g1-*-comp.png` | generated city edits (prompt in round6/PROMPTS.md), the person-free plates and the ungraded composites | Tal (AI-generated, original) | original work | build inputs only, not served |
+| `docs/team/art/round6/og-c-1200x630.jpg` | derived from `fog-g1-16x9.png` (1.04x push-in) | Tal (AI-generated, original) | original work | PICK 6c: OG background → `app/opengraph-image.jpg` via `scripts/og.mjs` |
+| `public/art/hero-16x9-{1440,2880,3840}.{avif,webp}`, `public/art/hero-4x5-{800,1600}.{avif,webp}` | round 6c `fog-g1-*` via `scripts/art.mjs` (2880 AVIF 126 KB) | Tal (AI-generated, original) | original work | landing hero (replaces the 6b export at the same paths) |

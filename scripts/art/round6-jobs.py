@@ -207,6 +207,29 @@ for crop, aspect in (("16x9", "16:9"), ("4x5", "4:5")):
             "ref": f"docs/team/art/round6/raw/guide-{crop}.png", "prompt": PLACE_EDIT,
         })
 
+# Round 6c (founder: "LOVE THE HERO CREATIVE... any way to make the city look more like SF?"). Edit only the city
+# on the clean plates (raw/fog-clean-*.png, no person, so the model cannot move them); the coder is composited back
+# afterwards by round6b-composite.py --plates ... --tag g1.
+SF_EDIT = (
+    "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco "
+    "recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, "
+    "running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian "
+    "row houses stepping down the hills, packed side by side; one long straight street with a line of lights running "
+    "down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette "
+    "with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark "
+    "bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and "
+    "keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over "
+    "the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass "
+    "and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no "
+    "bridges, no text, no signs, no logos."
+)
+for crop, aspect in (("16x9", "16:9"), ("4x5", "4:5")):
+    for take in ("a", "b", "c"):
+        jobs.append({
+            "name": f"fog-sf-{crop}-{take}", "aspect": aspect, "size": "4K",
+            "ref": f"docs/team/art/round6/raw/fog-clean-{crop}.png", "prompt": SF_EDIT,
+        })
+
 with open(OUT_JSON, "w") as f:
     json.dump(jobs, f, indent=2)
 
@@ -304,6 +327,17 @@ def write_md(pick_ref=None):
         "and bench from `raw/fog-g1-16x9-a.png` matted by difference, the laptop screen dimmed, scaled down (×0.36 / ×0.48) "
         "and seated on the crest. The grade adds `--filaments` (28 % softer) and `--depaint` (fine grain in the city band). "
         "See PICK.md, 6b.",
+        "",
+        "## Round 6c: more SF (takes sf-16x9-a/b/c, sf-4x5-a/b/c → `fog-g1-*`)",
+        "",
+        "Founder: \"LOVE THE HERO CREATIVE... any way to make the city look more like SF?\" Reference = the clean plates "
+        "(`raw/fog-clean-*.png`: the 6b plate without the coder), so the model cannot move the person; the same coder is "
+        "composited back by `round6b-composite.py --plates ... --tag g1`, then the 6b grade. Prompt:",
+        "",
+        SF_EDIT,
+        "",
+        "Picks: `fog-sf-16x9-a`, `fog-sf-4x5-b`. Grade as 6b plus `--veil` on the downtown (16:9 box 0.78,0.33,0.97,0.50; "
+        "4:5 box 0.78,0.40,0.99,0.50) so it stays small and soft. See PICK.md, 6c.",
         "",
         "## Grade (`scripts/art/round6-grade.py`)",
         "",

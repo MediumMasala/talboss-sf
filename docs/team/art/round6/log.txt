@@ -71,3 +71,20 @@ fog-g1-4x5-b ok 56.1s gemini-3-pro-image 4K ref
 6b og: og-b-1200x630.jpg -> app/opengraph-image.jpg + new alt via scripts/og.mjs
 6b sheet: sheet.jpg (6b row + fog-f1 pair added)
 DONE-6B
+fog-sf-16x9-a ok 42.6s gemini-3-pro-image 4K ref
+fog-sf-16x9-c ok 45.1s gemini-3-pro-image 4K ref
+fog-sf-16x9-b ok 46.7s gemini-3-pro-image 4K ref
+fog-sf-4x5-a ok 39.4s gemini-3-pro-image 4K ref
+fog-sf-4x5-c ok 39.4s gemini-3-pro-image 4K ref
+fog-sf-4x5-b ok 41.5s gemini-3-pro-image 4K ref
+6c founder: "LOVE THE HERO CREATIVE... any way to make the city look more like SF?" -> change only the city
+6c plates: round6b-composite.py now writes raw/fog-clean-{16x9,4x5}.png (6b plate, no coder); city edits run on those (3 takes per crop)
+6c pick: fog-sf-16x9-a (downtown small, filaments kept; b lost filaments, c downtown too big), fog-sf-4x5-b (Salesforce + pyramid, East Bay line; a generic towers, c ladder light line)
+6c composite: round6b-composite.py --plates 16x9=fog-sf-16x9-a.png,4x5=fog-sf-4x5-b.png --tag g1 -> raw/fog-g1-*-comp.png (same coder, same box)
+6c grade: as 6b + --veil on the downtown (detail 50 %, contrast 35 % toward the fog) -> fog-g1-16x9.png, fog-g1-4x5.png; R=G=B
+6c measure: 16x9 top35 6.9, lower-centre 16.0, peak 230 (p99.9 225); 4x5 top35 3.4, lower-centre 19.3, peak 230 (p99.9 224); vs 6b: sky+tower 0.5/0.3, fog 2.3/3.4, city 5.6/4.0, grass 1.4/1.7 (8x down)
+6c figure: unchanged (16x9 x 0.152-0.267 y 0.585-0.700; 4x5 x 0.136-0.362 y 0.598-0.700); paths.json unchanged (laptop did not move)
+6c export: node scripts/art.mjs -> hero-16x9-{1440,2880,3840} (2880 AVIF 126 KB), hero-4x5-{800,1600} from fog-g1; done/orb/wall unchanged
+6c og: og-c-1200x630.jpg (1.04x push-in) -> app/opengraph-image.jpg + alt via scripts/og.mjs
+6c sheet: sheet.jpg (6c row + fog-g1 pair added)
+DONE-6C

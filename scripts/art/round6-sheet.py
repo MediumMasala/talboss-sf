@@ -44,6 +44,13 @@ V6B = [
     ("fog-g1-16x9-b", "reject: 30 %, centre"), ("fog-g1-16x9-c", "reject: illustrated, 30 %"),
 ]
 
+# Round 6c (founder: more SF): city-only edits of the clean plate, then the composited and graded fog-g1 pair.
+V6C = [
+    ("fog-sf-16x9-a", "PICK 16:9: downtown small, fog kept"), ("fog-sf-16x9-b", "reject: filaments lost (fog changed)"),
+    ("fog-sf-16x9-c", "reject: downtown too big"), ("fog-sf-4x5-a", "4:5 alt: towers generic"),
+    ("fog-sf-4x5-b", "PICK 4:5: Salesforce + pyramid, East Bay"), ("fog-sf-4x5-c", "reject: ladder-like light line"),
+]
+
 TW, TH, PAD, LAB, COLS = 384, 216, 16, 40, 6
 rows = (len(ORDER) + COLS - 1) // COLS
 PW, PH = 1152, 648               # pick (16:9, graded)
@@ -51,6 +58,7 @@ FW, FH = int(PH * 4 / 5), PH     # 4:5 takes (graded)
 W = PAD + COLS * (TW + PAD)
 rows6b = (len(V6B) + COLS - 1) // COLS
 H = PAD + rows * (TH + LAB + PAD) + 40 + PH + LAB + PAD + 40 + rows6b * (TH + LAB + PAD) + 30 + PH + PAD
+H += 40 + (TH + LAB + PAD) + 30 + PH + PAD
 sheet = Image.new("RGB", (W, H), (128, 128, 128))
 d = ImageDraw.Draw(sheet)
 for k, t in enumerate(ORDER):
@@ -81,6 +89,21 @@ d.text((PAD, y0), "6b PICK, graded: fog-f1-16x9.png | fog-f1-4x5.png (composite 
 y0 += 30
 sheet.paste(Image.open(os.path.join(D, "fog-f1-16x9.png")).convert("RGB").resize((PW, PH), Image.LANCZOS), (PAD, y0))
 sheet.paste(Image.open(os.path.join(D, "fog-f1-4x5.png")).convert("RGB").resize((FW, FH), Image.LANCZOS), (PAD * 2 + PW, y0))
+y0 += PH + PAD + 10
+d.text((PAD, y0), "Round 6c: more SF (city-only edits of the clean plate; 4:5 thumbnails letterboxed)", fill=(255, 255, 255), font=big)
+y0 += 30
+for k, (n, v) in enumerate(V6C):
+    x = PAD + k * (TW + PAD)
+    im = Image.open(os.path.join(RAW, n + ".png")).convert("L")
+    im.thumbnail((TW, TH), Image.LANCZOS)
+    sheet.paste(im.convert("RGB"), (x + (TW - im.width) // 2, y0))
+    d.text((x, y0 + TH + 4), n, fill=(255, 255, 255), font=font)
+    d.text((x, y0 + TH + 21), v, fill=(255, 255, 0) if "PICK" in v else (255, 255, 255), font=font)
+y0 += TH + LAB + PAD
+d.text((PAD, y0), "6c PICK, graded (current hero): fog-g1-16x9.png | fog-g1-4x5.png", fill=(255, 255, 0), font=big)
+y0 += 30
+sheet.paste(Image.open(os.path.join(D, "fog-g1-16x9.png")).convert("RGB").resize((PW, PH), Image.LANCZOS), (PAD, y0))
+sheet.paste(Image.open(os.path.join(D, "fog-g1-4x5.png")).convert("RGB").resize((FW, FH), Image.LANCZOS), (PAD * 2 + PW, y0))
 out = os.path.join(D, "sheet.jpg")
 sheet.save(out, quality=86)
 print(out, sheet.size)

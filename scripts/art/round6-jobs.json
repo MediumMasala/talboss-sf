@@ -338,5 +338,47 @@
     "size": "4K",
     "ref": "docs/team/art/round6/raw/guide-4x5.png",
     "prompt": "Edit this photograph. Replace the flat grey rectangle with a young person coding on a simple, plain wooden park bench, drawn to fill exactly the rectangle's area and no more: the bench's legs stand on the grass of the crest at the rectangle's bottom edge and the top of the person's head is at the rectangle's top edge. Seen from behind and slightly three-quarter from the back, so the face is not visible; the bench faces away from the camera, toward the city and the fog. Hood down, short hair rim-lit by the fog's glow. They sit upright and engaged, shoulders open, leaning slightly toward a slim plain silver laptop open on their lap, typing: someone building something. The screen is seen from behind; only a very faint soft glow touches their hands and the edge of their cheek, much darker than the fog; no screen content, no logo. Remove the grey rectangle completely: the lit city shows around the person and through the gaps of the bench. Keep everything else exactly the same: the same fog, filaments, tower, city lights and houses, ridge, sky, grass, framing, grain and black-and-white film look. No text, no logos, no other people."
+  },
+  {
+    "name": "fog-sf-16x9-a",
+    "aspect": "16:9",
+    "size": "4K",
+    "ref": "docs/team/art/round6/raw/fog-clean-16x9.png",
+    "prompt": "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos."
+  },
+  {
+    "name": "fog-sf-16x9-b",
+    "aspect": "16:9",
+    "size": "4K",
+    "ref": "docs/team/art/round6/raw/fog-clean-16x9.png",
+    "prompt": "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos."
+  },
+  {
+    "name": "fog-sf-16x9-c",
+    "aspect": "16:9",
+    "size": "4K",
+    "ref": "docs/team/art/round6/raw/fog-clean-16x9.png",
+    "prompt": "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos."
+  },
+  {
+    "name": "fog-sf-4x5-a",
+    "aspect": "4:5",
+    "size": "4K",
+    "ref": "docs/team/art/round6/raw/fog-clean-4x5.png",
+    "prompt": "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos."
+  },
+  {
+    "name": "fog-sf-4x5-b",
+    "aspect": "4:5",
+    "size": "4K",
+    "ref": "docs/team/art/round6/raw/fog-clean-4x5.png",
+    "prompt": "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos."
+  },
+  {
+    "name": "fog-sf-4x5-c",
+    "aspect": "4:5",
+    "size": "4K",
+    "ref": "docs/team/art/round6/raw/fog-clean-4x5.png",
+    "prompt": "Edit this photograph. Change only the city in the valley below the fog so that anyone from San Francisco recognises it at a glance, as the view from Twin Peaks over Noe Valley: steep streets laid out in a straight grid, running downhill toward the bay, lit by soft streetlights; rows of narrow bay-windowed Victorian and Edwardian row houses stepping down the hills, packed side by side; one long straight street with a line of lights running down it like a cable-car line. Far to the right, deep in the fog, a faint, small, soft, low downtown silhouette with one tall slim tower and one small pyramid spire, so muted the eye finds it last. Beyond the city, the dark bay with a faint thin line of East Bay lights on the far shore. Keep the city exactly as bright as it is now and keep it in the same place in the frame. Keep everything else exactly the same: the same glowing fog pouring over the ridge and its filaments, the same Sutro tower, the same ridge, the same black sky, the same dark grass and the crest line in the foreground, the same framing, grain and black-and-white film look. No people, no bridges, no text, no signs, no logos."
   }
 ]

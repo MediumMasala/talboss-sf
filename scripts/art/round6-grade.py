@@ -20,6 +20,9 @@ The grade is the round-5 grade (neutralise to R=G=B, top fade) tuned for a lumin
   --filaments x0,y0,x1,y1 (round 6b, Steve round 4: the filament edge read electric): inside that box (image
      fractions, 60 px feather) the fine detail is pulled 36 % toward a 5 px gaussian, which measures as ~30 % less filament detail (band-pass 1-6 px) after the grain; the filaments are ~30 %
      softer and nothing outside the box changes. Applied before the tone curve.
+  --veil x0,y0,x1,y1 (round 6c): keeps the distant downtown "small and soft": inside the box (feathered) the detail
+     is pulled 50 % toward a 6 px gaussian and the local contrast 35 % toward a 40 px gaussian, as if more fog sat in
+     front of it. Applied before the tone curve.
   --depaint y0,y1 (round 6b): the model's 4K houses have a smooth painted look. Inside that band (feathered), a
      0.6 px soften then fine luminance film grain (sigma 4.5/255, 1 px, seeded), weighted to the mid-tones so the
      blacks stay black and the fog's peak is untouched. Adds texture, moves nothing. Applied after the curve.
@@ -44,13 +47,17 @@ def band_mask(H, W, box, feather=60):
     return nd.gaussian_filter(m, feather)
 
 
-def grade(src, out, crop, light=False, filaments=None, depaint=None):
+def grade(src, out, crop, light=False, filaments=None, depaint=None, veil=None):
     a = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
     L = a @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
     del a
     if filaments:
         m = band_mask(*L.shape, filaments)
         L = L + 0.36 * m * (nd.gaussian_filter(L, 5) - L)
+    if veil:
+        m = band_mask(*L.shape, veil, feather=40)
+        L = L + 0.50 * m * (nd.gaussian_filter(L, 6) - L)
+        L = L + 0.35 * m * (nd.gaussian_filter(L, 40) - L)
     bp, gamma = (4.0, 1.0) if light else (BP, GAMMA)
     v = np.clip((L - bp) / (255.0 - bp), 0, 1) ** gamma * 255.0
     hi = v > KNEE
@@ -98,6 +105,6 @@ if __name__ == "__main__":
         crop = sys.argv[sys.argv.index("--crop") + 1] if "--crop" in sys.argv else "16x9"
         opt = lambda k: [float(x) for x in sys.argv[sys.argv.index(k) + 1].split(",")] if k in sys.argv else None
         grade(sys.argv[2], sys.argv[3], crop, light="--light" in sys.argv,
-              filaments=opt("--filaments"), depaint=opt("--depaint"))
+              filaments=opt("--filaments"), depaint=opt("--depaint"), veil=opt("--veil"))
     elif cmd == "measure":
         measure(sys.argv[2], sys.argv[3])

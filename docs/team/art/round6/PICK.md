@@ -2,7 +2,52 @@
 
 Direction: `docs/team/HERO_DIRECTION.md`. Model `gemini-3-pro-image` at 4K (16:9 = 5504 × 3072, 4:5 = 3712 × 4608). Prompts and every pass: `PROMPTS.md`. All takes with verdicts: `sheet.jpg`.
 
-## 6b: coder on a bench (current hero: `fog-f1-16x9.png` + `fog-f1-4x5.png`)
+## 6c: more SF (current hero: `fog-g1-16x9.png` + `fog-g1-4x5.png`)
+
+The founder on 6b said: "LOVE THE HERO CREATIVE... any way to make the city look more like SF?" 6c changes only the city. The coder, bench, fog, Sutro and grade are all the same as 6b.
+
+**How it was made:**
+- **City-only edit on a person-free plate.** gemini-3-pro-image 4K made reference edits of the 6b clean plate (`raw/fog-clean-*.png`, the 6b plate without the coder), three takes per crop. The prompt is in PROMPTS.md, "Round 6c". Because the person wasn't in the edited plate, the model could not move them.
+- **Same coder seated back on.** The same coder and bench were composited back with `round6b-composite.py --plates 16x9=fog-sf-16x9-a.png,4x5=fog-sf-4x5-b.png --tag g1`. That places them with the same code at the same place and size.
+- **Same grade, plus one veil.** The 6b grade (filaments, de-paint) runs as before. A new `--veil` softens the distant downtown, pulling its detail 50 % and its contrast 35 % toward the fog, so it stays small and soft.
+
+**Picks:**
+- **16:9 take `a`.** It adds a low downtown silhouette far right in the fog: one slim tall tower (Salesforce-like) and one small pyramid spire (Transamerica-like), plus a few low blocks at x ≈ 0.80–0.94, y ≈ 0.38–0.46. The grid streets now run downhill toward it, with one bright straight street (the cable-car-like line) near x 0.52. It kept the fog filaments. Take `b` lost the filaments (the fog changed, so rejected). Take `c` drew the downtown too large, so the eye went there first.
+- **4:5 take `b`.** It has the clearest Salesforce + pyramid pair, small at the top right, and a faint thin line of East Bay lights across the left at y ≈ 0.44. Take `a`'s towers are generic. Take `c` has a ladder-like light line.
+
+**Would a San Franciscan name it?** Yes, and the frame now hangs together geographically. Sutro is on the western ridge with the fog pouring over Twin Peaks, the grid of row-house streets runs down below, and downtown sits far right in the fog. That is the view west from Bernal Heights over Noe Valley and the Mission, so "Bernal, looking at Sutro and the fog" is the likely answer.
+- **Honest limit:** the bay-windowed Victorians are only suggested, not legible, at 1440. The model held the city's layout and brightness as asked and mostly re-textured the houses. The SF read comes from Sutro, the downtown pair, the fog and the street grid.
+- **Geography slip on 4:5:** the faint East Bay line sits on the left. From Bernal looking west the East Bay would be behind you, but it is faint enough to read as the distant shore.
+
+**Unchanged, measured against 6b (graded, 8× down):**
+
+| region | 16:9 | 4:5 |
+|---|---|---|
+| sky + tower (y < 0.33) | 0.5 | 0.3 |
+| fog band (x < 0.78) | 2.3 | 3.4 |
+| city (changed on purpose) | 5.6 | 4.0 |
+| grass | 1.4 | 1.7 |
+
+The figure box is identical: 16:9 x 0.152–0.267, y 0.585–0.700; 4:5 x 0.136–0.362, y 0.598–0.700. The laptop did not move, so `paths.json` is unchanged.
+
+**Measurements:**
+
+| | 16:9 | 4:5 | target |
+|---|---|---|---|
+| R = G = B | yes | yes | |
+| top 35 % mean | **6.9** | **3.4** | ≤ 8 |
+| lower-centre third mean | **16.0** | **19.3** | ≤ 20 |
+| fog peak | **230** (p99.9 225) | **230** (p99.9 224) | ≤ 230 |
+| fog band mean | 121.7 | 114.9 | luminous |
+
+**Exports:**
+- **Hero:** `public/art/hero-16x9-{1440,2880,3840}` (AVIF 53 / **126** / 196 KB) and `hero-4x5-{800,1600}` (AVIF 35 / 81 KB), all from `fog-g1`.
+- **OG:** `og-c-1200x630.jpg` is a 1.04× push-in (1250 wide, crop x0 y20), so the tower clears the "l" and the downtown stays in frame. It feeds `app/opengraph-image.jpg`, and the alt text now mentions "downtown faint in the fog".
+- **Name clash:** `raw/fog-g1-16x9-{a,b,c}.png` are the older 6b placement-box edits, one of which is the coder source. The 6c picks are the top-level `fog-g1-*.png`. The 6c city edits are `raw/fog-sf-*`.
+
+---
+
+## 6b (superseded by 6c): coder on a bench (`fog-f1-16x9.png` + `fog-f1-4x5.png`)
 
 The founder on `fog-e1` asked, "Why is a depressed guy looking over a hill?" The first instruction was to remove the person. It was overridden before review: "show them as a coder with a MacBook (subtly visible) coding on a bench and overlooking SF." 6b is that frame. The fog, the city and the tower are the `fog-e1` plates.
 
