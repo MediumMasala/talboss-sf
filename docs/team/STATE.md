@@ -41,3 +41,6 @@ FEEDBACK_V4_3.md applied: hero logos gone; marquee caption "Hiring managers from
 
 ## 5 Nov 2026: PR open
 The Cloudflare account in wrangler.jsonc (Worker talboss-sf, D1, KV) belongs to the repo owner (MediumMasala); Sanchit's CF login is not authorised (code 7403). Branch pushed to the fork sanchittripathi/talboss-sf and PR #1 opened: https://github.com/MediumMasala/talboss-sf/pull/1. Owner must: merge, `npm run db:migrate` (0004+0005), set secrets (values in Sanchit's .dev.vars, share privately), `npm run deploy`. Hero 6c = fog-g1. Wall line rewritten. LEADS_KEY generated (in .dev.vars + ~/.config/tal/talboss-sf-leads.env).
+
+## 5 Nov 2026: LIVE on Railway
+https://tal-us-production.up.railway.app (project tal-us, service tal-us, volume /data, env vars set from .dev.vars). Deploy = commit + `railway up --ci` from the repo (uploads respect .railwayignore; docs/ and art are excluded). Storage on Railway = lib/node-bindings.ts (SQLite at /data/talboss.sqlite, resumes in /data/resumes, migrations at boot via instrumentation.ts). Verified live: /, /start, /leads (404 / 307 with key), /sheet.csv (DB header), OG, API validation. Lighthouse prod: mobile 92 (LCP 2.2 s, TBT 210 ms), desktop 100. `railway logs` streams forever: use `railway logs --json | head`. Cloudflare path (PR #1 to MediumMasala) still builds but is not the live host.
