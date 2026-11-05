@@ -4,16 +4,17 @@
  *
  *   search  apify~google-search-scraper   site:linkedin.com/in "Name" Company  → ranked /in/ slugs
  *   people  apimaestro~linkedin-profile-search-scraper  first + last name → up to 10 FULL profiles
- *   profile apimaestro~linkedin-profile-detail  one slug → one full profile (only when search found a
- *           slug the people search didn't return)
+ *   profile apimaestro~linkedin-profile-detail  one slug → one full profile (~3 s): the guessed slug
+ *           ("first-last"), pulled next to the searches, and the slugs Google found that the people search didn't
  *
- * search and people start together; whichever produces a confident match first wins (see linkedin-flow.ts).
- * The browser only ever holds a signed token naming its own runs, so it can't read anyone else's lookup.
- * Every pay-per-event run is capped (maxItems + maxTotalChargeUsd). Worst case ≈ $0.07 per person
- * (people ≤ $0.05, ≤ 3 profile pulls at $0.005, one SERP page).
+ * search, people and the guessed slug start together; the first match that clears the guard wins (see
+ * linkedin-flow.ts). The browser only ever holds a signed token naming its own runs, so it can't read anyone else's
+ * lookup. Every pay-per-event run is capped (maxItems + maxTotalChargeUsd). Worst case ≈ $0.072 per person
+ * (people ≤ $0.05, the guess + ≤ 3 profile pulls at $0.005, one SERP page). A pull that finds nobody costs nothing.
  */
 
-import { companyInText, matchProfile, nameMatches, titleInText, type MatchProfile } from "./linkedin-match";
+import { companyInText, matchProfile, nameMatches, serpCard, titleInText, type MatchProfile, type SerpResult } from "./linkedin-match";
+import type { JobRuns, Timings } from "./linkedin-job";
 
 const APIFY = "https://api.apify.com/v2";
 export const ACTORS = {
@@ -64,8 +65,10 @@ async function mac(secret: string, value: string) {
 }
 
 /** A slug we might show. h: Google listed it with the company in the snippet. r: its Google rank.
- *  sc: profile score (0–1) once we hold its full profile; b: tie-break bonus (role in headline, photo). */
-export type Cand = { s: string; h?: 1; r?: number; sc?: number; b?: number };
+ *  sc: profile score (0–1) once we hold its full profile; b: tie-break bonus (role in headline, photo).
+ *  ps: the guard's score on Google's search data alone (only kept when ≥ MATCH.sure; enables a partial card).
+ *  o: the lane that found it (people search, Google, the guessed slug). */
+export type Cand = { s: string; h?: 1; r?: number; sc?: number; b?: number; ps?: number; o?: "people" | "search" | "guess" };
 
 /** Everything a lookup needs between polls. Signed (not encrypted): it names run ids and public slugs, never profile data. */
 export type RunToken = {
@@ -84,6 +87,16 @@ export type RunToken = {
   t0: number;
   /** Stop waiting on Google for a better match at this time (ms). Set short after "not me". */
   until?: number;
+  /** The job's original runs (lib/linkedin-job.ts), so a later start can attach to them. Absent on cache hits and pasted links. */
+  j?: JobRuns;
+  /** The in-flight profile run is the guessed slug (not a Google hit). */
+  gs?: 1;
+  /** The browser accepts partial cards (search data first, experience rows on a later poll). */
+  pa?: 1;
+  /** Slug of the partial card on screen, waiting for its full profile. */
+  pp?: string;
+  /** Stage timings (ms since t0). */
+  tm?: Timings;
   exp: number;
 };
 
@@ -138,10 +151,13 @@ export async function readPhotoLink(secret: string, u: string | null, s: string 
 
 /* ------------------------------------------------------------------ apify */
 
-type Run = { id: string; status: string; defaultDatasetId: string };
+export type Run = { id: string; status: string; defaultDatasetId: string; startedAt?: string; finishedAt?: string };
+
+/** Apify's own time limits per run (s). Observed (Nov 2026): SERP 4–52 s (Google retries), people 4–14 s, profile 2.5–6.6 s. */
+export const RUN_TIMEOUT_S: Record<Stage, number> = { search: 40, people: 45, profile: 20 };
 
 export async function startRun(token: string, stage: Stage, input: Record<string, unknown>): Promise<Run> {
-  const params = new URLSearchParams({ token, timeout: stage === "search" ? "60" : "75", memory: "512" });
+  const params = new URLSearchParams({ token, timeout: String(RUN_TIMEOUT_S[stage]), memory: "512" });
   // Pay-per-event actors take hard caps; the Google SERP actor rejects them (its cost is bounded by the input).
   if (stage === "people") {
     params.set("maxItems", "10");
@@ -161,8 +177,11 @@ export async function startRun(token: string, stage: Stage, input: Record<string
   return ((await res.json()) as { data: Run }).data;
 }
 
-export async function getRun(token: string, run: string): Promise<Run> {
-  const res = await fetch(`${APIFY}/actor-runs/${encodeURIComponent(run)}?token=${token}`, { signal: AbortSignal.timeout(8_000) });
+/** A run's status. waitS > 0: Apify holds the request until the run finishes or waitS seconds pass (max 60). */
+export async function getRun(token: string, run: string, waitS = 0, signal?: AbortSignal): Promise<Run> {
+  const wait = waitS > 0 ? `&waitForFinish=${Math.min(60, Math.ceil(waitS))}` : "";
+  const timeout = AbortSignal.timeout(8_000 + Math.max(0, waitS) * 1000);
+  const res = await fetch(`${APIFY}/actor-runs/${encodeURIComponent(run)}?token=${token}${wait}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   if (!res.ok) throw new Error(`apify run ${res.status}`);
   return ((await res.json()) as { data: Run }).data;
 }
@@ -214,7 +233,7 @@ export function slugFromUrl(url: string): string | null {
   return m ? decodeURIComponent(m[1]).toLowerCase() : null;
 }
 
-type Serp = { organicResults?: { url?: string; title?: string; description?: string }[] };
+type Serp = { organicResults?: (SerpResult & { url?: string })[] };
 
 /**
  * Google results → up to 4 candidates worth pulling. The result title must carry the first AND last name, and the
@@ -236,6 +255,25 @@ export function candsFromSerp(pages: Serp[], { name, company, role }: LookupInpu
   return out.slice(0, 4);
 }
 
+/** The search-data card for one slug Google found (lib/linkedin-match.ts serpCard), as a Raw the store can hold. */
+export function serpRaw(pages: Serp[], slug: string): Raw | null {
+  for (const page of pages)
+    for (const r of page.organicResults ?? []) {
+      if (slugFromUrl(r.url ?? "") !== slug) continue;
+      const c = serpCard(r);
+      if (!c.fullname) return null;
+      return {
+        serp: 1,
+        basic_info: {
+          fullname: c.fullname.slice(0, 120), headline: c.headline.slice(0, 300), current_company: c.currentCompany.slice(0, 120),
+          location: c.location.slice(0, 120), public_identifier: slug, profile_url: `https://www.linkedin.com/in/${slug}`,
+        },
+        experience: [],
+      };
+    }
+  return null;
+}
+
 export type Raw = {
   basic_info?: {
     fullname?: string; headline?: string; profile_picture_url?: string; public_identifier?: string; profile_url?: string;
@@ -248,6 +286,12 @@ export type Raw = {
   }[];
   education?: { school?: string; degree?: string; degree_name?: string; field_of_study?: string; duration?: string }[];
   projects?: { name?: string; description?: string }[];
+  /** Built from Google's search data only (no experience rows yet). */
+  serp?: 1;
+  /** Tombstone: we pulled this slug and got nobody ("empty") or someone who fails the guard ("guard"). No data kept. */
+  gone?: "empty" | "guard";
+  /** With gone "guard": the (folded) title it failed for. Another title may still match, so it can be pulled again. */
+  for?: string;
 };
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : undefined);

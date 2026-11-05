@@ -3,7 +3,7 @@ import { Flow } from "@/components/flow/Flow";
 import { site } from "@/content/site";
 
 export const metadata: Metadata = {
-  title: `${site.select.topBar.cta} · Tal`,
+  title: site.select.topBar.cta,
   alternates: { canonical: "/start" },
   robots: { index: false },
 };

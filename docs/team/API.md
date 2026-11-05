@@ -5,22 +5,41 @@ English and safe to show as is (`message` on lookup routes, `error` elsewhere). 
 
 ## LinkedIn lookup
 
-### How it works now
-- `start` launches the **Google SERP** and the **LinkedIn people search** at the same time.
-- The people search returns full profiles (headline, experience, education), so when one has both the name and the
-  company, it is shown as soon as that run finishes. No third run is needed.
-- A Google result that has the company in its snippet gets its profile pulled while the people search is still running.
-  Whichever confident match lands first wins.
-- Every candidate passes the **match guard** (below) before it is shown. Name + company is shown at once; name +
-  title only is shown after we've waited up to 25 s for Google to find a name + company match. Nothing else is
-  ever shown: when no candidate passes, poll returns `not_found` and the flow offers the paste-link path.
+### How it works now (v4.2, Nov 5: speed, FEEDBACK_V4_2 §10)
+- **Three lanes, launched together** by the first `start`: the **Google SERP**, the **LinkedIn people search**
+  (first + last name → up to 10 full profiles), and a **pull of the guessed slug** (`first-last`, e.g.
+  `sanchit-tripathi`; `guessSlug` in `lib/linkedin-job.ts`). The first profile that clears the match guard at
+  "sure" (name + company, ≥ 0.9) is shown on the next poll, whichever lane found it. A guessed slug owned by a
+  stranger fails the guard like anyone else and nothing about them is kept (the store holds a tombstone only).
+- **Prefetch.** `start` works with **name + company only** (`role` optional). The flow calls it at A2 submit, so
+  the lanes run while the person types their title. The A3 `start` (same name + company, now with the title, plus
+  the A2 reply's `token`) **attaches** to that job: same Apify runs, same profile store, nothing paid again, nothing
+  counted against the limits again. Without the token it finds the job in KV (`li:job:v1:<sha(name|company)>`, 6 h).
+  Two starts fired at the same moment are caught by a write-then-verify claim (`li:jobclaim:v1:…`, 60 s): one
+  launches, the other joins it. The title only changes scoring, so an attached lookup re-reads every run with it.
+  Frontend call sequence: `docs/team/LOOKUP_PREFETCH.md`.
+- **Polls hold.** A poll that would answer `pending` waits (up to 5 s, `HOLD_MS`) on Apify's `waitForFinish` for
+  the next run to finish, and answers the moment one does, or when the stage changes, or when the 0.7 wait runs out.
+  The browser no longer adds its poll interval on top of the actor's time; it can poll again right away.
+- **Partial cards (opt-in, `partial: true` on start).** A Google result whose own search data (name, LinkedIn's
+  current company, headline; `serpCard` in `lib/linkedin-match.ts`) clears the guard at ≥ 0.9 is shown at once with
+  `partial: true` and no experience rows; a later poll returns the full card (`partial: false`). If the full
+  profile then fails the guard, the card is taken back (`retracted: true`). Measured: the detail pull is ~2.5–4 s and
+  rarely the slow part; this only helps when Google beats the people search. Old clients never see a partial card.
+- Name + title only (0.7) is still shown only after the existing wait (25 s from the first start) for a name +
+  company match. Nothing else is ever shown: when no candidate passes, poll returns `not_found` and the flow offers
+  the paste-link path.
 - Profiles stay server-side in KV (`li:d:<lookup id>`, about 7 h). The browser holds a signed token with run ids and
   public slugs only. It can't name another lookup's runs or data.
 - **Cache:** the same name, company and role within 6 h (`li:q:v5:<sha>`) reuses the candidates and costs nothing.
   v5 (Nov 5, match guard) replaced v4, whose entries could hold name-only guesses; v4 keys are never read again.
-- **Cost caps:** people ≤ 10 items (≤ $0.05), ≤ 3 profile pulls (each `maxItems=1`, ≤ $0.06), and one SERP page.
-  The worst case is about $0.07 per person.
-- **Limits** (`lib/limits.ts`; round 3). They are counted only when a paid run is about to start, so cache hits never count:
+  A different title for the same name + company within 6 h attaches to the job (free, re-scored with the new title).
+- **Apify time limits** (`RUN_TIMEOUT_S`): SERP 40 s (was 60; its Google retries ran to 52 s), people 45 s (was 75;
+  observed ≤ 14 s), profile 20 s (was 75; observed ≤ 6.6 s), so a stuck run frees its slot sooner.
+- **Cost caps:** people ≤ 10 items (≤ $0.05), the guessed slug + ≤ 3 Google-hit pulls (each `maxItems=1`, $0.005,
+  charged only when a profile comes back), and one SERP page (≈ $0.002). Worst case about $0.072 per person.
+- **Limits** (`lib/limits.ts`; round 3). They are counted only when a paid run is about to start, so cache hits and
+  attaches never count (a prefetched job is counted once, at A2):
   - **30 name searches per network (IP) per hour**, so one office behind one egress IP still works;
   - **3 per network + name** per hour;
   - **30 pasted-link pulls per network per hour**, in a separate bucket, so the paste-link fallback still works when the network limit trips;
@@ -56,32 +75,83 @@ the best name match was shown. Now a profile is offered only when **name AND (co
 - **Test (no network):** `node --test scripts/linkedin-match.test.mjs` (8 cases: exact; Inc/Labs/LLC/The variations;
   same name at another company, rejected; same company with another name, rejected; title-only with the same name,
   accepted; nicknames and transliterations; empty company, where the title must match; diacritics).
+- **Search-data cards** (partial cards) go through the same `matchProfile`, on LinkedIn's structured bits only:
+  the name, the current company (Google's `personalInfo.companyName`, the snippet's "Experience: X", or a whole
+  "Name - Role - Company" title) and the headline. An email domain or an "ex-" mention in the snippet is not the
+  company. Only ≥ 0.9 shows a partial card; 0.7 on search data never does.
+- **Test (no network):** `node --test scripts/linkedin-prefetch.test.mjs` (6 cases: attach keeps the runs, store and
+  clock and takes the new title; other names/companies, expired or empty jobs never attach; the guessed slug;
+  search-data cards from real Google results; the guard on search data).
 
-### Measured (founder's own profile, local dev, Nov 4)
+### Measured: speed (v4.2, Nov 5, local dev, "Sanchit Tripathi / Grapevine / Strategy Lead", 3 paid lookups)
+Polled exactly like the flow (`scripts/lookup-timing.mjs`); Apify's own run times from its run log.
+
+| | First card | Where the time went |
+|---|---|---|
+| **Before** (v4.1 code, cold, poll every 1.7 s) | **16.0 s** | start 1.1 s · people-search actor 13.8 s · ~1 s until the next poll · final poll 0.6 s. Google was still running (it hit its 60 s limit). |
+| **After, no prefetch, people lane only** (guess off for the test, frontend unchanged) | **12.2 s** (≈ 10.6 s without a dev recompile in the start) | start 2.7 s (1.6 s of it Next recompiling) · people actor 9.7 s · card out **5 ms** after the run finished (the poll was holding) |
+| **After, prefetch at A2, A3 start 4 s later** (poll every 150 ms) | **0.9 s after the A3 start** (4.9 s after A2) | start 1.15 s · guessed-slug pull 2.7 s · attach 0.03 s · first poll 0.58 s. One set of runs for both starts (SERP 6.1 s, people 7.9 s, guess 2.7 s). |
+| Cache hit (same name + company + role) | **0.05 s** (first poll at once; 0.37 s at today's 300 ms first-poll delay) | |
+
+What sets the floor: the people-search actor (one LinkedIn API call; 4–14 s across the last 10 runs, ~9 s median;
+it pushes all its results at the end, so there's nothing to read early). Our own overhead after the actor finishes
+is now ~0.05–0.6 s (was ~1–2 s). So on a cache miss:
+- **guessed slug owned by the person:** card ~4 s after A2, so on screen at once at A3;
+- **anyone else, with prefetch:** ~10–11 s after A2, so **≤ 6 s after A3** when the title takes ≥ 5 s to type;
+- **without prefetch:** ~10–11 s (was ~15–16 s).
+The next lever, not built: the people search needs only the name, so it could start at A1 (name submit) and win
+the company step's typing time too (cost: a $0.05 search for everyone who leaves at A2).
+
+The mocked-Apify run of the state machine (`scripts/linkedin-flow-mock.sh`, no network, ~2 min) covered: prefetch + attach (one paid
+job, the limits counted once), two starts at the same instant (one job), the guessed slug as a stranger (rejected,
+nothing stored; people search wins), partial → full, partial → retracted, no opt-in (no partial), cache hit, a
+different title attaching via KV without the gate, the 0.7 wait, and "not me".
+
+### Measured: before the speed work (Nov 4–5)
 | | Before | After |
 |---|---|---|
 | First lookup | 16.5 s, and the **wrong** person (a student with the same name; the SERP-only path) | **11.6 s and 13.2 s**, right person (score 1.0) |
 | Same name + company again | 16.5 s | **0.4–0.6 s** (first poll) |
 | "No, not me" (next profile already held) | ~5–15 s (a new profile run) | **0.3 s**; at most +5 s when it waits for a Google company hit |
 
-What sets the floor now is the people-search run (~11 s). With `POLL_MS = 2200`, the browser adds up to 2 s on top.
+**After the guard (Nov 5):** found in 12 s, right person, score 0.9 (name + company, from his recent role at
+Grapevine; "Strategy Lead" isn't on his profile). "No, not me" then ended at `not_found` (32 s, waiting out the Google
+run and its guarded pulls) instead of offering a stranger. The repeat was a v5 cache hit: found on the first poll, 0.16 s.
 
-**After the guard (Nov 5, local dev, "Sanchit Tripathi / Grapevine / Strategy Lead"):** found in 12 s, right person,
-score 0.9 (name + company, from his recent role at Grapevine; "Strategy Lead" isn't on his profile). "No, not me"
-then ended at `not_found` (32 s, waiting out the Google run and its guarded pulls) instead of offering a stranger.
-The repeat was a v5 cache hit: found on the first poll, 0.16 s.
-
-### Endpoints (contract unchanged)
-- `POST /api/linkedin/start` `{name, company, role, url?}` returns
+### Endpoints (v4.2: additive; old clients work unchanged)
+- `POST /api/linkedin/start` `{name, company, role?, url?, token?, partial?}` returns
   `{state:"pending", stage, token}` or `{state:"error", message, code?}`. Statuses: 400 bad input, 429 with `code:"rate_limited"` or `"daily_cap"`, 502 Apify down, 503 offline. **Branch on `code`, never on the message.**
+  - `role` may be empty or missing: that's the **A2 prefetch**. It launches the paid lanes (or joins a job for the
+    same name + company, or is a cache hit) and counts against the limits once.
+  - `token`: the `token` from an earlier start for the **same name + company** (the A2 reply). The new start attaches
+    to that job instead of paying again. A token for anyone else, an expired one, or none at all is fine: the server
+    then looks the job up in KV, and only then starts a new paid search.
+  - `partial: true`: this client handles partial cards (below). Leave it out and nothing changes.
+  - Order the server tries: the v5 cache for this exact name + company + role; the job (token, then KV); a paid start.
 - `GET /api/linkedin/poll?t=<token>` returns `{state:"pending", stage:"search"|"people"|"profile", token}`,
   `{state:"found", profile, next}`, `{state:"not_found", next:null}` or `{state:"error", message}`.
   **Always use the token from the latest reply.** It carries the state.
+  - A poll may take **up to ~5 s**: it holds until a run finishes (or the stage changes) instead of answering
+    `pending` straight away. Poll again as soon as a `pending` reply comes back (≤ 250 ms; no 1.7 s wait needed).
+  - Every poll reply carries **`timings`** (ms since the first start of the job): `start` (paid runs launched),
+    `attach` (the A3 start joined), `search` / `people` / `guess` / `pull` (when a poll saw that run finished),
+    `apify` (each run's own time on Apify), `first` (first card out) and `src` (`people` | `search` | `guess` |
+    `cache`), `full` (the full card after a partial), `n` (polls), `cache: 1` on a cache hit. For logs and analytics;
+    the card doesn't need it. The server also logs it once per lookup (`[linkedin] first card {…}`, no names) and
+    writes it to the job record.
+  - With `partial: true` on start, `found` also carries `partial`:
+    - `partial: true` + `token`: a search-data card (name, headline, company, location; **no photo, no experience
+      rows**). Show it and let them answer, but **keep polling with `token`**.
+    - `partial: false`: the full card. Replace the partial one in place (same person, same slug).
+    - `retracted: true` (on `pending` or `not_found`, rarely on `found` with a different person): the full profile
+      failed the guard, so the partial card was someone else. Take it down: back to A4 (pending), to the next card
+      (found), or to not-found.
 - `POST /api/linkedin/profile` `{next}` ("not me") returns `pending` (the next poll shows the next candidate) or `not_found`.
-  We show at most 3 profiles per lookup.
+  We show at most 3 profiles per lookup. It works on a partial card too (that slug is never shown again).
 
-`stage` can now go straight from `search` to `profile`, or end at `found` without ever reaching `profile`.
-`people` means Google has finished and the people search is still running. Keep using `Math.max` on the stage index.
+`stage` can go straight from `search` to `profile`, or end at `found` without ever reaching `profile`.
+`people` means Google has finished and the people search is still running. The guessed-slug pull never reports
+`profile` (it runs from the start). Keep using `Math.max` on the stage index.
 
 `Profile` (in `lib/linkedin.ts`) is unchanged, plus optional fields: `education?` (≤ 2), `about?` (≤ 800 chars, contact details stripped), `skills?` (≤ 10), `projects?` (≤ 2), and `experience[].description?` (≤ 400). The card can ignore them. `photo` is now a same-origin signed link (see `GET /api/linkedin/photo`), never LinkedIn's CDN URL.
 
@@ -185,6 +255,11 @@ curl -s localhost:3217/api/upload -F 'application={"name":"Test B","company":"Ac
 curl -s localhost:3217/api/linkedin/start -H 'content-type: application/json' -d '{"name":"12345","company":"Acme"}'
 # the match guard, no network
 node --test scripts/linkedin-match.test.mjs
+# the attach logic and search-data cards, no network
+node --test scripts/linkedin-prefetch.test.mjs
+# timed lookups the way the flow polls (paid unless cached; allowed identity only)
+node scripts/lookup-timing.mjs                                  # one start with the title
+POLL_MS=150 node scripts/lookup-timing.mjs --prefetch 4000      # A2 start, 4 s typing, A3 start with the A2 token
 # one real lookup (the allowed identity only): start, then poll with the latest token every ~2 s
 T=$(curl -s localhost:3217/api/linkedin/start -H 'content-type: application/json' \
   -d '{"name":"Sanchit Tripathi","company":"Grapevine","role":"Strategy Lead"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')

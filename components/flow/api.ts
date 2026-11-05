@@ -1,10 +1,17 @@
 /** Browser side of docs/team/API.md. Branch on `code`, never on the message. */
 import type { Profile } from "@/lib/linkedin";
 
+/** Poll timings (ms since the A2 start of the job). For analytics only. */
+export type Timings = { first?: number; attach?: number; full?: number; src?: string; cache?: number };
+
 export type Reply =
-  | { state: "pending"; stage: string; token: string }
-  | { state: "found"; profile: Profile; next: string | null }
-  | { state: "not_found"; next: null }
+  | { state: "pending"; stage: string; token: string; retracted?: true; timings?: Timings }
+  | {
+      state: "found"; profile: Profile; next: string | null;
+      /** Only with `partial: true` on start. true = search data only (no photo, no roles): keep polling with `token`. */
+      partial?: boolean; token?: string; retracted?: true; timings?: Timings;
+    }
+  | { state: "not_found"; next: null; retracted?: true; timings?: Timings }
   | { state: "error"; message: string; code?: string; retryAfter?: number };
 
 export type BusyCode = "rate_limited" | "daily_cap" | "search_down" | "offline";

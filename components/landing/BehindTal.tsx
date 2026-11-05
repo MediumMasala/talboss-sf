@@ -1,39 +1,72 @@
-/* eslint-disable @next/next/no-img-element -- the logo tile mark */
+/* eslint-disable @next/next/no-img-element -- pre-sized art */
+import type { CSSProperties } from "react";
+import { networkStats } from "@/content/network";
 import { site } from "@/content/site";
 import { CountUp } from "./CountUp";
-import { ProductMock } from "./ProductMock";
 
 const B = site.select.stats;
 
-/** L3 Behind Tal (white card 4:124 / 5:120): heading, logo tile, the paragraph, two count-up stats, the product mock. */
+/** How many columns the last tile spans so the grid ends flush, for `n` tiles in `cols` columns. */
+const span = (n: number, cols: number) => {
+  const rem = n % cols;
+  return rem === 0 ? 1 : cols - rem + 1;
+};
+
+/**
+ * L3 The numbers wall (white card 4:124 / 5:120, v4.2). Eyebrow, the people headline (the network claim), one line,
+ * then a dense grid of DS stats: big number, hairline, small label. One tile per function from content/network.json
+ * (via content/network.ts, which lets only clean rounded figures through), and the startups claim last.
+ * 2 columns on phones, 3 at tablet, 4 from 1024. Each number counts up when 80 % in view, rippling 60 ms per tile.
+ * Behind the card, full-bleed on the black page: the round-5 node map (`public/art/wall-*`, PICK.md) at 18 %, faded
+ * out at its top and bottom edges, so the people sit on "a network".
+ */
 export function BehindTal() {
+  const { stats } = networkStats();
+  const tiles = [...stats.map((s) => ({ key: s.key, value: s.display, label: s.label })), { key: "startups", value: B.startups.value, label: B.startups.label }];
+  const n = tiles.length;
   return (
-    <section aria-labelledby="behind" className="px-4 pb-24 md:px-12 md:pb-40">
-      <div className="mx-auto flex max-w-[1344px] flex-col gap-10 overflow-hidden rounded-[28px] bg-white px-6 py-8 md:flex-row md:items-center md:gap-16 md:py-10 md:pl-16 md:pr-10">
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <h2 id="behind" className="text-[28px] font-semibold leading-[34px] tracking-[-0.6px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
-            {B.heading}
+    <section aria-labelledby="behind" className="relative px-4 pb-24 md:px-12 md:pb-40">
+      <picture aria-hidden className="wall-art pointer-events-none absolute inset-x-0 -top-24 bottom-0 opacity-[0.18] md:-top-36">
+        <source type="image/avif" media="(min-width: 768px)" srcSet="/art/wall-16x9-1024.avif 1024w, /art/wall-16x9-1376.avif 1376w" sizes="100vw" />
+        <source type="image/webp" media="(min-width: 768px)" srcSet="/art/wall-16x9-1024.webp 1024w, /art/wall-16x9-1376.webp 1376w" sizes="100vw" />
+        <source type="image/avif" srcSet="/art/wall-4x5-480.avif 480w, /art/wall-4x5-928.avif 928w" sizes="100vw" />
+        <img src="/art/wall-4x5-480.webp" srcSet="/art/wall-4x5-480.webp 480w, /art/wall-4x5-928.webp 928w" sizes="100vw" alt="" loading="lazy" className="size-full object-cover" />
+      </picture>
+      <div className="relative mx-auto flex max-w-[1344px] flex-col gap-8 rounded-[28px] bg-white px-6 py-8 md:gap-12 md:p-16">
+        <div className="flex flex-col gap-4">
+          <p className="text-[12px] font-medium uppercase leading-5 tracking-[1.2px] text-s600 md:text-[13px]">{B.eyebrow}</p>
+          <h2 id="behind" className="max-w-[880px] text-balance text-[28px] font-semibold leading-[34px] tracking-[-0.6px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
+            {B.headline}
           </h2>
-          <span className="flex size-[44.64px] items-center justify-center rounded-[12px] bg-white shadow-[0_4px_6px_rgba(0,0,0,0.14)]">
-            <img src="/ds/tal-logo.svg" alt="" width={27} height={17} className="h-[16.6px] w-[27px]" />
-          </span>
-          <p className="t-sub max-w-[520px] text-s700">{B.body}</p>
-          <dl className="flex w-full max-w-[600px] gap-8">
-            {B.items.map((it) => (
-              <div key={it.label} className="flex flex-1 flex-col gap-1 border-t border-s300 py-5">
-                <dt className="sr-only">{it.label}</dt>
-                <dd className="order-first text-[32px] font-medium leading-10 tracking-[-1px] text-s1000 md:text-[40px] md:leading-[48px]">
-                  <CountUp value={it.value} />
+          <p className="t-sub max-w-[560px] text-s700">{B.body}</p>
+        </div>
+        <dl aria-label={B.gridLabel} className="grid grid-cols-2 gap-x-6 md:grid-cols-3 md:gap-x-8 lg:grid-cols-4">
+          {tiles.map((t, i) => {
+            const last = i === n - 1;
+            return (
+              <div
+                key={t.key}
+                className={`flex min-w-0 flex-col gap-1 border-t border-s300 pb-6 pt-5 md:pb-8 ${last ? "stat-last" : ""}`}
+                style={last ? ({ "--s2": span(n, 2), "--s3": span(n, 3), "--s4": span(n, 4) } as CSSProperties) : undefined}
+              >
+                <dt className="sr-only">{t.label}</dt>
+                <dd className="order-first text-[28px] font-medium leading-9 tracking-[-0.8px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
+                  <CountUp value={t.value} delay={i * 60} />
                 </dd>
-                <dd aria-hidden className="t-helper text-s700">
-                  {it.label}
+                <dd aria-hidden className="t-helper text-pretty text-s700">
+                  {t.label}
                 </dd>
               </div>
-            ))}
-          </dl>
-        </div>
-        <ProductMock />
+            );
+          })}
+        </dl>
       </div>
+      <style>{`
+        .wall-art { -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%, #000 70%, transparent); mask-image: linear-gradient(180deg, transparent, #000 22%, #000 70%, transparent); }
+        .stat-last { grid-column: span var(--s2) / span var(--s2); }
+        @media (min-width: 768px) { .stat-last { grid-column: span var(--s3) / span var(--s3); } }
+        @media (min-width: 1024px) { .stat-last { grid-column: span var(--s4) / span var(--s4); } }
+      `}</style>
     </section>
   );
 }

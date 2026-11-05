@@ -23,9 +23,15 @@ const S = site.select;
 const A = S.apply;
 const errors = site.upload.errors;
 const accept = [...site.upload.extensions, ...site.upload.mimeTypes].join(",");
-const FIRST_POLL_MS = 300; // cache hits and "not me" answer on the first poll
-const POLL_MS = 1700;
+// v4.2 §10 (docs/team/LOOKUP_PREFETCH.md): each poll holds on the server (≤ 5 s) until a run finishes or the stage
+// changes, so the browser asks again at once instead of adding its own wait on top.
+const FIRST_POLL_MS = 0;
+const POLL_MS = 150;
 const GIVE_UP_MS = 120_000;
+/** After "Yes" on a partial card, keep polling this long so the full card can replace it before the upload. */
+const FILL_AFTER_YES_MS = 8_000;
+/** The A2 prefetch is for this person (name + company); a different one means a new start. */
+const personKey = (name: string, company: string) => `${name.trim()}|${company.trim()}`.toLowerCase();
 
 export type Step =
   | "name" | "company" | "title" | "search" | "confirm" | "link" | "notFound"
@@ -40,7 +46,7 @@ export const CODES: Record<Step, string> = {
 };
 /** ?state= values → steps (dev preview). */
 export const PREVIEW: Record<string, Step> = {
-  a1: "name", a2: "company", a3: "title", a4: "search", a5: "confirm", link: "link", notfound: "notFound",
+  a1: "name", a2: "company", a3: "title", a4: "search", a5: "confirm", a5partial: "confirm", link: "link", notfound: "notFound",
   ratelimited: "rateLimited", dailycap: "dailyCap", searchdown: "searchDown", offline: "offline",
   a6: "resume", a6b: "email", noemail: "email", sending: "resume", a7: "done", done: "done",
 };
@@ -65,6 +71,12 @@ type State = {
   startedAt: number;
   profile: Profile | null;
   next: string | null;
+  /** The card on A5 is a search-data card (no photo, no roles); the full one may replace it in place. */
+  partial: boolean;
+  /** While a partial card is up: the token to keep polling with in the background. null = not polling. */
+  bg: string | null;
+  /** When "Yes" was pressed (the background poll runs FILL_AFTER_YES_MS past it). */
+  yesAt: number;
   status: Status;
   file: { name: string; size: number } | null;
   error: string | null;
@@ -81,7 +93,7 @@ type State = {
 
 const initial: State = {
   step: "name", dir: 1, history: [], name: "", company: "", title: "", url: "", email: "", token: null, stage: 0, stageAt: 0,
-  startedAt: 0, profile: null, next: null, status: "skipped", file: null, error: null, sending: false, sentEmail: null,
+  startedAt: 0, profile: null, next: null, partial: false, bg: null, yesAt: 0, status: "skipped", file: null, error: null, sending: false, sentEmail: null,
   retryAt: 0, checkingNext: false, needEmail: false, preview: false, epoch: 0,
 };
 
@@ -90,7 +102,13 @@ type Action =
   | { type: "go"; step: Step; error?: string | null; push?: boolean }
   | { type: "back" }
   | { type: "searching"; token: string; index: number; restart?: boolean; checkingNext?: boolean }
-  | { type: "found"; profile: Profile; next: string | null }
+  | { type: "found"; profile: Profile; next: string | null; partial?: boolean; bg?: string | null }
+  /** Background poll on a partial card: the card stays, poll again with `token`. */
+  | { type: "bg"; token: string | null; next?: string | null }
+  /** The full card for the partial one on screen (same person): replace it in place. */
+  | { type: "fill"; profile: Profile; next: string | null }
+  /** The partial card was someone else: take it down (and undo a "Yes"); the caller then says where to go. */
+  | { type: "retract" }
   | { type: "busy"; code: BusyCode; retryAfter?: number }
   | { type: "status"; status: Status; url?: string }
   | { type: "file"; file: State["file"] }
@@ -114,7 +132,7 @@ function reducer(s: State, a: Action): State {
     case "back": {
       const history = [...s.history];
       const prev = history.pop() ?? "name";
-      return { ...s, step: prev, dir: -1, history, error: null, token: null, sending: false, needEmail: false };
+      return { ...s, step: prev, dir: -1, history, error: null, token: null, bg: null, sending: false, needEmail: false };
     }
     case "searching": {
       const now = Date.now();
@@ -124,10 +142,27 @@ function reducer(s: State, a: Action): State {
         ...s, step: "search", dir: 1, history, token: a.token || null, error: null,
         stage: index, stageAt: index !== s.stage || a.restart ? now : s.stageAt,
         startedAt: a.restart ? now : s.startedAt, checkingNext: a.checkingNext ?? s.checkingNext,
+        ...(a.restart ? { bg: null, partial: false } : {}),
       };
     }
     case "found":
-      return { ...s, step: "confirm", dir: 1, profile: a.profile, next: a.next, token: null, checkingNext: false };
+      return {
+        ...s, step: "confirm", dir: 1, profile: a.profile, next: a.next, token: null, checkingNext: false,
+        partial: a.partial ?? false, bg: a.bg ?? null,
+      };
+    case "bg":
+      return { ...s, bg: a.token, next: a.next === undefined ? s.next : a.next };
+    case "fill":
+      return { ...s, profile: a.profile, next: a.next, partial: false, bg: null };
+    case "retract": {
+      // Back to the lookup as if the card had never been shown: drop it, undo a "Yes", and cut history back to
+      // before A5 so Back never returns to it. Step "search" (transient) so the follow-up dispatch pushes nothing.
+      const at = s.history.indexOf("confirm");
+      return {
+        ...s, step: "search", dir: -1, history: at >= 0 ? s.history.slice(0, at) : s.history, profile: null,
+        partial: false, bg: null, status: "skipped", yesAt: 0, token: null, error: null, checkingNext: false,
+      };
+    }
     case "busy":
       return {
         ...s, step: BUSY_STEP[a.code], dir: 1, token: null, error: null,
@@ -136,7 +171,12 @@ function reducer(s: State, a: Action): State {
       };
     case "status":
       // The caller decides typed vs skipped: only a link that passed LINKEDIN_RE counts as typed (Steve v4.1 #5).
-      return { ...s, status: a.status, url: a.url ?? s.url, step: "resume", dir: 1, history: [...s.history, s.step], token: null, error: null };
+      return {
+        ...s, status: a.status, url: a.url ?? s.url, step: "resume", dir: 1, history: [...s.history, s.step], token: null, error: null,
+        yesAt: a.status === "confirmed" ? Date.now() : 0,
+        // Only a confirmed partial card keeps its background poll (so the full card can still land before the upload).
+        bg: a.status === "confirmed" ? s.bg : null,
+      };
     case "needEmail":
       return { ...s, step: "email", dir: 1, needEmail: true, sending: false, error: null, history: [...s.history, s.step] };
     case "file":
@@ -353,6 +393,18 @@ function FlowInner() {
   const polls = useRef(0);
   const viewed = useRef<string>("");
   const main = useRef<HTMLDivElement>(null);
+  /** The A2 start (LOOKUP_PREFETCH.md §1): fired at A2 submit, awaited at A3 submit, never shown on its own. */
+  const prefetch = useRef<{ key: string; reply: Promise<Reply> } | null>(null);
+  /** Bumped by every new lookup (start, "not me") and by leaving the search, so a held poll that answers late is dropped. */
+  const lookupGen = useRef(0);
+  /** The same for the background poll behind a partial card. */
+  const bgGen = useRef(0);
+  const bgBusy = useRef(false);
+  /** The latest state, for replies that land after a held poll (up to ~5 s later). */
+  const latest = useRef(s);
+  useLayoutEffect(() => {
+    latest.current = s;
+  });
 
   useEffect(() => setUntil(untilDate()), []);
 
@@ -366,7 +418,7 @@ function FlowInner() {
     return () => clearTimeout(t);
   }, []);
 
-  // Dev preview: /start?state=A1…A7 | link | notfound | ratelimited | dailycap | searchdown | offline | A6b | sending
+  // Dev preview: /start?state=A1…A7 | A5partial | link | notfound | ratelimited | dailycap | searchdown | offline | A6b | sending
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     const want = new URLSearchParams(window.location.search).get("state")?.toLowerCase();
@@ -380,6 +432,8 @@ function FlowInner() {
       a3: { title: "" },
       a4: { stage: 1, stageAt: Date.now() - 1500, startedAt: Date.now() - 6000 },
       a5: { profile: mockProfile, next: "mock" },
+      // A partial card (search data) waiting for its full profile: initials tile + skeleton rows.
+      a5partial: { profile: { ...mockProfile, photo: "", experience: [] }, next: "mock", partial: true, bg: "mock" },
       link: { url: "" },
       ratelimited: { retryAt: Date.now() + 42_000 },
       a6: confirmed,
@@ -442,20 +496,32 @@ function FlowInner() {
   useEffect(() => {
     if (s.step !== "search" || !s.token || s.preview) return;
     const token = s.token;
+    const gen = lookupGen.current;
     const delay = polls.current++ === 0 ? FIRST_POLL_MS : POLL_MS;
+    // A poll can hold ~5 s; drop its answer if the person left the search (Back, "paste your link") meanwhile.
+    const stale = () => gen !== lookupGen.current || latest.current.step !== "search";
     const timer = setTimeout(async () => {
       if (Date.now() - s.startedAt > GIVE_UP_MS) {
         track("linkedin_failed", { reason: "timeout" });
         return dispatch({ type: "go", step: "notFound", push: false });
       }
       const reply = await poll(token);
+      if (stale()) return;
       if (reply.state === "pending") {
         dispatch({ type: "searching", token: reply.token, index: reply.stage ? stageIndex(reply.stage) : 0 });
       } else if (reply.state === "found") {
-        track("linkedin_found", { score: reply.profile.score, seconds: Math.round((Date.now() - s.startedAt) / 1000) });
+        const tm = reply.timings;
+        track("linkedin_found", {
+          score: reply.profile.score, seconds: Math.round((Date.now() - s.startedAt) / 1000), partial: Boolean(reply.partial),
+          src: tm?.src, ...(tm?.first !== undefined && tm?.attach !== undefined ? { after_title_ms: tm.first - tm.attach } : {}),
+        });
         dispatch({ type: "searching", token: "", index: 3 });
         await sleep(450); // the bar reaches 100 % and you see it
-        dispatch({ type: "found", profile: reply.profile, next: reply.next });
+        if (gen !== lookupGen.current || latest.current.step !== "search") return;
+        dispatch({
+          type: "found", profile: reply.profile, next: reply.next,
+          partial: reply.partial === true, bg: reply.partial === true ? reply.token ?? null : null,
+        });
       } else {
         const code = busyCode(reply);
         track("linkedin_failed", { reason: code ?? reply.state });
@@ -465,12 +531,59 @@ function FlowInner() {
     return () => clearTimeout(timer);
   }, [s.step, s.token, s.startedAt, s.preview]);
 
+  // A partial card is up (A5, or A6/A6b within FILL_AFTER_YES_MS of "Yes"): keep polling behind it, fill it in with
+  // the full card, or take it down when the full profile turns out to be someone else (LOOKUP_PREFETCH.md §3).
+  const bgOn =
+    Boolean(s.bg) && !s.preview && !s.sending &&
+    (s.step === "confirm" || (s.status === "confirmed" && (s.step === "resume" || s.step === "email")));
+  useEffect(() => {
+    if (!bgOn || !s.bg || bgBusy.current) return;
+    const token = s.bg;
+    const gen = bgGen.current;
+    const timer = setTimeout(async () => {
+      const at = latest.current;
+      if (at.status === "confirmed" && Date.now() - at.yesAt > FILL_AFTER_YES_MS) return dispatch({ type: "bg", token: null });
+      bgBusy.current = true;
+      const reply = await poll(token);
+      bgBusy.current = false;
+      const cur = latest.current;
+      const onCard = cur.step === "confirm" || (cur.status === "confirmed" && (cur.step === "resume" || cur.step === "email") && !cur.sending);
+      if (gen !== bgGen.current || !onCard || !cur.bg) return; // they moved on ("not me", Back, the upload started)
+      const same = reply.state === "found" && reply.profile.slug === cur.profile?.slug && !reply.retracted;
+      if (reply.state === "error") return dispatch({ type: "bg", token: null }); // keep the partial card as it is
+      if (reply.state === "pending" && !reply.retracted) return dispatch({ type: "bg", token: reply.token });
+      if (same && reply.partial === true) return dispatch({ type: "bg", token: reply.token ?? null, next: reply.next });
+      if (same) {
+        track("linkedin_found", { full_after_partial: true, after_yes: cur.status === "confirmed" });
+        return dispatch({ type: "fill", profile: reply.profile, next: reply.next });
+      }
+      // Retracted: the partial card was someone else. Back to A4, the next card, or not-found; a "Yes" is undone.
+      track("linkedin_failed", { reason: "retracted", after_yes: cur.status === "confirmed" });
+      lookupGen.current++;
+      polls.current = 1;
+      dispatch({ type: "retract" });
+      if (reply.state === "pending") dispatch({ type: "searching", token: reply.token, index: stageIndex(reply.stage), checkingNext: false });
+      else if (reply.state === "found")
+        dispatch({ type: "found", profile: reply.profile, next: reply.next, partial: reply.partial === true, bg: reply.partial === true ? reply.token ?? null : null });
+      else dispatch({ type: "go", step: "notFound", push: false });
+    }, POLL_MS);
+    return () => clearTimeout(timer);
+  }, [bgOn, s.bg]);
+
   const begin = useCallback(
-    async (body: Record<string, string>) => {
+    async (body: Record<string, string | boolean>, usePrefetch = false) => {
       polls.current = 0;
+      const gen = ++lookupGen.current;
+      bgGen.current++;
       dispatch({ type: "searching", token: "", index: body.url ? 2 : 0, restart: true, checkingNext: false });
       if (s.preview) return;
-      const reply = await post("/api/linkedin/start", body);
+      // A3: the A2 prefetch has almost always answered by now (~1 s). Always await it before this start, so the server
+      // attaches to its job instead of catching two starts at once (which costs the A3 start up to 3 s).
+      const key = personKey(String(body.name), String(body.company));
+      const pre = usePrefetch && prefetch.current?.key === key ? await prefetch.current.reply : null;
+      if (pre && pre.state !== "pending") prefetch.current = null; // it failed (429, 502, 400): start as usual; the A3 reply carries the error
+      const reply = await post("/api/linkedin/start", pre?.state === "pending" ? { ...body, token: pre.token } : body);
+      if (gen !== lookupGen.current || latest.current.step !== "search") return; // Back or "paste your link" meanwhile
       const code = busyCode(reply);
       if (reply.state === "pending") dispatch({ type: "searching", token: reply.token, index: stageIndex(reply.stage) });
       else if (code) dispatch({ type: "busy", code, retryAfter: reply.state === "error" ? reply.retryAfter : undefined });
@@ -479,7 +592,7 @@ function FlowInner() {
     [s.preview],
   );
 
-  const lookup = () => begin({ name: s.name.trim(), company: s.company.trim(), role: s.title.trim() });
+  const lookup = () => begin({ name: s.name.trim(), company: s.company.trim(), role: s.title.trim(), partial: true }, true);
 
   /* ------------------------------------------------------------ handlers */
   const submitName = (e: FormEvent) => {
@@ -490,6 +603,11 @@ function FlowInner() {
   const submitCompany = (e: FormEvent) => {
     e.preventDefault();
     if (s.company.trim().length < 2) return dispatch({ type: "error", message: A.company.missing });
+    // Prefetch: start the search now, while they type their title. Not polled, nothing shown from it (errors
+    // included). A changed name or company (Back from A3) fires a new one; the same pair again fires nothing.
+    const key = personKey(s.name, s.company);
+    if (!s.preview && prefetch.current?.key !== key)
+      prefetch.current = { key, reply: post("/api/linkedin/start", { name: s.name.trim(), company: s.company.trim(), partial: true }) };
     dispatch({ type: "go", step: "title" });
   };
   const submitTitle = (e: FormEvent) => {
@@ -511,9 +629,12 @@ function FlowInner() {
     track("linkedin_rejected", {});
     if (!s.next) return dispatch({ type: "go", step: "notFound", error: A.confirm.outOfProfiles });
     polls.current = 0;
+    const gen = ++lookupGen.current;
+    bgGen.current++; // "Not me" on a partial card: its background poll stops; that person is never shown again
     dispatch({ type: "searching", token: "", index: 2, restart: true, checkingNext: true });
     if (s.preview) return;
     const reply = await post("/api/linkedin/profile", { next: s.next });
+    if (gen !== lookupGen.current || latest.current.step !== "search") return;
     const code = busyCode(reply);
     if (reply.state === "pending") dispatch({ type: "searching", token: reply.token, index: 2, checkingNext: true });
     else if (code) dispatch({ type: "busy", code });
@@ -683,7 +804,7 @@ function FlowInner() {
           }
         >
           <Heading title={A.confirm.title} sub={A.confirm.hint} />
-          <ProfileCard profile={s.profile} nameId="ans-name" />
+          <ProfileCard profile={s.profile} nameId="ans-name" filling={s.partial && Boolean(s.bg)} />
         </Screen>
       ) : null,
     link: () => linkScreen(A.link.question),
@@ -845,9 +966,13 @@ function FlowInner() {
     <div className={`flex min-h-dvh flex-col ${isDone ? "bg-white" : "bg-white"}`}>
       <header className="relative z-20 flex h-16 shrink-0 items-center justify-between px-6 md:h-[88px] md:px-12">
         <LogoTile />
-        <a href="/#questions" className="pill pill-s pill-outline">
-          {S.topBar.questions}
-        </a>
+        {/* v4.2: no "Questions?" button. Phones have no footer, so Back sits here (desktop keeps it in the footer). */}
+        {canBack ? (
+          <button type="button" onClick={() => dispatch({ type: "back" })} className="pill pill-s -mr-2 gap-0.5 px-2 text-s1000 hover:bg-s100 md:hidden">
+            <img src="/ds/chevron-left.svg" alt="" width={20} height={20} className="size-5" />
+            <span className="pr-1">{A.back}</span>
+          </button>
+        ) : null}
       </header>
       {!isDone ? (
         <div className="md:hidden">
@@ -858,7 +983,7 @@ function FlowInner() {
       <main ref={main} className="relative flex flex-1 flex-col">
         <AnimatePresence key={s.epoch} mode="popLayout" initial={false} custom={s.dir}>
           <m.section
-            key={s.step === "search" ? `search-${s.checkingNext}` : s.step}
+            key={s.step === "search" ? `search-${s.checkingNext}` : s.step === "confirm" ? `confirm-${s.profile?.slug ?? ""}` : s.step}
             custom={s.dir}
             variants={screen}
             initial="initial"

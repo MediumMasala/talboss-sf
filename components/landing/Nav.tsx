@@ -36,14 +36,9 @@ export function Nav() {
       >
         <Wordmark className="h-[22px] w-[36px]" interactive={false} />
       </a>
-      <div className="flex items-center gap-2">
-        <a href="#questions" className="pill pill-s pill-ghost-dark hidden md:inline-flex">
-          {T.questions}
-        </a>
-        <StartLink from="nav" className="pill pill-s pill-white">
-          {T.cta}
-        </StartLink>
-      </div>
+      <StartLink from="nav" className="pill pill-s pill-white">
+        {T.cta}
+      </StartLink>
     </nav>
   );
 }

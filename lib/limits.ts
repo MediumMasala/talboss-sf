@@ -1,6 +1,7 @@
 /**
  * Lookup limits, counted in KV (approximate: KV counters aren't atomic, which is fine at this scale).
- * Only PAID lookups count: a cached name + company never touches these counters.
+ * Only PAID lookups count: a cached name + company never touches these counters, and neither does a start that
+ * attaches to a running job (lib/linkedin-job.ts), so the A2 prefetch + A3 start count once.
  *
  *   per network (IP)       30 discovery lookups / hour   (one office behind one egress IP still works)
  *   per network + name      3 / hour                     (the same person retrying, or a script on one name)

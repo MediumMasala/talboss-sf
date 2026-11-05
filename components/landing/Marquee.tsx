@@ -3,7 +3,7 @@ import { site } from "@/content/site";
 
 /** DS/Logo Marquee Row (18:1395): the 12 verified companies as full wordmarks, white, optical heights 16–24 px, 48 px apart.
  *  Google, Microsoft, Salesforce, Adobe, LinkedIn and PayPal are Commons wordmarks built by scripts/logos.mjs (24-px viewBox). */
-const LOGOS: [string, string, number, number][] = [
+export const LOGOS: [string, string, number, number][] = [
   ["google", "Google", 72.902, 24],
   ["microsoft", "Microsoft", 103.152, 22],
   ["amazon", "Amazon", 59.721, 20],

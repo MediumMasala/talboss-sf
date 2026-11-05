@@ -76,11 +76,11 @@ The v3 photographs (`public/photos/`), sound (`public/sound/`), the self-hosted 
 
 | file | source | licence | used where |
 |---|---|---|---|
-| `public/art/hero-16x9-{640,1024,1376}.{avif,webp}`, `hero-4x5-{480,768,928}.*` | round 4 `sf-horizon-a-*` (greyscale, `scripts/art.mjs`; replaced round 3 `particle-horizon-a`, which read as Manhattan, 5 Nov) | original (AI-generated) | landing hero |
+| `public/art/hero-16x9-{640,1024,1376}.{avif,webp}`, `hero-4x5-{480,768,928}.*` | round 5 `valley-isometric-b-*` (greyscale, `scripts/art.mjs`; replaced round 4 `sf-horizon-a`, "cool but not very SF", 5 Nov; round 4 had replaced round 3 `particle-horizon-a`) | original (AI-generated) | landing hero |
 | `public/art/done-4x5-{480,720,928}.*` | round 3 `horizon-dawn-b-4x5` | original (AI-generated) | A7 Done |
 | `public/art/orb-4x5-{480,720,928}.*` | round 3 `chrome-orb-b-4x5` | original (AI-generated) | The deal card (desktop) |
 | `public/art/grain.png` (160 px RGBA noise tile) | generated in node (seeded LCG) | original | hero film grain |
-| `app/opengraph-image.jpg` | round 4 `og-a-1200x630` (from `sf-horizon-a-16x9`) + the tal wordmark in the silver ramp (`scripts/og.mjs`) | original + Tal mark | social card |
+| `app/opengraph-image.jpg` | round 5 `og-a-1200x630` (from `valley-isometric-b-16x9`) + the tal wordmark in the silver ramp (`scripts/og.mjs`) | original + Tal mark | social card |
 | `public/ds/{tal-logo,chevron-left,magnifier,file-upload,mock-highlight}.svg` | exported from Figma QjHT7mWSNvgeAuiQehZZNJ (Boss DS library: tal logo v2, Anron icons) | Tal-owned | logo tile, wordmark mask, Back, LinkedIn visual, resume drop, product mock |
 | `public/logos/{amazon,uber,intuit,spotify,razorpay,sarvam}.svg` | white vectors from Figma DS/Logo Marquee Row 18:1395 (made from the repo SVGs) | trademarks of their owners, nominative use, founder-verified 4 Nov 2026 | logo marquee, captioned "Bosses from these companies hire on Tal" |
 | `public/logos/{google,microsoft,salesforce,adobe,linkedin,paypal}.svg` | full wordmarks from Wikimedia Commons, built by `scripts/logos.mjs` (5 Nov; sources in the table below) | Commons: public domain (text logo); trademarks of their owners, nominative use, founder-verified 4 Nov 2026 | logo marquee (replaced the icon-only marks) |
@@ -108,3 +108,18 @@ Steve v4.1 round 1, item 3: six marks were icons only. Each is now the company's
 | `public/logos/adobe.svg` | https://commons.wikimedia.org/wiki/File:Adobe_Corporate_logo.svg | https://upload.wikimedia.org/wikipedia/commons/6/6e/Adobe_Corporate_logo.svg | Public domain (text logo) | red to white (A mark + wordmark), cropped |
 | `public/logos/linkedin.svg` | https://commons.wikimedia.org/wiki/File:LinkedIn_Logo.svg | https://upload.wikimedia.org/wikipedia/commons/0/01/LinkedIn_Logo.svg | Public domain (text logo) | black and blue to white, "in" cut out of the box, cropped |
 | `public/logos/paypal.svg` | https://commons.wikimedia.org/wiki/File:PayPal_logo.svg | https://upload.wikimedia.org/wikipedia/commons/3/39/PayPal_logo.svg | Public domain (text logo) | two blues to white, cropped |
+
+## Round 5 (original, generated)
+
+### Hero art: new-age Silicon Valley
+FEEDBACK_V4_2.md section 9 (5 Nov 2026): the round 4 SF skyline was "cool but not very SF". The hero background is now the Bay Area seen from above as a quiet silver model city at night, with a few campuses and towers glowing down the peninsula as landmarks. The *feeling* of a landscape where companies rise as landmarks comes from the founder's reference (the HBO "Silicon Valley" title sequence). The composition, palette, camera and execution are our own. No title-sequence assets, frames or recreated shots were used, prompted or shipped. The reference frames were viewed outside the repo only. Three motifs (bay-aerial, valley-isometric, valley-nodes) x three takes x 16:9 + 4:5, from `gemini-3.1-flash-image` via `scripts/art/gen.mjs`, jobs from `scripts/art/round5-jobs.py`. All frames were neutralised to greyscale and given a shared top fade. Prompts, re-rolls and post notes: `docs/team/art/round5/PROMPTS.md`. Pick and reasoning: `docs/team/art/round5/PICK.md`. Hub positions for landmark lights: `docs/team/art/round5/hubs.json`. Contact sheet: `docs/team/art/round5/sheet.jpg`.
+
+| file | source | author | licence | used where |
+|---|---|---|---|---|
+| `docs/team/art/round5/valley-isometric-b-{16x9,4x5}.png` | generated, prompt in round5/PROMPTS.md | Tal (AI-generated, original) | original work | PICK: hero (desktop + mobile) → `public/art/hero-*` |
+| `docs/team/art/round5/valley-nodes-a-{16x9,4x5}.png` | generated, prompt in round5/PROMPTS.md | Tal (AI-generated, original) | original work | PICK: numbers wall background → `public/art/wall-*` (not wired yet) |
+| `docs/team/art/round5/{bay-aerial-a,b,c,valley-isometric-a,c,valley-nodes-b,c}-{16x9,4x5}.png` | generated, prompt in round5/PROMPTS.md | Tal (AI-generated, original) | original work | candidates (runner-up for the hero: `bay-aerial-b`) |
+| `docs/team/art/round5/og-a-1200x630.jpg` | derived from `valley-isometric-b-16x9.png` (1.1x push-in) | Tal (AI-generated, original) | original work | PICK: OG image background → `app/opengraph-image.jpg` via `scripts/og.mjs` |
+| `public/art/hero-16x9-{640,1024,1376}.*`, `hero-4x5-{480,768,928}.*` | round 5 `valley-isometric-b-*` via `scripts/art.mjs` | Tal (AI-generated, original) | original work | landing hero |
+| `public/art/wall-16x9-{1024,1376}.*`, `wall-4x5-{480,928}.*` | round 5 `valley-nodes-a-*` via `scripts/art.mjs` | Tal (AI-generated, original) | original work | numbers wall background (faint, 15–25 % opacity) |
+| `docs/team/art/round5/hubs.json` | measured on the hero pick | Tal | original work | frontend: where to light SF, Palo Alto, Mountain View, Sunnyvale, San Jose |

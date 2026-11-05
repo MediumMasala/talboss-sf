@@ -1,0 +1,14 @@
+{
+  "_note": "PLACEHOLDER. Not data. Same shape as content/network.json (data lane). Every display is a dash so no invented number can render. Delete nothing: the site reads network.json when it exists and falls back to this file.",
+  "placeholder": true,
+  "functions": [
+    { "key": "ai_ml", "label": "AI and ML engineers", "display": "—" },
+    { "key": "backend", "label": "Backend engineers", "display": "—" },
+    { "key": "frontend_fullstack", "label": "Frontend and full-stack engineers", "display": "—" },
+    { "key": "mobile", "label": "Mobile engineers", "display": "—" },
+    { "key": "product", "label": "Product managers", "display": "—" },
+    { "key": "design", "label": "Designers", "display": "—" },
+    { "key": "data", "label": "Data scientists and analysts", "display": "—" },
+    { "key": "founders", "label": "Founders", "display": "—" }
+  ]
+}

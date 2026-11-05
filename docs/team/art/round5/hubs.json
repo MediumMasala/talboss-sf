@@ -1,0 +1,25 @@
+{
+  "about": "Approximate hub positions on the round 5 hero pick (valley-isometric-b), as fractions of the SOURCE image width (x) and height (y), origin top-left. Each point sits on the lit landmark nearest the real town in the render (towers for SF and San Jose, glowing campus blocks down the peninsula). The render is a stylised model, so spacing is the picture's, not the map's. Eyeballed on a 5 % grid, good to about +/- 0.01.",
+  "crop_note": "The hero uses object-cover, so convert to on-screen positions per crop. Desktop 1440 x 720 box over a 16:9 image (1440 x 810): screen_y = (y * 810 - 45) / 720, x unchanged. Phone 390 x 520 image box over a 4:5 image (416 x 520): screen_x = (x * 416 - 13) / 390, y unchanged. Recompute for other box sizes the same way.",
+  "wordmark_note": "San Jose sits at the far end of the bay, right under the bottom edge of the wordmark on both crops (desktop wordmark spans about x 0.41-0.59, y 0.19-0.38 of the 16:9 image; phone about x 0.30-0.70, y 0.16-0.34 of the 4:5). Keep any San Jose light small and soft, or let it be the horizon glow that already backlights the mark.",
+  "image": {
+    "16x9": "docs/team/art/round5/valley-isometric-b-16x9.png",
+    "4x5": "docs/team/art/round5/valley-isometric-b-4x5.png"
+  },
+  "hubs": {
+    "16x9": {
+      "sf":            { "x": 0.665, "y": 0.690, "landmark": "downtown tower cluster, tallest tower top at x 0.670 y 0.665", "companies": ["Salesforce", "Uber", "Microsoft", "Amazon"] },
+      "palo_alto":     { "x": 0.655, "y": 0.575, "landmark": "row of glowing low campus blocks across the peninsula", "companies": [] },
+      "mountain_view": { "x": 0.660, "y": 0.525, "landmark": "pair of lit towers", "companies": ["Google", "Intuit"] },
+      "sunnyvale":     { "x": 0.615, "y": 0.475, "landmark": "lit tower with a soft halo", "companies": ["LinkedIn", "Microsoft", "Amazon"] },
+      "san_jose":      { "x": 0.495, "y": 0.385, "landmark": "bright glow and towers at the far end of the bay, on the horizon", "companies": ["Adobe", "PayPal"] }
+    },
+    "4x5": {
+      "sf":            { "x": 0.635, "y": 0.620, "landmark": "downtown tower cluster at the Bay Bridge landing", "companies": ["Salesforce", "Uber", "Microsoft", "Amazon"] },
+      "palo_alto":     { "x": 0.580, "y": 0.455, "landmark": "glowing campus blocks just past the mid-bay bridge, left half", "companies": [] },
+      "mountain_view": { "x": 0.650, "y": 0.450, "landmark": "glowing campus blocks, right half", "companies": ["Google", "Intuit"] },
+      "sunnyvale":     { "x": 0.535, "y": 0.370, "landmark": "small lit block on the shore further on", "companies": ["LinkedIn", "Microsoft", "Amazon"] },
+      "san_jose":      { "x": 0.390, "y": 0.330, "landmark": "lit towers at the far end of the bay, near the horizon", "companies": ["Adobe", "PayPal"] }
+    }
+  }
+}

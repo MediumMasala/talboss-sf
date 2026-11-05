@@ -1,19 +1,22 @@
-// Converts the chosen stills (hero: docs/team/art/round4, the rest: round3) into AVIF + WebP at three widths in public/art/.
+// Converts the chosen stills (hero + numbers wall: docs/team/art/round5, Done + orb: round3) into AVIF + WebP at three widths in public/art/.
 // Run: node scripts/art.mjs   (sharp is already in node_modules via next)
 import sharp from "sharp";
 import { mkdirSync } from "node:fs";
 
 const R3 = "docs/team/art/round3";
-const R4 = "docs/team/art/round4";
+const R5 = "docs/team/art/round5";
 const OUT = "public/art";
 mkdirSync(OUT, { recursive: true });
 
 /** name in public/art → source file and the three widths we serve. */
 const JOBS = [
-  { name: "hero-16x9", src: `${R4}/sf-horizon-a-16x9.png`, widths: [640, 1024, 1376] },
-  { name: "hero-4x5", src: `${R4}/sf-horizon-a-4x5.png`, widths: [480, 768, 928] },
+  { name: "hero-16x9", src: `${R5}/valley-isometric-b-16x9.png`, widths: [640, 1024, 1376] },
+  { name: "hero-4x5", src: `${R5}/valley-isometric-b-4x5.png`, widths: [480, 768, 928] },
   { name: "done-4x5", src: `${R3}/horizon-dawn-b-4x5.png`, widths: [480, 720, 928] },
   { name: "orb-4x5", src: `${R3}/chrome-orb-b-4x5.png`, widths: [480, 720, 928] },
+  // Faint full-bleed background for the numbers wall (round 5 PICK.md); not wired into a component yet.
+  { name: "wall-16x9", src: `${R5}/valley-nodes-a-16x9.png`, widths: [1024, 1376] },
+  { name: "wall-4x5", src: `${R5}/valley-nodes-a-4x5.png`, widths: [480, 928] },
 ];
 
 for (const job of JOBS) {

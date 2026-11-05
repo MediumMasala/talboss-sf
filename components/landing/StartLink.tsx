@@ -6,7 +6,7 @@ import { Magnetic } from "@/components/ds/Magnetic";
 import { track } from "@/lib/analytics";
 
 /**
- * Every "Ask Tal to represent you" pill. On click a white circle grows from the pointer (clip-path, 560 ms,
+ * Every "Apply for Tal" pill. On click a white circle grows from the pointer (clip-path, 560 ms,
  * the in-out curve) while /start loads underneath; the flow is white, so the wipe hands over seamlessly
  * and the flow removes it. Modifier-clicks and reduced motion get a plain link.
  */

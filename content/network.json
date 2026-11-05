@@ -1,0 +1,62 @@
+{
+  "asOf": "2026-11-05",
+  "total": "300,000+",
+  "startups": "5,000+",
+  "functions": [
+    {
+      "key": "swe",
+      "label": "Software engineers",
+      "count": 204841,
+      "display": "200,000+"
+    },
+    {
+      "key": "eng_lead",
+      "label": "Engineering leads",
+      "count": 37754,
+      "display": "37,000+"
+    },
+    {
+      "key": "data",
+      "label": "Data engineers, scientists and analysts",
+      "count": 33620,
+      "display": "33,000+"
+    },
+    {
+      "key": "product",
+      "label": "Product managers",
+      "count": 29044,
+      "display": "29,000+"
+    },
+    {
+      "key": "design",
+      "label": "Designers",
+      "count": 13088,
+      "display": "13,000+"
+    },
+    {
+      "key": "devops",
+      "label": "DevOps and platform engineers",
+      "count": 11787,
+      "display": "11,000+"
+    },
+    {
+      "key": "founder",
+      "label": "Founders",
+      "count": 8398,
+      "display": "8,300+"
+    },
+    {
+      "key": "ai",
+      "label": "AI and ML engineers",
+      "count": 7057,
+      "display": "7,000+"
+    },
+    {
+      "key": "security",
+      "label": "Security engineers",
+      "count": 5936,
+      "display": "5,900+"
+    }
+  ],
+  "notes": "Distinct people across the Tal app and Grapevine, by current job title (Tal's LinkedIn title first, Grapevine's sign-up title otherwise), sorted into one function each by keyword rules; see docs/team/NETWORK_NUMBERS.md."
+}

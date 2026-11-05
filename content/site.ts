@@ -2,6 +2,8 @@
  * Every word on the site lives here. Components only read from this file.
  *
  * v4 (4 Nov 2026): short and plain, one line per screen, in the voice of the India onboarding.
+ * v4.2 (5 Nov 2026, FEEDBACK_V4_2.md): "Apply for Tal" everywhere, early preview in the SF Bay Area, "What to expect"
+ * instead of "The deal", four warm questions, the numbers wall. Voice: a good friend explaining it over coffee.
  * The key map, with where each string appears, is in docs/team/COPY.md.
  *
  * House rules: Tal is "Tal" or "it", never a gendered pronoun. The page speaks as "we".
@@ -14,14 +16,17 @@ export const BRAND_NAME = "Tal";
  * Claims. Change them here only.
  * network: verified (~234K Tal app + ~1.04M Grapevine). Never say "active" or "every week".
  * startups: founder-stated, approved for use 4 Nov 2026.
- * Each is used once, in select.stats.
+ * Each is used once, on the numbers wall (select.stats: the headline and the last tile).
+ * The per-function counts are not here: they come from content/network.json (the data lane), never typed by hand.
  */
 const claims = {
   network: "300,000+",
   startups: "5,000+",
 };
 
-const askTal = "Ask Tal to represent you";
+const applyForTal = "Apply for Tal";
+/** Exact (FEEDBACK_V4_2 §1). Non-breaking spaces keep "SF Bay Area." on one line. */
+const preview = "In early preview within the SF\u00a0Bay\u00a0Area.";
 const pasteLink = "Paste my LinkedIn link";
 const pasteLinkInstead = "Paste my LinkedIn link instead";
 
@@ -34,7 +39,7 @@ export const site = {
   seo: {
     title: "Tal: a talent agent for engineers, researchers, PMs and designers",
     description:
-      "Tal is a talent agent for engineers, researchers, PMs and designers, for roles in San Francisco, the Bay Area, and remote. We ask you before anyone hears your name, and it's free for you.",
+      "Tal is a talent agent for engineers, researchers, PMs and designers, in early preview within the SF Bay Area. You see every role first, and it's free for you.",
   },
 
   /** The one funding claim. The pinned bar above the nav only (v4.1: cut from the footer). */
@@ -75,32 +80,30 @@ export const site = {
     seo: {
       title: "Tal: a talent agent for engineers, researchers, PMs and designers",
       description:
-        "Tal is a talent agent for engineers, researchers, PMs and designers, for roles in San Francisco, the Bay Area, and remote. We ask you before anyone hears your name, and it's free for you.",
+        "Tal is a talent agent for engineers, researchers, PMs and designers, in early preview within the SF Bay Area. You see every role first, and it's free for you.",
       siteName: BRAND_NAME,
     },
 
-    /** Social card text. The OG image is the hero: the metallic tal wordmark over a glowing skyline at night. */
+    /** Social card text. The OG image is the hero art with the metallic tal wordmark (scripts/og.mjs, art lane). */
     og: {
       line: "tal",
-      sub: "The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
-      alt: "The silver tal wordmark in a black sky above a glowing city skyline, with the line: The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
+      sub: `The talent agent for engineers, researchers, PMs and designers. ${preview}`,
+      alt: `The silver tal wordmark on black, with the line: The talent agent for engineers, researchers, PMs and designers. ${preview}`,
     },
 
-    /** Top nav (landing) and header (flow). Funding line: site.funding.line. */
+    /** Top nav (landing) and header (flow). Funding line: site.funding.line. v4.2: no "Questions?" button (a footer link only). */
     topBar: {
       wordmark: "tal",
       wordmarkLabel: "Tal, home",
-      questions: "Questions?",
-      cta: askTal,
+      cta: applyForTal,
     },
 
     /* ------------------------------ Landing ------------------------------ */
 
     /** L1. Hero (Figma 4:43 / 5:65). The metallic tal wordmark is the headline; this is the line under it. */
     hero: {
-      /** Non-breaking spaces keep "Now in San Francisco." on one line (the Figma break, at both widths). */
-      sub: "The talent agent for engineers, researchers, PMs and designers. Now in San Francisco.",
-      cta: askTal,
+      sub: `The talent agent for engineers, researchers, PMs and designers. ${preview}`,
+      cta: applyForTal,
       note: "Free for you. Companies pay when they hire.",
     },
 
@@ -108,7 +111,7 @@ export const site = {
     chat: {
       tal: "Tal",
       role: "Your talent agent",
-      caption: "What a week with Tal looks like. Every intro waits for your yes.",
+      caption: "An example of a week with Tal. Nothing goes to a company until you say yes.",
       /** The thread types itself in when it scrolls into view. `after` is the pause before each message (ms). */
       messages: [
         {
@@ -123,34 +126,23 @@ export const site = {
           after: 400,
         },
         { from: "you", text: "Yes to the payments one. No to the other two.", after: 1500 },
-        { from: "tal", meta: "Tal · Tuesday", text: "Intro sent to the founder. They'll reply here.", after: 1100 },
+        { from: "tal", meta: "Tal · Tuesday", text: "Intro sent to the founder. They'll write to you directly.", after: 1100 },
       ] as { from: "tal" | "you"; meta?: string; text: string; roles?: [string, string][]; after: number }[],
       typing: "Tal is typing",
     },
 
-    /** L3. Behind Tal (white card 4:124). Each claim number appears here and nowhere else. */
+    /**
+     * L3. The numbers wall (white card 4:124, v4.2). The people are the proof: the headline carries the network claim,
+     * the grid shows real counts by function from content/network.json (`functions[].display` + `label`), and the
+     * last tile is the startups claim. Each claim appears here and nowhere else.
+     */
     stats: {
-      heading: "Behind Tal",
-      body: "Tal just opened in San Francisco. The network behind it is already this big, and a team reads every profile.",
-      items: [
-        { value: claims.network, label: "tech professionals" },
-        { value: claims.startups, label: "AI and consumer startups" },
-      ],
-    },
-
-    /** The product mock inside the Behind Tal card (DS/Product Mock · Roles 19:923). */
-    mock: {
-      who: "Tal",
-      role: "Your talent agent",
-      eyebrow: "Monday · picked for you",
-      title: "3 roles that fit you this week",
-      yes: "Yes",
-      roles: [
-        { title: "Staff engineer", company: "Series B payments company", where: "San Francisco" },
-        { title: "Founding engineer", company: "Seed-stage dev tools", where: "Remote" },
-        { title: "ML engineer", company: "Series A health", where: "Bay Area" },
-      ],
-      notice: { who: "Tal", when: "now", title: "Intro sent to the founder.", body: "They'll write to you directly." },
+      eyebrow: "The people behind Tal",
+      headline: `${claims.network} tech professionals. In early preview in the Bay Area.`,
+      body: "Engineers, PMs, designers, data scientists and founders. Here's who they are, by what they do.",
+      startups: { value: claims.startups, label: "AI and consumer startups" },
+      /** Screen-reader name for the grid. */
+      gridLabel: "Tech professionals behind Tal, by what they do",
     },
 
     /** L4. How it works, numbered 01 to 04 (4:154). */
@@ -158,40 +150,41 @@ export const site = {
       heading: "How it works",
       sub: "Three questions now. Tal does the rest.",
       steps: [
-        { title: "Tell Tal who you are", body: "Your name, where you work and your title. That's all it asks." },
-        { title: "Tal finds your LinkedIn", body: "Your photo, roles and history fill in by themselves." },
-        { title: "Tal emails you roles that fit", body: "Only roles at AI and consumer startups that match what you do." },
-        { title: "You say yes, Tal makes the intro", body: "Nobody hears your name until you do." },
+        { title: "Tell Tal who you are", body: "Your name, where you work and your title. It takes a minute." },
+        { title: "Tal builds your career graph", body: "Your roles, skills and history, read from your LinkedIn and resume." },
+        { title: "Tal emails you roles that fit", body: "Roles at AI and consumer startups, picked for what you do." },
+        { title: "We only apply once you approve", body: "You see every role first. Nothing goes out without your yes." },
       ],
     },
 
-    /** L5. The deal (glass card 22:1165). Each row leads in white and continues in 64 % white. */
+    /** L5. What to expect (glass card 22:1165; v4.2: no orb, text only). Each row leads in white and continues in 64 % white. */
     deal: {
-      heading: "The deal",
+      heading: "What to expect",
       rows: [
-        ["Free for you.", " Companies pay Tal when they hire."],
-        ["Tal asks before every introduction.", " Nobody hears your name until you say yes."],
-        ["Tal represents you for six months.", " If you go quiet, Tal assumes you're not looking and stops."],
+        ["It's free for you.", " Companies pay Tal when they hire someone."],
+        ["You'll see every role first.", " Tal only applies to the ones you approve."],
+        ["Tal works for you for six months.", " Go quiet and Tal will stop reaching out."],
         ["Roles are in San Francisco, the Bay Area, and remote.", ""],
       ] as [string, string][],
     },
 
-    /** L6. Questions (4:195). Each answer two sentences or fewer. */
+    /** L6. Questions (4:195). v4.2: four warm ones, nothing that plants a fear. Each answer two sentences or fewer. */
     faq: {
       heading: "Questions",
       items: [
-        ["Who is Tal for?", "Engineers, researchers, PMs and designers in San Francisco, the Bay Area or remote."],
-        ["Does it cost anything?", "Nothing. Companies pay Tal when they hire someone it introduced."],
-        ["Will my employer find out?", "Not from Tal. Your name goes to a company only after you say yes to that role."],
-        ["Which companies does Tal work with?", "AI and consumer startups, from seed to late stage. Tal only sends you roles that fit what you do."],
-        ["What happens after six months?", "Tal asks if you'd like it to keep going. If you don't reply, Tal assumes you're not looking right now and stops."],
-        ["How do I delete my data?", "Write to support@gvine.app and Tal deletes your profile and resume."],
+        ["Who is Tal for?", "Engineers, researchers, PMs and designers who'd like to hear about good roles in San Francisco, the Bay Area or remote. You don't have to be looking right now."],
+        ["Does it cost anything?", "No, it's free for you. Companies pay Tal when they hire someone it introduced."],
+        ["Which companies does Tal work with?", "AI and consumer startups, from seed to late stage. Tal only sends you the roles that fit what you do."],
+        ["What happens after six months?", "Tal checks in to ask if you'd like to keep going. If you don't reply, it simply stops."],
       ] as [string, string][],
     },
 
-    /** L7. Footer (4:224) and the giant wordmark. Email: site.legal.supportEmail. */
+    /** L7. Closing CTA, footer (4:224) and the giant wordmark. Email: site.legal.supportEmail. */
     credits: {
-      cta: askTal,
+      /** v4.2: the bottom CTA, centred above the footer hairline. */
+      cta: applyForTal,
+      /** The one quiet "Questions" link (to #questions); the nav and flow buttons are gone. */
+      questions: "Questions",
       copyright: "© 2026 Tal",
       privacy: "Privacy",
       terms: "Terms",
@@ -240,8 +233,8 @@ export const site = {
       search: {
         title: "Finding you on LinkedIn",
         /** Under the title (v4.1, from the Figma frame). */
-        sub: "Tal is pulling your photo, role and work history so you don't have to type it.",
-        wait: "This usually takes about 15 seconds.",
+        sub: "Tal is reading your photo, roles and history so you don't have to type them.",
+        wait: "This usually takes a few seconds.",
         /**
          * v4.1: under the bar, the stage the poll really reports (docs/team/API.md), cross-fading as it changes.
          * `search` = Google + the people search started; `people` = Google done, people search still running;
@@ -344,13 +337,13 @@ export const site = {
       done: {
         /** `date` like "4 May 2027". Set in tracked caps by CSS. */
         credit: (date: string) => `Represented by Tal · until ${date}`,
-        /** v4.1 founder note: what's ahead, not "Tal reads your profile". The chips below carry the places. */
-        sub: "Tal is already looking for your first roles. You say yes to each intro, and nothing happens without you.",
+        /** Exact (FEEDBACK_V4_2 §6). The chips below carry the places. */
+        sub: "Tal will mail you when a good role that matches you is found.",
         /** The three chips that rise from the horizon under the line. */
         places: ["San Francisco", "Bay Area", "Remote"],
         /**
          * v4.1: after a beat each chip gives way to a sample role line in the same spot (same order as `places`,
-         * so each line keeps its chip's place). The same three roles as the landing's chat and mock.
+         * so each line keeps its chip's place). The same three roles as the landing's chat.
          */
         roles: [
           ["Staff engineer", "payments · SF"],

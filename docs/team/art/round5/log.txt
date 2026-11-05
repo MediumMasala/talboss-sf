@@ -1,0 +1,62 @@
+bay-aerial-b-16x9 ok 7.9s gemini-3.1-flash-image
+bay-aerial-a-16x9 ok 8.2s gemini-3.1-flash-image
+bay-aerial-b-4x5 ok 8.2s gemini-3.1-flash-image
+bay-aerial-c-4x5 ok 8.8s gemini-3.1-flash-image
+bay-aerial-a-4x5 ok 8.8s gemini-3.1-flash-image
+bay-aerial-c-16x9 ok 9.1s gemini-3.1-flash-image
+valley-isometric-a-4x5 ok 7.7s gemini-3.1-flash-image
+valley-isometric-a-16x9 ok 8.1s gemini-3.1-flash-image
+valley-isometric-b-4x5 ok 7.8s gemini-3.1-flash-image
+valley-isometric-c-4x5 ok 7.6s gemini-3.1-flash-image
+valley-isometric-b-16x9 ok 8.6s gemini-3.1-flash-image
+valley-isometric-c-16x9 ok 9.7s gemini-3.1-flash-image
+valley-nodes-a-16x9 ok 8.3s gemini-3.1-flash-image
+valley-nodes-a-4x5 ok 9.0s gemini-3.1-flash-image
+valley-nodes-b-4x5 ok 8.4s gemini-3.1-flash-image
+valley-nodes-c-16x9 ok 8.7s gemini-3.1-flash-image
+valley-nodes-c-4x5 ok 8.0s gemini-3.1-flash-image
+valley-nodes-b-16x9 ok 10.7s gemini-3.1-flash-image
+reroll 1: valley-nodes-a-4x5, valley-nodes-b-16x9, valley-nodes-b-4x5 (city names printed), valley-isometric-c-16x9 (warm, flooded), valley-isometric-a-4x5 (floating board), bay-aerial-a-4x5 (bright sky band); v1s kept outside the repo
+bay-aerial-a-16x9 skip (exists)
+bay-aerial-b-16x9 skip (exists)
+bay-aerial-b-4x5 skip (exists)
+bay-aerial-c-16x9 skip (exists)
+bay-aerial-c-4x5 skip (exists)
+valley-isometric-a-16x9 skip (exists)
+valley-isometric-b-16x9 skip (exists)
+valley-isometric-b-4x5 skip (exists)
+valley-isometric-c-4x5 skip (exists)
+valley-nodes-a-16x9 skip (exists)
+valley-nodes-a-4x5 ok 8.2s gemini-3.1-flash-image
+valley-nodes-c-16x9 skip (exists)
+valley-nodes-c-4x5 skip (exists)
+valley-isometric-a-4x5 ok 8.4s gemini-3.1-flash-image
+valley-nodes-b-4x5 ok 9.0s gemini-3.1-flash-image
+valley-nodes-b-16x9 ok 9.3s gemini-3.1-flash-image
+valley-isometric-c-16x9 ok 9.4s gemini-3.1-flash-image
+bay-aerial-a-4x5 ok 10.2s gemini-3.1-flash-image
+reroll 2: valley-nodes-b-4x5 (names again), valley-isometric-a-4x5 (vertical seam), bay-aerial-a-4x5 (bright sky again) re-prompted by editing the subject; v2s kept outside the repo
+bay-aerial-a-16x9 skip (exists)
+bay-aerial-b-16x9 skip (exists)
+bay-aerial-b-4x5 skip (exists)
+bay-aerial-c-16x9 skip (exists)
+bay-aerial-c-4x5 skip (exists)
+valley-isometric-a-16x9 skip (exists)
+valley-isometric-b-16x9 skip (exists)
+valley-isometric-b-4x5 skip (exists)
+valley-isometric-c-16x9 skip (exists)
+valley-isometric-c-4x5 skip (exists)
+valley-nodes-a-16x9 skip (exists)
+valley-nodes-a-4x5 skip (exists)
+valley-nodes-b-16x9 skip (exists)
+bay-aerial-a-4x5 ok 8.7s gemini-3.1-flash-image
+valley-nodes-c-16x9 skip (exists)
+valley-nodes-c-4x5 skip (exists)
+valley-nodes-b-4x5 ok 9.3s gemini-3.1-flash-image
+valley-isometric-a-4x5 ok 9.6s gemini-3.1-flash-image
+grade: all 18 shipped candidates neutralised to true greyscale (R=G=B) + shared top fade (0.3 + 0.7*smoothstep(0.18,0.42,y))
+pick: valley-isometric-b (16x9 + 4x5) -> public/art/hero-* via scripts/art.mjs; numbers wall: valley-nodes-a -> public/art/wall-*
+hubs: hubs.json (SF, Palo Alto, Mountain View, Sunnyvale, San Jose on both hero crops)
+og: og-a-1200x630.jpg from valley-isometric-b-16x9 (1.1x push-in, crop x60 y33) -> app/opengraph-image.jpg via scripts/og.mjs
+sheet: sheet.jpg (18 candidates)
+DONE

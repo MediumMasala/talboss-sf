@@ -53,8 +53,11 @@ const when = (d: string) => d.replace(/\s*·.*$/, "");
 /**
  * DS/Profile Card (Figma 3:244): 480 wide, padding 24, radius 24, 1 px #EBEBEB, shadow 0 8 12 @10 %.
  * Springs in (scale .96 → 1, y 24 → 0); the name arrives by shared layout from the answer trail; rows cascade 60 ms.
+ * `filling`: a partial card (search data: no photo, no roles) whose full profile is still coming. The initials tile
+ * stands in for the photo and two quiet skeleton rows hold the roles' place; when the full card replaces the profile
+ * in place, the photo fades in over the initials and the real rows cascade in.
  */
-export function ProfileCard({ profile, nameId }: { profile: Profile; nameId?: string }) {
+export function ProfileCard({ profile, nameId, filling = false }: { profile: Profile; nameId?: string; filling?: boolean }) {
   const rows = profile.experience.slice(0, 3);
   return (
     <m.div
@@ -64,7 +67,7 @@ export function ProfileCard({ profile, nameId }: { profile: Profile; nameId?: st
       className="flex w-full max-w-[480px] flex-col gap-5 short-phone:gap-4 rounded-[24px] border border-s300 bg-white p-6 text-left shadow-[0_8px_12px_rgba(0,0,0,0.1)]"
     >
       <div className="flex items-center gap-4">
-        <Photo src={profile.photo} name={profile.fullname} />
+        <Photo key={profile.photo} src={profile.photo} name={profile.fullname} />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <m.p layoutId={nameId} transition={travel} className="text-[20px] font-medium leading-7 tracking-[-0.2px] text-s1000">
             {profile.fullname}
@@ -92,6 +95,21 @@ export function ProfileCard({ profile, nameId }: { profile: Profile; nameId?: st
                 </div>
                 {e.duration ? <p className="t-helper shrink-0 text-right text-s600">{when(e.duration)}</p> : null}
               </m.li>
+            ))}
+          </ul>
+        </>
+      ) : filling ? (
+        <>
+          <div className="h-px w-full bg-s300" />
+          <ul className="flex flex-col gap-4 short-phone:gap-3" aria-label="Loading roles" aria-busy>
+            {[0.62, 0.46].map((w, i) => (
+              <li key={i} className="flex items-center gap-3 motion-safe:animate-pulse">
+                <div className="size-7 shrink-0 rounded-[8px] bg-s300" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-0.5">
+                  <div className="h-3 rounded-full bg-s300" style={{ width: `${w * 100}%` }} />
+                  <div className="h-2.5 rounded-full bg-s300" style={{ width: `${w * 60}%` }} />
+                </div>
+              </li>
             ))}
           </ul>
         </>

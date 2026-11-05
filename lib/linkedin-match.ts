@@ -209,6 +209,39 @@ export function titleMatches(role: string, p: MatchProfile): boolean {
   return [p.headline ?? "", ...recent(p).map((e) => e.title ?? "")].some((f) => titleInText(role, f));
 }
 
+/* ------------------------------------------------------------------ search data */
+
+export type SerpResult = {
+  title?: string; websiteTitle?: string; description?: string;
+  personalInfo?: { companyName?: string; jobTitle?: string; location?: string };
+};
+export type SerpCard = { fullname: string; headline: string; currentCompany: string; location: string };
+
+const clean = (s: string) => s.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, " ").replace(/\s*(\.\.\.|…)\s*$/, "").replace(/\s+/g, " ").trim();
+
+/**
+ * A card from one Google result for a linkedin.com/in/ page, using only LinkedIn's structured bits: the name
+ * ("LinkedIn · Name", or the title before " - "), the current company (Google's personalInfo, or the snippet's
+ * "Experience: X", or a title shaped "Name - Role - Company"), the headline (the title after the name, or the job
+ * title) and the location. Free mentions in the snippet ("ex-Grapevine", an email domain) never count as the company.
+ * The match guard reads this card exactly like a full profile, with no experience rows.
+ */
+export function serpCard(r: SerpResult): SerpCard {
+  const title = clean((r.title ?? "").replace(/\s*\|\s*LinkedIn\s*$/i, ""));
+  const parts = title.split(/\s+[-–—]\s+/).map((p) => p.trim()).filter(Boolean);
+  const fromSite = /·\s*(.+)$/.exec(r.websiteTitle ?? "")?.[1]?.trim();
+  const fullname = fromSite || parts[0] || "";
+  const rest = parts.slice(1);
+  const snippet = r.description ?? "";
+  const experience = /Experience:\s*([^·]+?)\s*(?:·|\.\.\.|…|$)/.exec(snippet)?.[1]?.trim();
+  // "Name - Role - Company" only when the title is whole (not cut off with "…") and has no other separators.
+  const whole = !/(\.\.\.|…)\s*(\|\s*LinkedIn)?\s*$/i.test(r.title ?? "") && !title.includes("|");
+  const company = clean(r.personalInfo?.companyName || experience || (whole && rest.length === 2 ? rest[1] : "") || "");
+  const headline = clean(r.personalInfo?.jobTitle || rest.join(" - ") || "");
+  const location = clean(r.personalInfo?.location || /Location:\s*([^·]+?)\s*(?:·|\.|$)/.exec(snippet)?.[1] || "");
+  return { fullname: clean(fullname), headline, currentCompany: company, location };
+}
+
 /* ------------------------------------------------------------------ verdict */
 
 export function matchProfile(p: MatchProfile, input: MatchInput): Match {
