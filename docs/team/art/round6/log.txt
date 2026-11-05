@@ -1,0 +1,73 @@
+round 6: The fog is thinking (docs/team/HERO_DIRECTION.md), gemini-3-pro-image 4K via scripts/art/gen.mjs (--model, imageConfig.imageSize, ref images)
+fog-c-16x9 ok 32.5s gemini-3-pro-image 4K
+fog-d-16x9 ok 55.5s gemini-3-pro-image 4K
+fog-a-16x9 ok 55.7s gemini-3-pro-image 4K
+fog-b-16x9 ok 55.9s gemini-3-pro-image 4K
+fog-e-16x9 ok 32.6s gemini-3-pro-image 4K
+fog-g-16x9 ok 31.9s gemini-3-pro-image 4K
+fog-h-16x9 ok 32.9s gemini-3-pro-image 4K
+fog-f-16x9 ok 40.7s gemini-3-pro-image 4K
+fog-i-16x9 ok 30.2s gemini-3-pro-image 4K
+fog-k-16x9 ok 32.9s gemini-3-pro-image 4K
+fog-j-16x9 ok 35.9s gemini-3-pro-image 4K
+fog-l-16x9 ok 43.9s gemini-3-pro-image 4K
+fog-n-16x9 ok 32.0s gemini-3-pro-image 4K
+fog-m-16x9 ok 38.5s gemini-3-pro-image 4K
+fog-o-16x9 ok 35.6s gemini-3-pro-image 4K
+fog-p-16x9 ok 32.8s gemini-3-pro-image 4K
+fog-s-16x9 ok 34.5s gemini-3-pro-image 4K
+fog-r-16x9 ok 35.3s gemini-3-pro-image 4K
+fog-t-16x9 ok 37.1s gemini-3-pro-image 4K
+fog-q-16x9 ok 38.9s gemini-3-pro-image 4K
+fog-u-16x9 ok 33.3s gemini-3-pro-image 4K
+fog-v-16x9 ok 32.5s gemini-3-pro-image 4K
+fog-w-16x9 ok 34.3s gemini-3-pro-image 4K
+fog-x-16x9 ok 36.9s gemini-3-pro-image 4K
+fog-r1-16x9 ok 47.3s gemini-3-pro-image 4K ref
+fog-r3-16x9 ok 49.6s gemini-3-pro-image 4K ref
+fog-r2-16x9 ok 52.9s gemini-3-pro-image 4K ref
+fog-r4-16x9 ok 56.0s gemini-3-pro-image 4K ref
+fog-r5-16x9 ok 48.4s gemini-3-pro-image 4K ref
+fog-r6-16x9 ok 46.0s gemini-3-pro-image 4K ref
+fog-r8-16x9 ok 42.3s gemini-3-pro-image 4K ref
+fog-r7-16x9 ok 46.2s gemini-3-pro-image 4K ref
+fog-e2-16x9 ok 49.1s gemini-3-pro-image 4K ref
+fog-e1-16x9 ok 51.2s gemini-3-pro-image 4K ref
+fog-e1-4x5-b ok 37.4s gemini-3-pro-image 4K ref
+fog-e1-4x5-a ok 44.4s gemini-3-pro-image 4K ref
+reject: all 24 text-only takes (a-x): figure 15-40 % of frame height and/or x 0.25-0.34; open laptops; faces in profile (b j n v); colour cast (m u); black borders (n o p)
+reject: r1 r3-r8 (copy column / diagonal crest / face in profile / figure > 14 %); r2 met the layout with the laptop lid up -> local edit e1, e2
+pick: fog-e1 (16x9); 4x5 take a (b rejected: city in lower third, figure in the phone copy)
+grade: scripts/art/round6-grade.py -> fog-e1-16x9.png (bp 16, gamma 0.92, shoulder 195->230, fade 0.24-0.41), fog-e1-4x5.png (--light: bp 4, fade 0.22-0.40); R=G=B
+measure: 16x9 top35 6.3, lower-centre 15.3, peak 224, figure x 0.216 head 0.582 seat 0.697; 4x5 top35 3.0, lower-centre 18.1, peak 224, figure x 0.159 head 0.591 seat 0.697
+paths: paths.json (3 per crop, last point = where the person sits)
+export: node scripts/art.mjs -> public/art/hero-16x9-{1440,2880,3840}, hero-4x5-{800,1600} (AVIF q72, 2880 = 116 KB); done/orb/wall unchanged
+og: og-a-1200x630.jpg (1.1x push-in) -> app/opengraph-image.jpg + alt via scripts/og.mjs
+sheet: sheet.jpg (34 16:9 takes + pick + both 4:5)
+DONE
+fog-rm-4x5-b ok 39.0s gemini-3-pro-image 4K ref (generated as fog-f1-4x5-b, renamed fog-rm)
+fog-rm-4x5-a ok 46.7s gemini-3-pro-image 4K ref (generated as fog-f1-4x5-a, renamed fog-rm)
+fog-rm-16x9-a ok 51.6s gemini-3-pro-image 4K ref (generated as fog-f1-16x9-a, renamed fog-rm)
+fog-rm-16x9-b ok 55.8s gemini-3-pro-image 4K ref (generated as fog-f1-16x9-b, renamed fog-rm)
+fog-c1-4x5-a ok 48.6s gemini-3-pro-image 4K ref
+fog-c1-16x9-c ok 52.5s gemini-3-pro-image 4K ref
+fog-c1-16x9-b ok 56.6s gemini-3-pro-image 4K ref
+fog-c1-16x9-a ok 61.5s gemini-3-pro-image 4K ref
+fog-c1-4x5-b ok 40.6s gemini-3-pro-image 4K ref
+fog-c1-4x5-c ok 42.5s gemini-3-pro-image 4K ref
+fog-g1-4x5-a ok 46.7s gemini-3-pro-image 4K ref
+fog-g1-16x9-b ok 48.1s gemini-3-pro-image 4K ref
+fog-g1-16x9-a ok 49.7s gemini-3-pro-image 4K ref
+fog-g1-16x9-c ok 66.6s gemini-3-pro-image 4K ref
+fog-g1-4x5-c ok 45.4s gemini-3-pro-image 4K ref
+fog-g1-4x5-b ok 56.1s gemini-3-pro-image 4K ref
+6b founder: "Why is a depressed guy looking over a hill?" -> first: remove the figure (rm-*), then overridden: coder with a MacBook on a bench overlooking SF
+6b reject: c1 (direct replace) and g1 (grey placement box): coder + bench drawn at 20-30 % of frame height, moved right, scene re-rendered; g1-16x9-a kept as the subject source
+6b composite: scripts/art/round6b-composite.py -> raw/fog-f1-{16x9,4x5}-comp.png (fog-e1 plates, old figure box from rm-*-a, g1-a coder matted and scaled down x0.36 / x0.48; screen dimmed)
+6b grade: round6-grade.py --filaments (28 % softer, band-pass 1-6 px) --depaint (0.6 px soften + 1 px grain, city band) -> fog-f1-16x9.png, fog-f1-4x5.png (4:5 --light); R=G=B
+6b measure: 16x9 top35 6.3, lower-centre 15.3, peak 230; person x 0.190-0.241 (centre 0.215), head 0.585, feet 0.700, 11.5 %; 4x5 top35 3.0, lower-centre 18.1, peak 230; person x 0.211-0.311 (centre 0.24), head 0.598, 10.2 %
+6b paths: paths.json rewritten, each path ends at the laptop (16x9 [0.232, 0.645], 4x5 [0.290, 0.650])
+6b export: node scripts/art.mjs -> hero-16x9-{1440,2880,3840} (2880 AVIF 121 KB), hero-4x5-{800,1600} from fog-f1; done/orb/wall unchanged
+6b og: og-b-1200x630.jpg -> app/opengraph-image.jpg + new alt via scripts/og.mjs
+6b sheet: sheet.jpg (6b row + fog-f1 pair added)
+DONE-6B

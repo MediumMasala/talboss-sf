@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import { networkStats } from "@/content/network";
 import { site } from "@/content/site";
 import { CountUp } from "./CountUp";
+import { Faces } from "./Faces";
+import { LOGOS } from "./Marquee";
 
 const B = site.select.stats;
 
@@ -13,16 +15,22 @@ const span = (n: number, cols: number) => {
 };
 
 /**
- * L3 The numbers wall (white card 4:124 / 5:120, v4.2). Eyebrow, the people headline (the network claim), one line,
- * then a dense grid of DS stats: big number, hairline, small label. One tile per function from content/network.json
- * (via content/network.ts, which lets only clean rounded figures through), and the startups claim last.
- * 2 columns on phones, 3 at tablet, 4 from 1024. Each number counts up when 80 % in view, rippling 60 ms per tile.
+ * L3 The numbers wall (white card 4:124 / 5:120, v4.3: "a room full of people, not a dashboard"). Eyebrow; the lead
+ * (300,000+ and the rest of the sentence, one count-up, slow and soft) with eight Tal faces beside it (`Faces`); the
+ * one line; five tiles (`B.tiles` picks the keys from content/network.json, via content/network.ts, which lets only
+ * clean rounded figures through): a static number at 28/36 (40/48 from 768), a hairline above, a small label; then a
+ * quiet row of the verified company marks (Marquee's `LOGOS`, black at ~16 px) under its one line.
+ * Tiles: 2 columns on phones, 3 at tablet, 5 from 1024; the last tile spans to end the grid flush.
  * Behind the card, full-bleed on the black page: the round-5 node map (`public/art/wall-*`, PICK.md) at 18 %, faded
  * out at its top and bottom edges, so the people sit on "a network".
  */
 export function BehindTal() {
   const { stats } = networkStats();
-  const tiles = [...stats.map((s) => ({ key: s.key, value: s.display, label: s.label })), { key: "startups", value: B.startups.value, label: B.startups.label }];
+  const byKey = new Map(stats.map((s) => [s.key, s]));
+  const tiles = B.tiles.flatMap((k) => {
+    const s = byKey.get(k);
+    return s ? [{ key: s.key, value: s.display, label: s.label }] : [];
+  });
   const n = tiles.length;
   return (
     <section aria-labelledby="behind" className="relative px-4 pb-24 md:px-12 md:pb-40">
@@ -32,32 +40,30 @@ export function BehindTal() {
         <source type="image/avif" srcSet="/art/wall-4x5-480.avif 480w, /art/wall-4x5-928.avif 928w" sizes="100vw" />
         <img src="/art/wall-4x5-480.webp" srcSet="/art/wall-4x5-480.webp 480w, /art/wall-4x5-928.webp 928w" sizes="100vw" alt="" loading="lazy" className="size-full object-cover" />
       </picture>
-      <div className="relative mx-auto flex max-w-[1344px] flex-col gap-8 rounded-[28px] bg-white px-6 py-8 md:gap-12 md:p-16">
+      <div className="relative mx-auto flex max-w-[1344px] flex-col gap-8 rounded-[28px] bg-white px-6 py-8 md:gap-14 md:p-16">
         <div className="flex flex-col gap-4">
           <p className="text-[12px] font-medium uppercase leading-5 tracking-[1.2px] text-s600 md:text-[13px]">{B.eyebrow}</p>
-          {/* Steve r3: the total is the headline. Set big, so the grid under it reads as who those people are. */}
-          <h2 id="behind" className="flex max-w-[880px] flex-col text-s1000">
-            <span className="text-[64px] font-semibold leading-[64px] tracking-[-2.4px] md:text-[112px] md:leading-[108px] md:tracking-[-4.5px]">
-              <CountUp value={B.total} />
-            </span>
-            <span className="mt-2 text-balance text-[28px] font-semibold leading-[34px] tracking-[-0.6px] md:mt-3 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
-              {B.headline}
-            </span>
-          </h2>
+          {/* v4.3: the lead is one sentence, lighter than r3's 112-px total, with the faces beside it (above it on phones). */}
+          <div className="flex flex-col-reverse gap-5 md:flex-row md:items-center md:justify-between md:gap-10">
+            <h2 id="behind" className="max-w-[760px] text-balance text-[36px] font-semibold leading-[42px] tracking-[-1px] text-s1000 md:text-[56px] md:leading-[64px] md:tracking-[-1.6px]">
+              <CountUp value={B.total} duration={2400} soft /> {B.headline}
+            </h2>
+            <Faces className="shrink-0 md:pr-1" />
+          </div>
           <p className="t-sub max-w-[560px] text-s700">{B.body}</p>
         </div>
-        <dl aria-label={B.gridLabel} className="grid grid-cols-2 gap-x-6 md:grid-cols-3 md:gap-x-8 lg:grid-cols-4 wall-grid">
+        <dl aria-label={B.gridLabel} className="grid grid-cols-2 gap-x-6 md:grid-cols-3 md:gap-x-8 lg:grid-cols-5">
           {tiles.map((t, i) => {
             const last = i === n - 1;
             return (
               <div
                 key={t.key}
-                className={`flex min-w-0 flex-col gap-1 border-t border-s300 pb-6 pt-5 md:pb-8 ${last ? "stat-last" : ""}`}
-                style={last ? ({ "--s2": span(n, 2), "--s3": span(n, 3), "--s4": span(n, 4), "--s5": span(n, 5) } as CSSProperties) : undefined}
+                className={`flex min-w-0 flex-col gap-1 border-t border-s300 pb-5 pt-5 md:pb-2 ${last ? "stat-last" : ""}`}
+                style={last ? ({ "--s2": span(n, 2), "--s3": span(n, 3), "--s5": span(n, 5) } as CSSProperties) : undefined}
               >
                 <dt className="sr-only">{t.label}</dt>
-                <dd className="order-first text-[28px] font-medium leading-9 tracking-[-0.8px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
-                  <CountUp value={t.value} delay={i * 60} />
+                <dd className="order-first text-[28px] font-medium leading-9 tracking-[-0.8px] text-s1000 tabular-nums md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
+                  {t.value}
                 </dd>
                 <dd aria-hidden className="t-helper text-pretty text-s700">
                   {t.label}
@@ -66,13 +72,32 @@ export function BehindTal() {
             );
           })}
         </dl>
+        <div className="flex flex-col gap-4 border-t border-s300 pt-5 md:gap-5 md:pt-8">
+          <p className="t-helper text-s600">{B.companies}</p>
+          <ul aria-label={B.companies} className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-x-10">
+            {LOGOS.map(([file, name, w, h]) => (
+              <li key={file} className="flex items-center">
+                <img
+                  src={`/logos/${file}.svg`}
+                  alt={name}
+                  width={w}
+                  height={h}
+                  loading="lazy"
+                  className="wall-logo block h-[calc(var(--h)*0.62px)] w-auto md:h-[calc(var(--h)*0.72px)]"
+                  style={{ ["--h" as string]: h }}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
       <style>{`
         .wall-art { -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%, #000 70%, transparent); mask-image: linear-gradient(180deg, transparent, #000 22%, #000 70%, transparent); }
         .stat-last { grid-column: span var(--s2) / span var(--s2); }
         @media (min-width: 768px) { .stat-last { grid-column: span var(--s3) / span var(--s3); } }
-        @media (min-width: 1024px) { .stat-last { grid-column: span var(--s4) / span var(--s4); } }
-        @media (min-width: 1360px) { .wall-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .stat-last { grid-column: span var(--s5) / span var(--s5); } }
+        @media (min-width: 1024px) { .stat-last { grid-column: span var(--s5) / span var(--s5); } }
+        /* The marks are white SVGs (the marquee's): black on the card, quiet. */
+        .wall-logo { filter: brightness(0); opacity: 0.55; }
       `}</style>
     </section>
   );

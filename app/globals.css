@@ -301,6 +301,10 @@
     animation: grain 900ms steps(6) infinite;
     will-change: transform;
   }
+  /* While the hero's WebGL canvas runs (landing/HeroLive.tsx), its own 24 fps grain replaces this one. */
+  .grain.is-live::after {
+    display: none;
+  }
   @keyframes grain {
     0% { transform: translate(0, 0); }
     20% { transform: translate(-3%, 2%); }
@@ -422,6 +426,21 @@
 @keyframes done-spread {
   from { opacity: 0; transform: scaleX(0.3); }
   to { opacity: 1; transform: scaleX(1); }
+}
+
+/* Numbers wall face stack (landing/Faces.tsx): once hydrated the faces wait, then settle in one by one when seen. */
+@media (prefers-reduced-motion: no-preference) {
+  .faces[data-armed] .face {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .faces.faces-in .face {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.7s ease-out calc(var(--i) * 70ms),
+      transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) calc(var(--i) * 70ms);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

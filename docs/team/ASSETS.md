@@ -30,6 +30,7 @@
 | IBM Plex Mono (via `next/font/google`) | https://fonts.google.com/specimen/IBM+Plex+Mono | IBM | SIL Open Font Licence | mono credits and labels |
 | Inter (via `next/font/google`) | https://fonts.google.com/specimen/Inter | Rasmus Andersson | SIL Open Font Licence | text fallback after the system UI stack |
 | `public/india/people/{aman,ananya,aryan,isha,rohan,sanchit,souvik,sunny-shah}.png` | tal-boss-web.vercel.app (Tal-owned, see top of file) | Tal | Tal-owned | the Bengaluru contact sheet only, captioned "People on Tal in Bengaluru", no quotes |
+| `public/faces/{aman,ananya,aryan,isha,rohan,sanchit,souvik,sunny-shah}.webp` (112 × 112, shown as 56-px circles) | face crops of `public/india/people/*.png` (sharp: hand-placed square crop on each face, white flatten, lanczos3, WebP q82), 5 Nov 2026, v4.3 | Tal | Tal-owned (real Tal people as on our India site) | the numbers wall face stack only (`landing/Faces`): in colour, no names, no quotes, never captioned as SF or Tal members |
 | `public/brands/{google,uber,salesforce,adobe,linkedin,paypal,intuit}.svg` (okta, ebay, nvidia, stripe, databricks deleted 4 Nov: unverified), `public/india/companies/{microsoft,amazon,spotify,razorpay}.svg`, `public/india/misc/sarvam.svg` | company marks (trademarks of their owners), from the repo and our India site | the companies | nominative use, founder-verified 4 Nov 2026: bosses from these companies have accounts on Tal | one quiet monochrome row in "Where we come from", captioned with the copy key |
 
 Rules: Unsplash Licence, Pexels Licence, CC0 or original only. No film stills, posters or any A24 material. No stock "diverse office" clichés.
@@ -123,3 +124,30 @@ FEEDBACK_V4_2.md section 9 (5 Nov 2026): the round 4 SF skyline was "cool but no
 | `public/art/hero-16x9-{640,1024,1376}.*`, `hero-4x5-{480,768,928}.*` | round 5 `valley-isometric-b-*` via `scripts/art.mjs` | Tal (AI-generated, original) | original work | landing hero |
 | `public/art/wall-16x9-{1024,1376}.*`, `wall-4x5-{480,928}.*` | round 5 `valley-nodes-a-*` via `scripts/art.mjs` | Tal (AI-generated, original) | original work | numbers wall background (faint, 15–25 % opacity) |
 | `docs/team/art/round5/hubs.json` | measured on the hero pick | Tal | original work | frontend: where to light SF, Palo Alto, Mountain View, Sunnyvale, San Jose |
+
+## Round 6 (original, generated)
+
+### Hero art: "The fog is thinking"
+Steve's single direction (`docs/team/HERO_DIRECTION.md`, 5 Nov 2026), after FEEDBACK_V4_3: one young person, seen from behind, sits small on a dark San Francisco hill at night while glowing fog pours over the western ridge into the city, with the Sutro silhouette as the only landmark. No logos, text, bridges, named towers, faces, screens or particles. Generated with `gemini-3-pro-image` at 4K (`imageConfig.imageSize: "4K"`) via `scripts/art/gen.mjs`, jobs from `scripts/art/round6-jobs.py`. Three text passes failed the layout, so pass 4 recomposed the best takes from a reference image and pass 5 closed the laptop in `r2` (local edit). The 4:5 was made from the graded 16:9 as a reference. Graded to true greyscale by `scripts/art/round6-grade.py`. Prompts: `docs/team/art/round6/PROMPTS.md`. Pick, reasoning and measurements: `docs/team/art/round6/PICK.md`. Pulse paths for the shader: `docs/team/art/round6/paths.json`. Contact sheet: `docs/team/art/round6/sheet.jpg`. Log: `docs/team/art/round6/log.txt`. No film stills, A24 material or third-party imagery were used or prompted.
+
+| file | source | author | licence | used where |
+|---|---|---|---|---|
+| `docs/team/art/round6/fog-e1-16x9.png` (5504 × 3072, graded) | generated, gemini-3-pro-image 4K, prompt in round6/PROMPTS.md (pass 5 edit of take r2) | Tal (AI-generated, original) | original work | PICK: hero (desktop) → `public/art/hero-16x9-*` |
+| `docs/team/art/round6/fog-e1-4x5.png` (3712 × 4608, graded) | generated from `fog-e1-16x9.png` as the reference image, take a | Tal (AI-generated, original) | original work | PICK: hero (phones) → `public/art/hero-4x5-*` |
+| `docs/team/art/round6/raw/fog-{a..x,r1..r8,e1,e2}-16x9.png`, `raw/fog-e1-4x5-{a,b}.png` | generated, gemini-3-pro-image 4K, prompts in round6/PROMPTS.md | Tal (AI-generated, original) | original work | candidates (runner-up: `e2`, the same frame); build inputs only, not served |
+| `docs/team/art/round6/og-a-1200x630.jpg` | derived from `fog-e1-16x9.png` (1.1x push-in) | Tal (AI-generated, original) | original work | PICK: OG background → `app/opengraph-image.jpg` via `scripts/og.mjs` |
+| `docs/team/art/round6/paths.json` | authored on the pick | Tal | original work | frontend: three pulse paths per crop; the last point is where the person sits |
+| `public/art/hero-16x9-{1440,2880,3840}.{avif,webp}`, `public/art/hero-4x5-{800,1600}.{avif,webp}` | round 6 `fog-e1-*` via `scripts/art.mjs` (AVIF q 72, WebP q 82, never upscaled) | Tal (AI-generated, original) | original work | landing hero (replaces round 5 `valley-isometric-b` once `Hero.tsx` switches its srcset; the round 5 files stay in `public/art/` until then) |
+| `app/opengraph-image.jpg` | round 6 `og-a-1200x630` + the tal wordmark in the silver ramp (`scripts/og.mjs`) | original + Tal mark | original work | social card (alt text in `app/opengraph-image.alt.txt`) |
+
+### Round 6b: coder on a bench (founder, 5 Nov 2026)
+The founder on `fog-e1` asked, "Why is a depressed guy looking over a hill?" He then asked to "show them as a coder with a MacBook (subtly visible) coding on a bench and overlooking SF". `fog-f1` keeps the `fog-e1` fog, city and tower. The coder and bench come from a gemini-3-pro-image edit, composited at the doc's size by `scripts/art/round6b-composite.py`. The grade adds filament softening (28 %) and fine grain on the houses (`scripts/art/round6-grade.py --filaments --depaint`). Notes: `docs/team/art/round6/PICK.md` (6b). The plain silver laptop has no logo, so it is not a brand mark.
+
+| file | source | author | licence | used where |
+|---|---|---|---|---|
+| `docs/team/art/round6/fog-f1-16x9.png` (5504 × 3072, graded) | composite: `fog-e1` plate + `raw/fog-rm-16x9-a` patch + coder/bench from `raw/fog-g1-16x9-a` (all generated, gemini-3-pro-image 4K) | Tal (AI-generated, original) | original work | PICK 6b: hero (desktop) → `public/art/hero-16x9-*` |
+| `docs/team/art/round6/fog-f1-4x5.png` (3712 × 4608, graded) | composite: `fog-e1-4x5` plate + `raw/fog-rm-4x5-a` patch + the same coder/bench | Tal (AI-generated, original) | original work | PICK 6b: hero (phones) → `public/art/hero-4x5-*` |
+| `docs/team/art/round6/raw/fog-{rm,c1,g1}-*.png`, `raw/guide-*.png`, `raw/fog-f1-*-comp.png` | generated edits (prompts in round6/PROMPTS.md), the hand-made placement guides and the ungraded composites | Tal (AI-generated, original) | original work | build inputs only, not served |
+| `docs/team/art/round6/og-b-1200x630.jpg` | derived from `fog-f1-16x9.png` (1.1x push-in) | Tal (AI-generated, original) | original work | PICK 6b: OG background → `app/opengraph-image.jpg` via `scripts/og.mjs` |
+| `docs/team/art/round6/paths.json` (rewritten for 6b) | authored on `fog-f1` | Tal | original work | frontend: three pulse paths per crop; the last point is the coder's laptop |
+| `public/art/hero-16x9-{1440,2880,3840}.{avif,webp}`, `public/art/hero-4x5-{800,1600}.{avif,webp}` | round 6b `fog-f1-*` via `scripts/art.mjs` (2880 AVIF 121 KB) | Tal (AI-generated, original) | original work | landing hero (replaces the 6a export at the same paths) |

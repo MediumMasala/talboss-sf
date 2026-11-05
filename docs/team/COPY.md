@@ -1,6 +1,6 @@
-# Tal US site: copy (v4.2, 5 Nov 2026)
+# Tal US site: copy (v4.3, 5 Nov 2026)
 
-Owner: copywriter. Source of truth: `content/site.ts`; components only read from it. v4.2 follows the founder's review `FEEDBACK_V4_2.md` (binding) on top of `FEEDBACK_V4.md`.
+Owner: copywriter. Source of truth: `content/site.ts`; components only read from it. v4.3 follows `FEEDBACK_V4_3.md` (binding) on top of `FEEDBACK_V4_2.md` and `FEEDBACK_V4.md`.
 
 **Voice:** a good friend explaining it over coffee. Human, friendly, specific. Short sentences, no hype, nothing that plants a fear. Tal is "Tal" or "it", never "he"; the page speaks as "we". The old programme name never appears on screen.
 
@@ -14,13 +14,13 @@ Owner: copywriter. Source of truth: `content/site.ts`; components only read from
 | L1 Hero | `select.hero.sub`, `.cta`, `.note` |
 | Logo marquee | `select.proofLine` |
 | L2 Chat card | `select.chat.tal`, `.role`, `.caption`, `.messages[]`, `.typing` |
-| L3 Numbers wall | `select.stats.eyebrow`, `.total` (= `claims.network`, set big on its own line, Steve r3), `.headline` (finishes the sentence), `.body`, `.startups` (uses `claims.startups`), `.gridLabel`; the function tiles come from `content/network.json` (see below) |
+| L3 Numbers wall | `select.stats.eyebrow`, `.total` (= `claims.network`, set big on its own line, Steve r3), `.headline` (finishes the sentence), `.body`, `.tiles` (which `network.json` keys show, in order), `.companies` (over the logo row), `.gridLabel`; the tile figures and labels come from `content/network.json` (see below) |
 | L4 How it works | `select.how.heading`, `.sub`, `.steps[]` |
 | L5 What to expect | `select.deal.heading`, `.rows[]` (lead in white, rest in 64 % white) |
 | L6 Questions | `select.faq.heading`, `.items[]` |
 | L7 Bottom CTA + footer | `select.credits.cta`, `.questions` (the only "Questions" link outside its section), `.copyright`, `.privacy`, `.terms`; `select.hero.note` under the CTA; `legal.supportEmail` |
 | Flow | `select.steps.*`, `select.apply.*`, `upload.*` (unchanged except A4 sub and A7 sub) |
-| Claims | `claims.network` (headline of L3), `claims.startups` (last tile of L3). Each used once. |
+| Claims | `claims.network` (lead of L3, used once). `claims.startups` is held off the page since v4.3 (five tiles). |
 
 **Numbers wall data.** The per-function figures are never typed into `site.ts`. `content/network.ts` reads `content/network.json` (data lane, SQL in `docs/team/NETWORK_NUMBERS.md`): `functions[]` with `label` and `display`. Only a clean rounded figure renders (`48,000+`, `12K+`, `1.2K+`); anything else shows "—". Until the file exists, `content/network.placeholder.json` supplies the labels with "—" for every value.
 
@@ -41,7 +41,7 @@ We've raised $7 million from Peak XV (formerly Sequoia Capital). · tal · [Appl
 - Free for you. Companies pay when they hire.
 
 ### Logo marquee
-Bosses from these companies hire on Tal
+Hiring managers from these companies hire on Tal *(exact, FEEDBACK_V4_3)*
 
 ### L2 Chat card
 - Tal · Monday: Three new roles for you: SF, the Bay Area and remote. (Staff engineer, a Series B payments company · Founding engineer, a seed-stage dev tools company · ML engineer, a Series A health company)
@@ -51,9 +51,10 @@ Bosses from these companies hire on Tal
 
 ### L3 The numbers wall
 - THE PEOPLE BEHIND TAL
-- **300,000+ tech professionals. In early preview in the Bay Area.**
-- Engineers, PMs, designers, data scientists and founders. Here's who they are, by what they do.
-- Tiles: one per function from `network.json` (label + figure), then **5,000+** AI and consumer startups.
+- **300,000+ tech professionals in Tal's network.** (beside it, eight Tal faces, no names, no caption)
+- Here's who they are, by what they do. Tal is in early preview within the SF Bay Area.
+- Five tiles from `network.json`, in this order: Software engineers 200,000+ · Product managers 29,000+ · Designers 13,000+ · AI and ML engineers 7,000+ · Founders 8,300+.
+- People from these companies are in Tal's network. (over the 12 verified marks; NETWORK_NUMBERS: 53,744 current employees of those companies)
 
 ### L4 How it works
 Three questions now. Tal does the rest.
@@ -88,7 +89,13 @@ Header: the tal tile (and, on phones, Back once there is somewhere to go back to
 - **A5b** We couldn't find you on LinkedIn · Tal is getting a lot of requests right now · Tal's LinkedIn search is full for today · Tal's LinkedIn search isn't working right now · You're offline (each with "Paste my LinkedIn link" and, where it applies, "Skip, I'll add my resume" or "Try again").
 - **A6** Add your resume / Optional. It helps Tal represent you better. / Drop a PDF or DOCX, or click to choose (touch: Tap to choose a PDF or DOCX) / [Continue] / No resume handy? We'll work from your LinkedIn.
 - **A6b** Where should Tal write to you? / We'll email you when a role fits. / [Continue] / Add a resume instead
-- **A7** {Full name} / REPRESENTED BY TAL · UNTIL {date} / **Tal will mail you when a good role that matches you is found.** *(exact)* / chips San Francisco · Bay Area · Remote, each turning into a sample role line / Examples of what Tal sends. / Tal will write to {email}. / [Done]
+- **A7** {Full name} / REPRESENTED BY TAL · UNTIL {date} / **Tal will mail you when a good role that matches you is found.** *(exact)* / Tal is in early preview. We've already started looking for roles for you. *(Steve r4)* / Tal will write to {email}. / [Done]
+
+## Changed in v4.3
+- Marquee caption: "Bosses from these companies hire on Tal" → "Hiring managers from these companies hire on Tal".
+- Numbers wall: five tiles (`stats.tiles`), the startups tile and `stats.startups` removed from view (`claims.startups` kept, unused); new `stats.companies` line over the logo row. The lead, the body line and the eyebrow are unchanged. Faces carry no copy.
+- A7: removed `done.places`, `done.roles`, `done.rolesNote` ("Examples of what Tal sends."); added `done.note`. `done.sub` unchanged *(exact)*.
+- Hero: no copy change (the landmark marks are gone; they carried none).
 
 ## Changed in v4.2
 - "Now in San Francisco." → "In early preview within the SF Bay Area." (hero, OG, meta); the numbers wall says "In early preview in the Bay Area" (no "just opened").

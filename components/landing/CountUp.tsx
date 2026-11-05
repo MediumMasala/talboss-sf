@@ -13,22 +13,37 @@ function parse(value: string) {
 }
 
 /**
- * Counts a figure like "300,000+" up from 0 once it's 80 % in view: 1.6 s, easeOutExpo, tabular figures, after
- * `delay` ms (the numbers wall ripples across its grid). The final string is laid out invisibly underneath, so the
- * width never changes (CLS 0). A value that isn't a number (a dash) is shown as is. Reduced motion: the number.
+ * Counts a figure like "300,000+" up (from the smallest number with as many digits, 100,000+) once it's 80 % in view: `duration` ms (1.6 s default), easeOutExpo, or the
+ * gentler easeOutCubic with `soft` (v4.3: the numbers wall's one count), tabular figures, after `delay` ms.
+ * The final string is laid out invisibly underneath, so the width never changes (CLS 0). A value that isn't a number (a dash) is shown as is. Reduced motion: the number.
  */
-export function CountUp({ value, className = "", delay = 0 }: { value: string; className?: string; delay?: number }) {
+export function CountUp({
+  value,
+  className = "",
+  delay = 0,
+  duration = 1600,
+  soft = false,
+}: {
+  value: string;
+  className?: string;
+  delay?: number;
+  duration?: number;
+  soft?: boolean;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const seen = useSeen(ref, 0.8);
   const p = parse(value);
   const countable = !!p;
   const [n, setN] = useState<number | null>(null);
-  // Server HTML (and no-JS) shows the figure; once hydrated, off-screen numbers wait at 0 for their count.
-  useEffect(() => {
-    if (countable && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) setN((v) => (v === null ? 0 : v));
-  }, [countable]);
-
   const target = p?.n ?? 0;
+  // The count starts at the smallest number with the final's digit count (300,000+ counts up from 100,000+): with
+  // tabular figures every step is then exactly the final's width, so the words after it never sit behind a gap.
+  const from = target >= 1 ? Math.pow(10, Math.floor(Math.log10(target))) : 0;
+  // Server HTML (and no-JS) shows the figure; once hydrated, off-screen numbers wait at `from` for their count.
+  useEffect(() => {
+    if (countable && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) setN((v) => (v === null ? from : v));
+  }, [countable, from]);
+
   useEffect(() => {
     if (!seen || !target) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setN(target);
@@ -36,13 +51,13 @@ export function CountUp({ value, className = "", delay = 0 }: { value: string; c
     let t0 = 0;
     const tick = (now: number) => {
       if (!t0) t0 = now + delay;
-      const t = Math.max(0, Math.min(1, (now - t0) / 1600));
-      setN(t === 1 ? target : target * (1 - Math.pow(2, -10 * t)));
+      const t = Math.max(0, Math.min(1, (now - t0) / duration));
+      setN(t === 1 ? target : from + (target - from) * (soft ? 1 - Math.pow(1 - t, 3) : 1 - Math.pow(2, -10 * t)));
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [seen, target, delay]);
+  }, [seen, target, from, delay, duration, soft]);
 
   const shown =
     n === null || !p

@@ -16,7 +16,8 @@ export const BRAND_NAME = "Tal";
  * Claims. Change them here only.
  * network: verified (~234K Tal app + ~1.04M Grapevine). Never say "active" or "every week".
  * startups: founder-stated, approved for use 4 Nov 2026.
- * Each is used once, on the numbers wall (select.stats: the headline and the last tile).
+ * network is used once, on the numbers wall (select.stats.total). startups is held off the page since v4.3 (five tiles,
+ * FEEDBACK_V4_3); it stays here, approved, for when a place for it comes back.
  * The per-function counts are not here: they come from content/network.json (the data lane), never typed by hand.
  */
 const claims = {
@@ -132,9 +133,9 @@ export const site = {
     },
 
     /**
-     * L3. The numbers wall (white card 4:124, v4.2). The people are the proof: the headline carries the network claim,
-     * the grid shows real counts by function from content/network.json (`functions[].display` + `label`), and the
-     * last tile is the startups claim. Each claim appears here and nowhere else.
+     * L3. The numbers wall (white card 4:124, v4.3). The people are the proof: the lead carries the network claim with
+     * eight Tal faces beside it, five tiles show real counts by function from content/network.json (`tiles` picks the
+     * keys, in order), and a quiet row of the verified company marks closes it (`companies`). Claims appear here only.
      */
     stats: {
       eyebrow: "The people behind Tal",
@@ -145,7 +146,13 @@ export const site = {
       total: claims.network,
       headline: "tech professionals in Tal's network.",
       body: "Here's who they are, by what they do. Tal is in early preview within the SF Bay Area.",
-      startups: { value: claims.startups, label: "AI and consumer startups" },
+      /**
+       * FEEDBACK_V4_3: five tiles, not ten. Keys from content/network.json, shown in this order; the other rows stay in
+       * the JSON, off the page.
+       */
+      tiles: ["swe", "product", "design", "ai", "founder"],
+      /** Over the quiet logo row under the tiles. Backed by NETWORK_NUMBERS: 53,744 current employees of the 12. */
+      companies: "People from these companies are in Tal's network.",
       /** Screen-reader name for the grid. */
       gridLabel: "Tech professionals behind Tal, by what they do",
     },
@@ -195,8 +202,8 @@ export const site = {
       terms: "Terms",
     },
 
-    /** Logo marquee caption (21:965). India bosses; never implies US openings. */
-    proofLine: "Bosses from these companies hire on Tal",
+    /** Logo marquee caption (21:965), exact (FEEDBACK_V4_3). India hiring managers; never implies US openings. */
+    proofLine: "Hiring managers from these companies hire on Tal",
 
     /* -------------------------------- Flow -------------------------------- */
 
@@ -338,25 +345,19 @@ export const site = {
         back: "Add a resume instead",
       },
 
-      /** A7 (Figma 3:661 / 5:917). Their name, set large, the credit caps, one line about what's ahead, three chips. */
+      /** A7 (Figma 3:661 / 5:917). Their name, set large, the credit caps, the line about what's ahead, one warm note. */
       done: {
         /** `date` like "4 May 2027". Set in tracked caps by CSS. */
         credit: (date: string) => `Represented by Tal · until ${date}`,
-        /** Exact (FEEDBACK_V4_2 §6). The chips below carry the places. */
+        /** Exact (FEEDBACK_V4_2 §6, kept in V4_3). */
         sub: "Tal will mail you when a good role that matches you is found.",
-        /** The three chips that rise from the horizon under the line. */
-        places: ["San Francisco", "Bay Area", "Remote"],
         /**
-         * v4.1: after a beat each chip gives way to a sample role line in the same spot (same order as `places`,
-         * so each line keeps its chip's place). The same three roles as the landing's chat.
+         * v4.3 (FEEDBACK_V4_3): replaces the three sample chips and "Examples of what Tal sends." A reminder that a real
+         * person is looking while Tal is in early preview. Rises from the horizon where the chips did.
+         * Steve r4: "a real person … right now" was a promise we can't keep at 3 am, and "the moment one matches, it's in
+         * your inbox" said the sub line again, one line below it. The founder's own words, shorter.
          */
-        roles: [
-          ["Staff engineer", "payments · SF"],
-          ["ML engineer", "health · Bay Area"],
-          ["Founding engineer", "dev tools · remote"],
-        ] as [string, string][],
-        /** Steve r2: under the role lines, so nobody takes the samples for roles already found. */
-        rolesNote: "Examples of what Tal sends.",
+        note: "Tal is in early preview. We've already started looking for roles for you.",
         /** No email ever reaches A7 any more: an upload without one goes to A6b first (v4.1). */
         email: (email: string) => `Tal will write to ${email}.`,
         close: "Done",

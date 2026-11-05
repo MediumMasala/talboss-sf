@@ -5,16 +5,13 @@ import { m, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { Magnetic } from "@/components/ds/Magnetic";
 import { site } from "@/content/site";
-import { EASE_IO, EASE_OUT } from "./motion";
+import { EASE_OUT } from "./motion";
 
 const D = site.select.apply.done;
 
-/** How far below its resting place a chip starts. Steve r2: 120 made the chips rise through the email line and the
- *  Done pill (both are already on screen); 36 is a short lift that never crosses them. */
+/** How far below its resting place the note starts (the chips' old lift). Steve r2: 120 rose through the email line
+ *  and the Done pill (both already on screen); 36 is a short lift that never crosses them. */
 const RISE = 36;
-/** Seconds between the chips' rises, and how long a chip shows its place before the role line takes over. */
-const RISE_GAP = 0.45;
-const BEAT = 1.5;
 
 /**
  * A7 Done (Figma 3:661 / 5:917). White and bright, and it stays alive:
@@ -22,9 +19,8 @@ const BEAT = 1.5;
  * - your name arrives letter by letter (34 ms stagger, 640 ms each, y .35em → 0, blur 8 → 0), then the credit caps and the line;
  * - the sun blooms (CSS `.done-sun`: scale .35 → 1 + fade over 6 s, then an 8 s pulse) and its light spreads along
  *   the horizon (`.done-spread`, scaleX .3 → 1 over 7 s);
- * - the three place chips rise from the horizon one by one (y 120 → 0, 1.3 s, 450 ms apart); after a beat (1.5 s) each
- *   gives way to a sample role line in the same spot, then the set idles.
- * Transform and opacity only. Reduced motion renders the final state (the role lines, the sun at rest).
+ * - v4.3: in the chips' old slot, the early-preview note rises from the horizon (y 36 → 0, 1.3 s) as the sun blooms.
+ * Transform and opacity only. Reduced motion renders the final state (the note in place, the sun at rest).
  */
 export function Done({ name, email, until }: { name: string; email: string | null; until: string }) {
   const still = useReducedMotion() ?? false;
@@ -93,50 +89,15 @@ export function Done({ name, email, until }: { name: string; email: string | nul
         >
           {D.sub}
         </m.p>
-        <ul className="mt-6 flex flex-col items-center gap-1.5">
-          {D.places.map((place, i) => {
-            const [role, rest] = D.roles[i] ?? [place, ""];
-            const rise = chips0 + i * RISE_GAP;
-            const swap = rise + BEAT;
-            return (
-              <m.li
-                key={place}
-                className="grid place-items-center"
-                initial={still ? false : { opacity: 0, y: RISE }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ y: { duration: 1.3, ease: EASE_OUT, delay: rise }, opacity: { duration: 0.8, ease: "easeOut", delay: rise } }}
-              >
-                <m.span
-                  aria-hidden
-                  className="[grid-area:1/1] rounded-full border border-s400 bg-white/65 px-3.5 py-1.5 text-[13px] font-medium leading-5 tracking-[0.01px] text-s1000 backdrop-blur-[8px]"
-                  initial={still ? false : { opacity: 1, scale: 1 }}
-                  animate={{ opacity: 0, scale: 0.94 }}
-                  transition={{ duration: 0.45, ease: EASE_IO, delay: swap }}
-                >
-                  {place}
-                </m.span>
-                <m.span
-                  className="[grid-area:1/1] whitespace-nowrap rounded-full border border-s300 bg-white/70 px-4 py-1.5 text-[14px] leading-5 tracking-[-0.05px] shadow-[0_4px_12px_rgba(0,0,0,0.04)] backdrop-blur-[10px]"
-                  initial={still ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, ease: EASE_OUT, delay: swap + 0.3 }}
-                >
-                  <span className="font-medium text-s1000">{role}</span>
-                  {rest ? <span className="text-s600"> · {rest}</span> : null}
-                </m.span>
-              </m.li>
-            );
-          })}
-        </ul>
-        {/* Steve r2: the role lines are samples, and say so, so nobody reads them as roles already found. Laid out
-            from the start (no shift); fades up with the first role line. */}
+        {/* v4.3 (FEEDBACK_V4_3): the sample chips and their note are gone. One warm note in their entrance slot: it rises
+            the chips' short lift from the horizon while the sun blooms behind it. */}
         <m.p
-          initial={still ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: chips0 + BEAT + 0.3 }}
-          className="t-helper mt-2.5 text-s600"
+          initial={still ? false : { opacity: 0, y: RISE }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ y: { duration: 1.3, ease: EASE_OUT, delay: chips0 }, opacity: { duration: 0.8, ease: "easeOut", delay: chips0 } }}
+          className="mt-4 w-full max-w-[480px] text-pretty text-[14px] leading-5 tracking-[-0.05px] text-s700"
         >
-          {D.rolesNote}
+          {D.note}
         </m.p>
         {email ? (
           <m.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: after + 0.7 }} className="t-helper mt-4 text-s600">
