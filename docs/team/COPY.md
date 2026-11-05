@@ -14,7 +14,7 @@ Owner: copywriter. Source of truth: `content/site.ts`; components only read from
 | L1 Hero | `select.hero.sub`, `.cta`, `.note` |
 | Logo marquee | `select.proofLine` |
 | L2 Chat card | `select.chat.tal`, `.role`, `.caption`, `.messages[]`, `.typing` |
-| L3 Numbers wall | `select.stats.eyebrow`, `.headline` (uses `claims.network`), `.body`, `.startups` (uses `claims.startups`), `.gridLabel`; the function tiles come from `content/network.json` (see below) |
+| L3 Numbers wall | `select.stats.eyebrow`, `.total` (= `claims.network`, set big on its own line, Steve r3), `.headline` (finishes the sentence), `.body`, `.startups` (uses `claims.startups`), `.gridLabel`; the function tiles come from `content/network.json` (see below) |
 | L4 How it works | `select.how.heading`, `.sub`, `.steps[]` |
 | L5 What to expect | `select.deal.heading`, `.rows[]` (lead in white, rest in 64 % white) |
 | L6 Questions | `select.faq.heading`, `.items[]` |

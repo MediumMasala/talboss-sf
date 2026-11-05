@@ -24,8 +24,8 @@ const PLACES: { hub: string; companies: string[]; side: Record<Crop, "r" | "rd" 
   // Desktop: below-right of its light, which sits at the end of the sub line's first row (≤ 1590 px wide).
   { hub: "sf", companies: ["salesforce", "uber", "microsoft"], side: { "16x9": "rd", "4x5": "r" } },
   { hub: "mountain_view", companies: ["google", "intuit"], side: { "16x9": "r", "4x5": "r" } },
-  // Phones: under its light and out over the water, since beside it the marks would touch the wordmark's baseline.
-  { hub: "sunnyvale", companies: ["linkedin", "amazon"], side: { "16x9": "l", "4x5": "bl" } },
+  // Phones drop Sunnyvale too (Steve r3): under its light the marks hang over the water toward the East Bay, which a local reads as Fremont.
+  { hub: "sunnyvale", companies: ["linkedin", "amazon"], side: { "16x9": "l", "4x5": null } },
   { hub: "san_jose", companies: ["adobe", "paypal"], side: { "16x9": "b", "4x5": null } },
 ];
 
@@ -56,11 +56,13 @@ function Layer({ crop, at }: { crop: Crop; at: Record<string, Hub> }) {
         const marks = companies.map((c) => {
           const sz = size(c);
           const d = START + STEP * n++;
+          // Steve r3: the marquee's optical heights (20 = the base), so INTUIT's full-height caps stop shouting over a tiny Google.
+          const mh = sz ? (h * sz[3]) / 20 : h;
           return sz ? (
             <span
               key={c}
               className="lm-mark"
-              style={{ width: (sz[2] / sz[3]) * h, height: h, ["--d" as string]: `${d}s`, ["--src" as string]: `url(/logos/${c}.svg)` } as CSSProperties}
+              style={{ width: (sz[2] / sz[3]) * mh, height: mh, ["--d" as string]: `${d}s`, ["--src" as string]: `url(/logos/${c}.svg)` } as CSSProperties}
             />
           ) : null;
         });
@@ -101,7 +103,7 @@ export function Landmarks() {
         }
         /* The marks sit a short hairline away from their light, like a label on a map, with a soft dark halo so they
            read over the lit city. */
-        .lm-marks { position: absolute; display: flex; gap: 6px; filter: drop-shadow(0 0 3px rgba(0,0,0,.85)) drop-shadow(0 0 10px rgba(0,0,0,.6)); }
+        .lm-marks { position: absolute; display: flex; gap: 8px; filter: drop-shadow(0 0 3px rgba(0,0,0,.85)) drop-shadow(0 0 10px rgba(0,0,0,.6)); }
         .lm-marks::before { content: ""; position: absolute; background: rgba(255,255,255,.28); animation: lm-on 1s var(--ease-out) var(--d) both; }
         .lm-r { left: 24px; top: 0; translate: 0 -50%; flex-direction: column; align-items: flex-start; }
         .lm-r::before { right: calc(100% + 4px); top: 50%; width: 14px; height: 1px; }
@@ -120,11 +122,11 @@ export function Landmarks() {
           opacity: .62;
           animation: lm-on 1s var(--ease-out) var(--d) both, lm-pulse 6s ease-in-out calc(var(--d) + 1s) infinite;
         }
-        .lm-b .lm-mark, .lm-bl .lm-mark { opacity: .5; }
+        .lm-b .lm-mark, .lm-bl .lm-mark { opacity: .58; }
         @keyframes lm-on { from { opacity: 0; transform: translateY(3px); filter: blur(3px); } }
         @keyframes lm-pulse { 50% { opacity: .42; } }
         .lm-b .lm-mark, .lm-bl .lm-mark { animation-name: lm-on, lm-pulse-soft; }
-        @keyframes lm-pulse-soft { 50% { opacity: .3; } }
+        @keyframes lm-pulse-soft { 50% { opacity: .4; } }
         @keyframes lm-breathe { 50% { opacity: .55; transform: scale(.8); } }
         @media (prefers-reduced-motion: reduce) { .lm-light, .lm-mark, .lm-marks::before { animation: none !important; } }
       `}</style>

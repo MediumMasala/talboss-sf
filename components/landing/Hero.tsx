@@ -42,6 +42,13 @@ export function Hero() {
             "radial-gradient(ellipse 30% 22% at 50% 77%, rgba(0,0,0,0.78), rgba(0,0,0,0.45) 60%, rgba(0,0,0,0) 100%), linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0) 78%, #000 100%)",
         }}
       />
+      {/* Steve r3, phones: the desktop ellipse is ~117 px wide here, so the sub sat on the lit city. A wider, flatter
+          pool of dark behind the sub line only; the map still shows around it. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 md:hidden"
+        style={{ background: "radial-gradient(ellipse 64% 15% at 50% 71%, rgba(0,0,0,0.7), rgba(0,0,0,0.38) 62%, rgba(0,0,0,0) 100%)" }}
+      />
       {/* Right-edge vignette (desktop, 16:9 only): fades the flat Pacific plane and its hard top edge into the page. */}
       <div aria-hidden className="absolute inset-0 hidden bg-[linear-gradient(270deg,#000_0%,rgba(0,0,0,0.86)_9%,rgba(0,0,0,0.5)_21%,rgba(0,0,0,0.18)_31%,rgba(0,0,0,0)_40%)] md:block" />
       <Landmarks />

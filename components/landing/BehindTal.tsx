@@ -35,19 +35,25 @@ export function BehindTal() {
       <div className="relative mx-auto flex max-w-[1344px] flex-col gap-8 rounded-[28px] bg-white px-6 py-8 md:gap-12 md:p-16">
         <div className="flex flex-col gap-4">
           <p className="text-[12px] font-medium uppercase leading-5 tracking-[1.2px] text-s600 md:text-[13px]">{B.eyebrow}</p>
-          <h2 id="behind" className="max-w-[880px] text-balance text-[28px] font-semibold leading-[34px] tracking-[-0.6px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
-            {B.headline}
+          {/* Steve r3: the total is the headline. Set big, so the grid under it reads as who those people are. */}
+          <h2 id="behind" className="flex max-w-[880px] flex-col text-s1000">
+            <span className="text-[64px] font-semibold leading-[64px] tracking-[-2.4px] md:text-[112px] md:leading-[108px] md:tracking-[-4.5px]">
+              <CountUp value={B.total} />
+            </span>
+            <span className="mt-2 text-balance text-[28px] font-semibold leading-[34px] tracking-[-0.6px] md:mt-3 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
+              {B.headline}
+            </span>
           </h2>
           <p className="t-sub max-w-[560px] text-s700">{B.body}</p>
         </div>
-        <dl aria-label={B.gridLabel} className="grid grid-cols-2 gap-x-6 md:grid-cols-3 md:gap-x-8 lg:grid-cols-4">
+        <dl aria-label={B.gridLabel} className="grid grid-cols-2 gap-x-6 md:grid-cols-3 md:gap-x-8 lg:grid-cols-4 wall-grid">
           {tiles.map((t, i) => {
             const last = i === n - 1;
             return (
               <div
                 key={t.key}
                 className={`flex min-w-0 flex-col gap-1 border-t border-s300 pb-6 pt-5 md:pb-8 ${last ? "stat-last" : ""}`}
-                style={last ? ({ "--s2": span(n, 2), "--s3": span(n, 3), "--s4": span(n, 4) } as CSSProperties) : undefined}
+                style={last ? ({ "--s2": span(n, 2), "--s3": span(n, 3), "--s4": span(n, 4), "--s5": span(n, 5) } as CSSProperties) : undefined}
               >
                 <dt className="sr-only">{t.label}</dt>
                 <dd className="order-first text-[28px] font-medium leading-9 tracking-[-0.8px] text-s1000 md:text-[40px] md:leading-[48px] md:tracking-[-1px]">
@@ -66,6 +72,7 @@ export function BehindTal() {
         .stat-last { grid-column: span var(--s2) / span var(--s2); }
         @media (min-width: 768px) { .stat-last { grid-column: span var(--s3) / span var(--s3); } }
         @media (min-width: 1024px) { .stat-last { grid-column: span var(--s4) / span var(--s4); } }
+        @media (min-width: 1360px) { .wall-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .stat-last { grid-column: span var(--s5) / span var(--s5); } }
       `}</style>
     </section>
   );

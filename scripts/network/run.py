@@ -23,7 +23,7 @@ LABELS = {
     "mobile": "Mobile engineers",
     "devops": "DevOps and platform engineers",
     "data": "Data engineers, scientists and analysts",
-    "security": "Security engineers",
+    "security": "Security",
     "product": "Product managers",
     "design": "Designers",
     "eng_lead": "Engineering leads",

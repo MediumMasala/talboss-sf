@@ -138,8 +138,13 @@ export const site = {
      */
     stats: {
       eyebrow: "The people behind Tal",
-      headline: `${claims.network} tech professionals. In early preview in the Bay Area.`,
-      body: "Engineers, PMs, designers, data scientists and founders. Here's who they are, by what they do.",
+      /**
+       * Steve r3: the total is set big on its own line (`total`), the headline finishes the sentence. "In early preview"
+       * moved out of the headline: next to "300,000+" it read as 300,000 people in the Bay Area (NETWORK_NUMBERS: 522).
+       */
+      total: claims.network,
+      headline: "tech professionals in Tal's network.",
+      body: "Here's who they are, by what they do. Tal is in early preview within the SF Bay Area.",
       startups: { value: claims.startups, label: "AI and consumer startups" },
       /** Screen-reader name for the grid. */
       gridLabel: "Tech professionals behind Tal, by what they do",
@@ -153,7 +158,7 @@ export const site = {
         { title: "Tell Tal who you are", body: "Your name, where you work and your title. It takes a minute." },
         { title: "Tal builds your career graph", body: "Your roles, skills and history, read from your LinkedIn and resume." },
         { title: "Tal emails you roles that fit", body: "Roles at AI and consumer startups, picked for what you do." },
-        { title: "We only apply once you approve", body: "You see every role first. Nothing goes out without your yes." },
+        { title: "We only apply once you approve", body: "Say yes to a role and Tal makes the intro." },
       ],
     },
 
@@ -175,7 +180,7 @@ export const site = {
         ["Who is Tal for?", "Engineers, researchers, PMs and designers who'd like to hear about good roles in San Francisco, the Bay Area or remote. You don't have to be looking right now."],
         ["Does it cost anything?", "No, it's free for you. Companies pay Tal when they hire someone it introduced."],
         ["Which companies does Tal work with?", "AI and consumer startups, from seed to late stage. Tal only sends you the roles that fit what you do."],
-        ["What happens after six months?", "Tal checks in to ask if you'd like to keep going. If you don't reply, it simply stops."],
+        ["What happens after six months?", "Tal checks in to ask if you'd like to keep going. If you don't reply, it stops."],
       ] as [string, string][],
     },
 

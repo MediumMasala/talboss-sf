@@ -62,7 +62,7 @@ Tal's numbers come from the current company on the person's LinkedIn experience.
 5. **Spotify (16) and Sarvam (58).** Real but tiny. Don't print per-company counts for them.
 6. **Data 33,000+** includes ~10K data analysts and analytics people. The label must keep "analysts". "Data scientists 33,000+" would not be true.
 
-**What is in `content/network.json`:** 9 rows, already following points 1, 2 and 6. They are Software engineers 200,000+, Engineering leads 37,000+, Data engineers, scientists and analysts 33,000+, Product managers 29,000+, Designers 13,000+, DevOps and platform engineers 11,000+, Founders 8,300+, AI and ML engineers 7,000+ and Security engineers 5,900+. The four stack buckets and QA are held back in `run.py` (`HOLD`). Delete a key from `HOLD` and re-run to publish it.
+**What is in `content/network.json`:** 9 rows, already following points 1, 2 and 6. They are Software engineers 200,000+, Engineering leads 37,000+, Data engineers, scientists and analysts 33,000+, Product managers 29,000+, Designers 13,000+, DevOps and platform engineers 11,000+, Founders 8,300+, AI and ML engineers 7,000+ and Security 5,900+. The four stack buckets and QA are held back in `run.py` (`HOLD`). Delete a key from `HOLD` and re-run to publish it.
 
 ## How the numbers were made
 
